@@ -1,9 +1,26 @@
+require('dotenv').config();
 const express = require('express');
 const { sequelize } = require('./models');
 const app = express();
 const PORT = process.env.PORT || 7001;
+const express_session = require('express-session');
+const { passport } = require('./middlewares/passport');
+const customerRoutes = require('./routes/customer');
+const authRoutes = require('./routes/auth');
 
 app.use(express.json());
+
+app.use(express_session({
+    secret: 'Stich-Sure',
+    resave: true,
+    saveUninitialized: true
+}))
+
+app.use(passport.initialize());
+app.use(passport.session());
+
+app.use('/api/v1/customer', customerRoutes);
+app.use('/api/v1/auth', authRoutes);
 
 const startServer = async () => {
   try {
@@ -11,7 +28,7 @@ const startServer = async () => {
     console.log("Database connected successfully");
 
     app.listen(PORT, () => {
-      console.log(`Running on port:${PORT}`);
+      console.log(`Running on port: ${PORT}`);
     });
   } catch (error) {
     console.error("Unable to connect to the database:", error.message);
