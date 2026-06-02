@@ -5,10 +5,10 @@ module.exports = {
   async up(queryInterface, Sequelize) {
     const table = await queryInterface.describeTable("Customers");
 
-    if (!table.role) {
-      await queryInterface.addColumn("Customers", "role", {
-        type: Sequelize.STRING,
-        defaultValue: "customer",
+    if (!table.profilePhoto) {
+      await queryInterface.addColumn("Customers", "profilePhoto", {
+        type: Sequelize.TEXT,
+        allowNull: true,
       });
     }
   },
@@ -16,8 +16,8 @@ module.exports = {
   async down(queryInterface) {
     const table = await queryInterface.describeTable("Customers");
 
-    if (table.role) {
-      await queryInterface.removeColumn("Customers", "role");
+    if (table.profilePhoto) {
+      await queryInterface.removeColumn("Customers", "profilePhoto");
     }
   },
 };

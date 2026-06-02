@@ -31,6 +31,10 @@ module.exports = {
         trim: true,
         allowNull: true,
       },
+      otpExpire: {
+        type: Sequelize.DATE,
+        allowNull: true,
+      },
       role: {
         type: Sequelize.STRING,
         defaultValue: "designer",
