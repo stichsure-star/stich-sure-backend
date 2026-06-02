@@ -20,11 +20,26 @@ module.exports = (sequelize, DataTypes) => {
       primaryKey: true,
       allowNull: false
     },
-    firstName: DataTypes.STRING,
-    lastName: DataTypes.STRING,
-    email: DataTypes.STRING,
-    password: DataTypes.STRING,
-    otp: DataTypes.STRING,
+    firstName: {
+      type: DataTypes.STRING,
+      allownull: false
+    },
+    lastName: {
+      type: DataTypes.STRING,
+      allownull: false
+    },
+    email: {
+      type: DataTypes.STRING,
+      allownull: false
+    },
+    password: {
+      type: DataTypes.STRING,
+      allownull: false
+    },
+    otp: {
+      type: DataTypes.STRING,
+      allowNull: true
+    },
     role: {
       type: DataTypes.STRING,
       defaultValue: 'designer'

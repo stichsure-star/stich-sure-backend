@@ -13,7 +13,7 @@ exports.authentication = async(req, res, next) => {
             if(err) {
                 console.log(err.message)
                 return res.status(404).json({
-                    massage: 'Token validation failed'
+                    message: 'Token validation failed'
             })
         }
         req.user = data

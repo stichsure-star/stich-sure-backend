@@ -1,5 +1,5 @@
 "use strict";
-const { Model } = require("sequelize");
+const { Model, INTEGER } = require("sequelize");
 module.exports = (sequelize, DataTypes) => {
   class Customer extends Model {
     /**
@@ -19,12 +19,30 @@ module.exports = (sequelize, DataTypes) => {
         primaryKey: true,
         allowNull: false,
       },
-      firstName: DataTypes.STRING,
-      lastName: DataTypes.STRING,
-      email: DataTypes.STRING,
-      password: DataTypes.STRING,
-      otp: DataTypes.STRING,
-      otpExpire: DataTypes.DATE,
+      firstName: {
+        type: DataTypes.STRING,
+        allownull: false
+      },
+      lastName:{
+        type:  DataTypes.STRING,
+        allownull: false
+      },
+      email: {
+        type: DataTypes.STRING,
+        allowNull: false,
+      },
+      password: {
+        type: DataTypes.STRING,
+        allowNull: false, 
+      },
+      otp: {
+        type: DataTypes.STRING,
+        allowNull: true
+      },
+      otpExpire: {
+        type: DataTypes.DATE,
+        allowNull: true
+      },
       role: {
         type: DataTypes.STRING,
         defaultValue: "customer",
@@ -32,7 +50,18 @@ module.exports = (sequelize, DataTypes) => {
       isEmailVerified: {
         type: DataTypes.BOOLEAN,
         defaultValue: false
-      }
+      },
+      isBlocked: {
+        type: DataTypes.BOOLEAN,
+        defaultValue: false
+      },
+      loginAttempts: {
+        type: DataTypes.INTEGER,
+        default: 0
+    },
+    lockUntil: {
+        type: DataTypes.DATE,
+    },
     },
     {
       sequelize,

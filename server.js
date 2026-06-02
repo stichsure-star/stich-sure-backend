@@ -7,6 +7,7 @@ const express_session = require('express-session');
 const { passport } = require('./middlewares/passport');
 const customerRoutes = require('./routes/customer');
 const authRoutes = require('./routes/auth');
+const designerRoutes = require('./routes/designer')
 
 app.use(express.json());
 
@@ -21,6 +22,7 @@ app.use(passport.session());
 
 app.use('/api/v1/customer', customerRoutes);
 app.use('/api/v1/auth', authRoutes);
+app.use('/api/v1/designer', designerRoutes)
 
 const startServer = async () => {
   try {

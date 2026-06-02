@@ -2,20 +2,33 @@ const { Customer } = require("../models");
 const bcrypt = require("bcrypt");
 const otpGenerator = require("otp-generator");
 const jwt = require("jsonwebtoken");
+const cloudinary = require('../config/cloudinary')
+const fs = require('fs')
 
 exports.createCustomer = async (req, res) => {
   try {
     const { firstName, lastName, email, password } = req.body;
 
+    const imagesPaths = req.files.map((img) => img.path);
+    console.log('imagePath: ', imagesPaths);
+
+    profilePhoto = []
+    imagesPaths = []
+    
+    for(const path of imagesPaths) {
+      const result = await cloudinary.uploader.upload(path)
+      console.log('result', result);
+
+      profilePhoto.push(result.secure_url)
+      imagesPaths.push(result.public_id)
+    }
     const otp = otpGenerator.generate(6, {
       upperCaseAlphabets: false,
       lowerCaseAlphabets: false,
       specialChars: false,
     });
 
-    const existingEmail = await Customer.findOne({
-      where: { email: email.toLowerCase() },
-    });
+    const existingEmail = await Customer.findOne({where: { email: email.toLowerCase() },});
     if (existingEmail) {
       return res.status(404).json({
         message: "Customer with this email already exists",
@@ -32,6 +45,8 @@ exports.createCustomer = async (req, res) => {
       lastName,
       email,
       password: hashPassword,
+      profilePhoto,
+      imagesPaths,
       otp,
       otpExpire,
       role: "customer",
@@ -67,11 +82,20 @@ exports.loginCustomer = async (req, res) => {
       password,
       existingCustomer.password,
     );
-    if (!correctPassword) {
-      return res.status(404).json({
-        message: "Invalid credentials",
-      });
-    }
+     if (!correctPassword) {
+            // Increment login attempts and lock acccount if neccessary
+            user.loginAttempts += 1;
+            if(user.loginAttempts >= 5) {
+                user.lockUntil = new Date(Date.now() + 2 * 60000);
+                user.loginAttempts = 0;
+            }
+            await user.save();
+            console.log(user.loginAttempts);
+           return next({
+            message: 'Invalid Credentials',
+            statusCode: 400
+           })     
+        }
 
     await existingCustomer.save();
 
@@ -199,3 +223,26 @@ exports.loginWithGoogle = async (req, res) => {
     });
   }
 };
+
+exports.updateCustomer = async (req, res) => {
+  try{
+    const {customerId} = req.params;
+    const {firstName, lastName, email, profilePhoto, address} = req.body;
+
+    const existingCustomer = await Customer.findByPk(customerId);
+    if(!existingCustomer){
+      return res.status(404).json({
+        message: "Customer not found",
+      });
+    }
+    const updatedCustomer = await Customer.update({ firstName,lastName, email, profilePhoto, address }, {where: { id: customerId } });
+    return res.status(200).json({
+      message: 'User updated successfully'
+    })
+  }catch (error) {
+    console.log(error.message);
+    res.status(500).json({
+      message: 'Something went wrong'
+    });
+  }
+}
