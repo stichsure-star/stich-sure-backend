@@ -2,10 +2,13 @@ require('dotenv').config();
 const express = require('express');
 const { sequelize } = require('./models');
 const app = express();
+const swaggerUi = require('swagger-ui-express')
 const PORT = process.env.PORT || 7001;
+const swaggerDocument = require('./swaggerDocumentation');
 const express_session = require('express-session');
 const { passport } = require('./middlewares/passport');
 const customerRoutes = require('./routes/customer');
+const designerRoutes = require('./routes/designer')
 const authRoutes = require('./routes/auth');
 
 app.use(express.json());
@@ -19,7 +22,10 @@ app.use(express_session({
 app.use(passport.initialize());
 app.use(passport.session());
 
+app.use('/apiDocs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
+
 app.use('/api/v1/customer', customerRoutes);
+app.use('/api/v1/designer', designerRoutes);
 app.use('/api/v1/auth', authRoutes);
 
 const startServer = async () => {

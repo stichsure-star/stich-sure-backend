@@ -21,7 +21,7 @@ passport.use(new GoogleStrategy({
             email,
             password: null,
             role: 'customer',
-            isEmailVerified: profile._json.email_verified || false,
+            isEmailVerified: false,
           })
         }
 

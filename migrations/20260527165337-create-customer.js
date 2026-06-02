@@ -41,7 +41,11 @@ module.exports = {
       },
       isEmailVerified: {
         type: Sequelize.BOOLEAN,
-        defaultValue: false
+        defaultValue: false,
+      },
+      profilePhoto: {
+        type: Sequelize.TEXT,
+        allowNull: true
       },
       createdAt: {
         allowNull: false,

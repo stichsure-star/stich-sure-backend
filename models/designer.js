@@ -25,6 +25,7 @@ module.exports = (sequelize, DataTypes) => {
     email: DataTypes.STRING,
     password: DataTypes.STRING,
     otp: DataTypes.STRING,
+    otpExpire: DataTypes.DATE,
     role: {
       type: DataTypes.STRING,
       defaultValue: 'designer'

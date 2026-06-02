@@ -32,7 +32,8 @@ module.exports = (sequelize, DataTypes) => {
       isEmailVerified: {
         type: DataTypes.BOOLEAN,
         defaultValue: false
-      }
+      },
+      profilePhoto: DataTypes.TEXT
     },
     {
       sequelize,

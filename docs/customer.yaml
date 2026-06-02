@@ -1,0 +1,156 @@
+openapi: 3.0.0
+info:
+  title: StitchSure API Documentation
+  version: 1.0.0
+  description: API documentation for the StitchSure application, which connects customers with tailors and designers for custom clothing services.
+paths:
+  /api/v1/customer:
+    post:
+      summary: Create a new customer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - firstName
+                - lastName
+                - email
+                - password
+              properties:
+                firstName:
+                  type: String,
+                  example: John,
+                  description: "The first name of the customer"
+                lastName:
+                  type: String,
+                  example: Doe,
+                  description: "The last name of the customer"
+                email:
+                  type: String,
+                  example: johndoe@gmail.com,
+                  description: "The email address of the customer"
+                password:
+                  type: String,
+                  example: password123,
+                  description: "The password for the customer's account"
+      responses:
+        '201':
+          description: Customer created successfully
+        '400':
+          description: Bad request, invalid input data
+  /api/v1/customer/login:
+    post:
+      summary: Customer login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+              properties:
+                email:
+                  type: String,
+                  example: johndoe@gmail.com
+                  description: "The email address of the customer"
+                password:
+                  type: String,
+                  example: password123
+                  description: "The password for the customer's account"
+      responses:
+        '200':
+          description: Customer logged in successfully  
+        '401':
+          description: Unauthorized, invalid email or password
+  /api/v1/customer/forget-password:
+    post:
+      summary: Customer forget password
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+              properties:
+                email:
+                  type: String,
+                  example: johndoe@gmail.com
+                  description: "The email address of the customer"
+      responses:
+        '200':
+          description: Password reset successfully
+  /api/v1/customer/set-password:
+    post:
+      summary: Customer set new password
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+               - password
+              properties:
+                password:
+                  type: String,
+                  example: password123
+                  description: "The new password for the customer's account"
+      responses:
+        '200':
+          description: Password updated successfully
+  /api/v1/customer/otp:
+    post:
+      summary: Customer request OTP for password reset
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - otp
+                - email
+              properties:
+                otp:
+                  type: String
+                email:
+                  type: String,
+                  example: johndoe@gmail.com
+  /api/v1/customer/update-profile/{id}:
+    put:
+      summary: Update customer profile
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: UUID
+          description: The ID of the customer to update
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                firstName:
+                  type: String,
+                  example: John,
+                  description: "The first name of the customer"
+                lastName:
+                  type: String,
+                  example: Doe,
+                  description: "The last name of the customer"
+                email:
+                  type: String,
+                  example: johndoe@gmail.com,
+                  description: "The email address of the customer"
+      responses:
+        '200':
+          description: Customer profile updated successfully
