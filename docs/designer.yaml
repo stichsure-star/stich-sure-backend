@@ -69,3 +69,76 @@ paths:
           description: Logged in successfully
         '401':
           description: Unauthorized, invalid email or password
+  /api/v1/designer/forget-password:
+    post:
+      summary: Request password reset OTP
+      description: Sends a one-time password (OTP) to the designer's email to allow resetting their password.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: janetailor@gmail.com
+                  description: The email address of the designer requesting a password reset.
+      responses:
+        '200':
+          description: Otp sent successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Otp sent successfully
+        '404':
+          description: Designer not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Designer with example@example.com doesn't exist
+
+  /api/v1/designer/reset-password:
+    post:
+      summary: Set a new password
+      description: Sets a new password for the authenticated designer. The request must include the new password in the body. (This endpoint expects an authenticated user/token.)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - password
+              properties:
+                password:
+                  type: string
+                  format: password
+                  example: newSecureP@ssw0rd
+                  description: The new password to set for the designer account.
+      responses:
+        '200':
+          description: Password set successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Password set successfully
+        '401':
+          description: Unauthorized - valid authentication required
+        '500':
+          description: Server error

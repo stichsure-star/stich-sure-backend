@@ -14,10 +14,10 @@
     "dialect": "mysql"
   },
   "production": {
-    "username": "root",
-    "password": null,
-    "database": "database_production",
-    "host": "127.0.0.1",
+    "username": "sql8829172",
+    "password": "iCMHTalHkZ",
+    "database": "sql8829172",
+    "host": "sql8.freesqldatabase.com",
     "dialect": "mysql"
   }
 }
