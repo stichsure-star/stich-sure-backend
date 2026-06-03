@@ -9,7 +9,7 @@ const express_session = require('express-session');
 const { passport } = require('./middlewares/passport');
 const customerRoutes = require('./routes/customer');
 const authRoutes = require('./routes/auth');
-const designerRoutes = require('./routes/designer')
+const designerRoutes = require('./routes/designer');
 
 app.use(express.json());
 
@@ -27,6 +27,9 @@ app.use('/apiDocs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 app.use('/api/v1/customer', customerRoutes);
 app.use('/api/v1/designer', designerRoutes);
 app.use('/api/v1/auth', authRoutes);
+
+
+
 
 const startServer = async () => {
   try {
