@@ -1,11 +1,21 @@
-const { Customer } = require("../models");
+const Customer = require("../models/customer");
+
 const bcrypt = require("bcrypt");
+
 const otpGenerator = require("otp-generator");
+
 const fs = require("fs");
+
 const jwt = require("jsonwebtoken");
+
 const cloudinary = require("../middlewares/cloudinary");
+
+const {signUpTemplate} = require('../utils/emailTemplates')
+
 const { sendSingleEmail } = require("../utils/brevo");
+
 const otpExpire = Date.now() + 3 * 60 * 1000;
+
 const otp = otpGenerator.generate(6, {
   upperCaseAlphabets: false,
   lowerCaseAlphabets: false,
@@ -16,9 +26,7 @@ exports.createCustomer = async (req, res) => {
   try {
     const { firstName, lastName, email, password } = req.body;
 
-    const existingEmail = await Customer.findOne({
-      where: { email: email.toLowerCase() },
-    });
+    const existingEmail = await Customer.findOne({where: {email: email.toLowerCase()}})
     if (existingEmail) {
       return res.status(404).json({
         message: "Customer with this email already exists",
@@ -71,7 +79,7 @@ exports.createCustomer = async (req, res) => {
         await sendSingleEmail({
           email: newCustomer.dataValues.email,
           subject: "Email Verification",
-          html,
+          html: signUpTemplate(newCustomer.dataValues.firstName, otp),
         });
       } catch (error) {
         console.log(error.message);
@@ -80,7 +88,7 @@ exports.createCustomer = async (req, res) => {
   } catch (error) {
     console.log(error.message);
     res.status(500).json({
-      message: "Something went wrong",
+      message: error.message,
     });
   }
 };
@@ -100,11 +108,20 @@ exports.loginCustomer = async (req, res) => {
       password,
       existingCustomer.password,
     );
-    if (!correctPassword) {
-      return res.status(404).json({
-        message: "Invalid credentials",
-      });
-    }
+     if (!correctPassword) {
+            // Increment login attempts and lock acccount if neccessary
+            user.loginAttempts += 1;
+            if(user.loginAttempts >= 5) {
+                user.lockUntil = new Date(Date.now() + 2 * 60000);
+                user.loginAttempts = 0;
+            }
+            await user.save();
+            console.log(user.loginAttempts);
+           return next({
+            message: 'Invalid Credentials',
+            statusCode: 400
+           })     
+        }
 
     await existingCustomer.save();
 

@@ -3,6 +3,7 @@ const bcrypt = require("bcrypt");
 const otpGenerator = require("otp-generator");
 const jwt = require("jsonwebtoken");
 
+
 exports.createDesingner = async (req, res) => {
   try {
     const { firstName, lastName, email, password } = req.body;
@@ -12,10 +13,10 @@ exports.createDesingner = async (req, res) => {
       lowerCaseAlphabets: false,
       specialChars: false,
     });
+    
+    const otpExpire = Date.now() + 3 * 60 * 1000;
 
-    const existingEmail = await Designer.findOne({
-      email: email.toLowerCase(),
-    });
+    const existingEmail = await Designer.findOne({where:{email: email.toLowerCase(), }});
     if (existingEmail) {
       return res.status(404).json({
         message: "Designer with this email already exists",
@@ -89,3 +90,4 @@ exports.loginDesigner = async (req, res) => {
     });
   }
 };
+

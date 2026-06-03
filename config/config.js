@@ -1,10 +1,12 @@
-{
+require('dotenv').config()
+
+module.exports = {
   "development": {
-    "username": "root",
-    "password": "root",
-    "database": "Stich-Sure",
-    "host": "127.0.0.1",
-    "dialect": "mysql"
+    "username": process.env.DB_USERNAME,
+    "password": process.env.DB_PASSWORD,
+    "database": process.env.DATABASE,
+    "host": process.env.HOST,
+    "dialect": process.env.DIALECT
   },
   "test": {
     "username": "root",
