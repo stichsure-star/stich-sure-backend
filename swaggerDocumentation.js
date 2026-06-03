@@ -25,7 +25,6 @@ const options = {
         }
     },
     apis: [
-        './routes/*.js',
         './docs/customer.yaml'
     ]
 }
