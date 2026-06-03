@@ -8,6 +8,7 @@ paths:
   /api/v1/designer:
     post:
       summary: Create a new designer
+      tags: [designer]
       description: Creates a designer account and generates an OTP for email verification.
       requestBody:
         required: true
