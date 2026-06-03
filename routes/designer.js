@@ -1,28 +1,56 @@
-const router = require('express').Router()
+const router = require('express').Router();
 
-const passport = require('passport')
+const { createDesingner } = require('../controller/designer')
+/**
+ * @swagger
+ * tags:
+ *   name: Designer
+ *   description: API endpoints for Designer management
+ */
 
-const { createDesingner, forgetPassword, verifyOtp } = require('../controller/designer')
-
-router.post('/create-designer', createDesingner )
-
-router.post('/reset-password', forgetPassword)
-
-router.post('/verify-otp', verifyOtp)
-
-router.get('/collect', passport.authenticate('google', {scope: ['profile', 'email']}))
-
-router.get('/googleLogin', passport.authenticate('google', {
-    successRedirect: '/api/designer/loginsuccess', 
-    failureRedirect: '/api/designer/loginfailed'}))
-
-router.get('/loginsuccess', (req, res) => {
-        res.json({message: 'Login successful', 
-            data: req.user})
-    })
-
-router.get('/loginfailed', (req, res) => {
-        res.json({message: 'Login failed'})
-    })  
-
+router.post('/', createDesingner);
+/**
+ * @swagger
+ * /api/v1/designer:
+ *   post:
+ *     tags:
+ *       - Designer
+ *     summary: Designer registration
+ *     description: Register a new Designer with name, email, phone number, password, and confirm password
+ *     requestBody:
+ *       required: true 
+ *       content:
+ *         application/json:
+ *           schema: 
+ *             type: object
+ *             properties:
+ *               firstName:
+ *                 type: string  
+ *                 description: The Designer's First Name
+ *                 example: John
+ *               lastName:
+ *                 type: string  
+ *                 description: The Designer's Last Name
+ *                 example: Doe
+ *               email:
+ *                 type: string
+ *                 description: The Designer's Email
+ *                 example: example@example.com
+ *               password:
+ *                 type: string
+ *                 description: The Designer's Password
+ *                 example: password123
+ *     responses:
+ *       201:
+ *         description: Designer created successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   description: Confirmation message
+ *                   example: Designer created successfully
+ */
 module.exports = router

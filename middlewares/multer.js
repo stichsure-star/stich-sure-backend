@@ -1,35 +1,23 @@
 const multer = require('multer');
 
-const storage = multer.diskStorage({
-    destination: (req, file, cb)=>{
-        cb(null, './uploads')
+exports.upload = multer({
+    storage: multer.diskStorage({
+        destination: (req, file, cb) =>{
+            cb(null, './assets')
+        },
+        filename: function (req, file, cb) {
+            const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+            cb(null, file.fieldname + '-' + uniqueSuffix + '-' + file.originalname);
+        }
+    }), 
+    limits: {
+        filesize: 1024 * 1024 * 40
     },
-    filename: (req, file, cb) => {
-        const ext = file.mimetype.split('/')[1]
-        const fileName = `IMG-${Date.now()}_${Math.floor(Math.random() * 1E10)}.${ext}`
-        cb(null, fileName)
+    fileFilter: (req, file, cb) => {
+        if(!file.mimetype.startsWith('image/')) {
+            cb(new Error('Only image files are allowed!'))
+        }else{
+            cb(null, true)
+        }
     }
-});
-
-const fileFilter = (req, file, cb)=> {
-    console.log('File: ',file);
-    console.log('File Mimetype: ', file.mimetype);
-    
-    if (file.mimetype.startsWith('image/')) {
-        cb(null, true)
-    } else{
-        cb(new Error('Invalid image format, only images allowed'))
-    }
-}
-
-const limits = {
-    fileSize: 1024 * 1024 * 5
-}
-
-const upload =multer({
-    storage,
-    fileFilter,
-    limits
 })
-
-module.exports = upload;

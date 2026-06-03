@@ -1,8 +1,6 @@
 const passport = require('passport');
-require('dotenv').config()
 const GoogleStrategy = require('passport-google-oauth20').Strategy;
 const { Customer } = require('../models');
-const jwt = require('jsonwebtoken')
 
 
 passport.use(new GoogleStrategy({
@@ -10,48 +8,48 @@ passport.use(new GoogleStrategy({
     clientSecret: process.env.GOOGLE_CLIENT_SECRET,
     callbackURL: process.env.GOOGLE_CALLBACK_URL
   },
-  async function (request, accessToken, refreshToken, profile, done) {
+  async (accessToken, refreshToken, profile, cb) => {
     try {
         console.log('Profile: ', profile)
         const email = profile._json.email;
         let customer = await Customer.findOne({ where: { email } });
-         let token;
-        if(customer) {
-          token = await jwt.sign({id: customer.id}, process.env.JWT_SECRET, {expiresIn: '2h'})
-        }
-       
         
         if (!customer) {
           customer = await Customer.create({
-            email,
             firstName: profile.name?.givenName || profile._json.given_name || profile._json.name,
             lastName: profile.name?.familyName || profile._json.family_name || '',
+            email,
+            password: null,
             role: 'customer',
-            isEmailVerified: profile._json.email_verified || false,
+            isEmailVerified: false,
           })
-          
         }
 
-        return done(null, customer)
+        return cb(null, customer)
         
     } catch (error) {
-        return done(null, error)
+        return cb(null, error)
     }
   }
 ));
 
-passport.serializeUser((customer, done) => {
+passport.serializeUser((customer, cb) => {
   console.log(customer)
- return done(null, customer.id);
+  cb(null, customer.id);
 });
 
-passport.deserializeUser(async (id, done) => {
+passport.deserializeUser(async (id, cb) => {
   // console.log(id)
   const customer = await Customer.findByPk(id)
 
   if (!customer) {
-    return done(new Error('Customer not found'), null)
+    return cb(new Error('Customer not found'), null)
   }
- return done(null, customer)
+  cb(null, customer)
 });
 
+const profile = passport.authenticate('google', {scope: ['profile', 'email'] })
+
+const loginProfile = passport.authenticate('google', { failureRedirect: '/login', session: false })
+
+module.exports = {passport, profile, loginProfile }

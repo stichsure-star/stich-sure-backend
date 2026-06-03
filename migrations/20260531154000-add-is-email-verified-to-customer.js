@@ -3,13 +3,21 @@
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.addColumn("Customers", "isEmailVerified", {
-      type: Sequelize.BOOLEAN,
-      defaultValue: false,
-    });
+    const table = await queryInterface.describeTable("Customers");
+
+    if (!table.isEmailVerified) {
+      await queryInterface.addColumn("Customers", "isEmailVerified", {
+        type: Sequelize.BOOLEAN,
+        defaultValue: false,
+      });
+    }
   },
 
   async down(queryInterface) {
-    await queryInterface.removeColumn("Customers", "isEmailVerified");
+    const table = await queryInterface.describeTable("Customers");
+
+    if (table.isEmailVerified) {
+      await queryInterface.removeColumn("Customers", "isEmailVerified");
+    }
   },
 };

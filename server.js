@@ -1,8 +1,10 @@
 require('dotenv').config();
 const express = require('express');
-const { sequelize } = require('./models');
+const Sequelize = require('./Database/database')
 const app = express();
+const swaggerUi = require('swagger-ui-express')
 const PORT = process.env.PORT || 7001;
+const swaggerDocument = require('./swaggerDocumentation');
 const express_session = require('express-session');
 const { passport } = require('./middlewares/passport');
 const customerRoutes = require('./routes/customer');
@@ -20,13 +22,16 @@ app.use(express_session({
 app.use(passport.initialize());
 app.use(passport.session());
 
+app.use('/apiDocs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
+
 app.use('/api/v1/customer', customerRoutes);
+app.use('/api/v1/designer', designerRoutes);
 app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/designer', designerRoutes)
 
 const startServer = async () => {
   try {
-    await sequelize.authenticate();
+    await Sequelize.authenticate();
     console.log("Database connected successfully");
 
     app.listen(PORT, () => {

@@ -1,41 +1,37 @@
-const { Customer } = require("../models");
+const Customer = require("../models/customer");
+
 const bcrypt = require("bcrypt");
+
 const otpGenerator = require("otp-generator");
+
+const fs = require("fs");
+
 const jwt = require("jsonwebtoken");
-const cloudinary = require('../config/cloudinary')
-const fs = require('fs')
+
+const cloudinary = require("../middlewares/cloudinary");
+
+const {signUpTemplate} = require('../utils/emailTemplates')
+
+const { sendSingleEmail } = require("../utils/brevo");
+
+const otpExpire = Date.now() + 3 * 60 * 1000;
+
+const otp = otpGenerator.generate(6, {
+  upperCaseAlphabets: false,
+  lowerCaseAlphabets: false,
+  specialChars: false,
+});
 
 exports.createCustomer = async (req, res) => {
   try {
     const { firstName, lastName, email, password } = req.body;
 
-    const imagesPaths = req.files.map((img) => img.path);
-    console.log('imagePath: ', imagesPaths);
-
-    profilePhoto = []
-    imagesPaths = []
-    
-    for(const path of imagesPaths) {
-      const result = await cloudinary.uploader.upload(path)
-      console.log('result', result);
-
-      profilePhoto.push(result.secure_url)
-      imagesPaths.push(result.public_id)
-    }
-    const otp = otpGenerator.generate(6, {
-      upperCaseAlphabets: false,
-      lowerCaseAlphabets: false,
-      specialChars: false,
-    });
-
-    const existingEmail = await Customer.findOne({where: { email: email.toLowerCase() },});
+    const existingEmail = await Customer.findOne({where: {email: email.toLowerCase()}})
     if (existingEmail) {
       return res.status(404).json({
         message: "Customer with this email already exists",
       });
     }
-
-    const otpExpire = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
     const salt = await bcrypt.genSalt(10);
     const hashPassword = await bcrypt.hash(password, salt);
@@ -45,24 +41,54 @@ exports.createCustomer = async (req, res) => {
       lastName,
       email,
       password: hashPassword,
-      profilePhoto,
-      imagesPaths,
       otp,
       otpExpire,
       role: "customer",
     });
 
-    isEmailVerified = false;
-    await newCustomer.save();
-
     res.status(200).json({
-      message: "Customer created successfully",
-      data: newCustomer,
+      message:
+        "Account created successfully. Check email for verrification otp",
     });
+
+    (async () => {
+      try {
+        const html = `
+          <!DOCTYPE html>
+          <html lang="en">
+          <head>
+              <meta charset="UTF-8">
+              <meta name="viewport" content="width=device-width, initial-scale=1.0">
+              <title>Document</title>
+              <style>
+                  *{
+                      margin: 0;
+                      padding: 0;
+                      box-sizing: border-box;
+                  }
+              </style>
+          </head>
+          <body>
+              <h1>Email Verification</h1>
+              <h3>Hello ${newCustomer.dataValues.firstName} ${newCustomer.dataValues.lastName}, Please enter the otp below to verify your email</h3>
+              <h3>${newCustomer.dataValues.otp}</h3> 
+              <h3>This otp will expire in 3 minutes</h3>
+          </body>
+          </html>
+        `;
+        await sendSingleEmail({
+          email: newCustomer.dataValues.email,
+          subject: "Email Verification",
+          html: signUpTemplate(newCustomer.dataValues.firstName, otp),
+        });
+      } catch (error) {
+        console.log(error.message);
+      }
+    })();
   } catch (error) {
     console.log(error.message);
     res.status(500).json({
-      message: "Something went wrong",
+      message: error.message,
     });
   }
 };
@@ -157,31 +183,61 @@ exports.forgetPassword = async (req, res) => {
   }
 };
 
+exports.setPassword = async (req, res) => {
+  try {
+    const { password } = req.body;
+    const customer = await Customer.findByPk(req.user.id);
+    const salt = await bcrypt.genSalt(10);
+    const hashPassword = await bcrypt.hash(password, salt);
+    customer.password = hashPassword;
+    await customer.save();
+    res.status(200).json({
+      message: "Password set successfully",
+    });
+  } catch (error) {
+    console.log(error.message);
+    res.status(500).json({
+      message: "Something went wrong",
+    });
+  }
+};
+
 exports.verifyOtp = async (req, res) => {
   try {
-    const { otp } = req.body;
-    const existingCustomer = await Customer.findOne({
-      where: { otp },
+    const { otp, email } = req.body;
+
+    const customer = await Customer.findOne({
+      where: { email: email.toLowerCase() },
     });
-    if (!existingCustomer) {
+
+    if (!customer) {
       return res.status(404).json({
-        message: "Invalid OTP",
+        message: "Account not found",
       });
     }
-    if (existingCustomer.otpExpire < new Date()) {
+
+    if (customer.dataValues.otpExpire < Date.now()) {
       return res.status(400).json({
         message: "OTP has expired",
       });
     }
 
-    existingCustomer.isEmailVerified = true;
-    existingCustomer.otp = null;
-    existingCustomer.otpExpire = null;
-    await existingCustomer.save();
+    if (customer.dataValues.otp !== otp) {
+      return res.status(400).json({
+        message: "OTP is invalid",
+      });
+    }
+
+    Object.assign(customer, {
+      isEmailVerified: true,
+      otp: null,
+      otpExpire: null,
+    });
+    await customer.save();
 
     res.status(200).json({
       message: "OTP verified successfully",
-      data: existingCustomer,
+      data: customer,
     });
   } catch (error) {
     console.log(error.message);
@@ -224,25 +280,76 @@ exports.loginWithGoogle = async (req, res) => {
   }
 };
 
-exports.updateCustomer = async (req, res) => {
-  try{
-    const {customerId} = req.params;
-    const {firstName, lastName, email, profilePhoto, address} = req.body;
+exports.updateCustomerProfile = async (req, res) => {
+  try {
+    const { firstName, lastName, email } = req.body;
+    const { id } = req.params;
 
-    const existingCustomer = await Customer.findByPk(customerId);
-    if(!existingCustomer){
+    const customer = await Customer.findByPk(id);
+
+    if (!customer) {
       return res.status(404).json({
         message: "Customer not found",
       });
     }
-    const updatedCustomer = await Customer.update({ firstName,lastName, email, profilePhoto, address }, {where: { id: customerId } });
-    return res.status(200).json({
-      message: 'User updated successfully'
-    })
-  }catch (error) {
+
+    let profilePhoto = customer.profilePhoto;
+
+    if (req.file) {
+      const filePath = req.file.path;
+      const uploadToCloudinary = await cloudinary.uploader.upload(filePath);
+      profilePhoto = uploadToCloudinary.secure_url;
+      fs.unlinkSync(filePath);
+    }
+
+    const updatedCustomer = await customer.update({
+      firstName: firstName || customer.firstName,
+      lastName: lastName || customer.lastName,
+      email: email || customer.email,
+      profilePhoto: profilePhoto,
+    });
+
+    res.status(200).json({
+      message: "Customer updated successfully",
+      data: updatedCustomer,
+    });
+  } catch (error) {
     console.log(error.message);
     res.status(500).json({
-      message: 'Something went wrong'
+      message: "Something went wrong",
     });
   }
-}
+};
+
+exports.updatePassword = async (req, res) => {
+  try {
+    const { id } = req.customer;
+    const { currentPassword, newPassword, confirmPassword } = req.body;
+
+    const customer = await customer.findByPk(id);
+
+    if (!customer) {
+      return res.status(404).json({
+        message: "Customer not found",
+      });
+    }
+
+    const checkPassword = await bcrypt.compare(
+      currentPassword,
+      customer.password,
+    );
+
+    if (!checkPassword) {
+      return res.status(404).json({
+        message: "Current password is invalid",
+      });
+    }
+
+    const salt = await bcrypt.genSalt(10);
+  } catch (error) {
+    console.log(error.message);
+    res.status(500).json({
+      message: "Something went wrong",
+    });
+  }
+};

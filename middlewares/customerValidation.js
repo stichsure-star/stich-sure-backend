@@ -1,6 +1,6 @@
 const Joi = require('joi');
 
-exports.signupValidator = (req, res, next) => {
+exports.customerValidator = (req, res, next) => {
     const schema = Joi.object({
         firstName: Joi.string().pattern(/^[a-zA-Z]{3,}$/).required().messages({
             'any.required': "first Name is required",
@@ -22,7 +22,7 @@ exports.signupValidator = (req, res, next) => {
                     'string.empty': "Password cannot be empty",
                     "string.pattern.base": "Password must contain at least one uppercase letter, one lowercase letter, one digit, and one special character"
         }),
-        userId: Joi.string().required(),
+
     })
     const { error } = schema.validate(req.body);
     if (error) {
@@ -50,10 +50,6 @@ exports.updateValidator = (req, res, next) => {
                     'any.required': "Email is required",
                     'string.empty': "Email cannot be empty",
                     'string.email': "Invalid Email format"
-        }),
-        address: Joi.string().min(15).required().messages({
-            'any.required': "Address is required",
-                    'string.empty': "Address cannot be empty"
         }),
     })
     const { error } = schema.validate(req.body);
