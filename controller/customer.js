@@ -54,6 +54,7 @@ exports.createCustomer = async (req, res) => {
               <title>Document</title>
               <style>
                   *{
+
                       margin: 0;
                       padding: 0;
                       box-sizing: border-box;
@@ -220,7 +221,6 @@ exports.verifyOtp = async (req, res) => {
 
     res.status(200).json({
       message: "OTP verified successfully",
-      data: customer,
     });
   } catch (error) {
     console.log(error.message);
@@ -294,7 +294,6 @@ exports.updateCustomerProfile = async (req, res) => {
 
     res.status(200).json({
       message: "Customer updated successfully",
-      data: updatedCustomer,
     });
   } catch (error) {
     console.log(error.message);
@@ -329,6 +328,13 @@ exports.updatePassword = async (req, res) => {
     }
 
     const salt = await bcrypt.genSalt(10);
+    const hashPassword = await bcrypt.hash(newPassword, salt);
+
+    customer.password = hashPassword;
+    await customer.save();
+    res.status(200).json({
+      message: "Password updated successfully",
+    });
   } catch (error) {
     console.log(error.message);
     res.status(500).json({

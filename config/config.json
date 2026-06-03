@@ -1,9 +1,9 @@
 {
   "development": {
-    "username": "root",
-    "password": "root",
-    "database": "Stich-Sure",
-    "host": "127.0.0.1",
+    "username": "sql8829172",
+    "password": "iCMHTalHkZ",
+    "database": "sql8829172",
+    "host": "sql8.freesqldatabase.com",
     "dialect": "mysql"
   },
   "test": {
