@@ -1,15 +1,15 @@
 require('dotenv').config();
 const express = require('express');
-const { sequelize } = require('./models');
 const app = express();
+const { sequelize } = require('./models');
 const swaggerUi = require('swagger-ui-express')
 const PORT = process.env.PORT || 7001;
 const swaggerDocument = require('./swaggerDocumentation');
 const express_session = require('express-session');
 const { passport } = require('./middlewares/passport');
 const customerRoutes = require('./routes/customer');
-const designerRoutes = require('./routes/designer')
 const authRoutes = require('./routes/auth');
+const designerRoutes = require('./routes/designer')
 
 app.use(express.json());
 

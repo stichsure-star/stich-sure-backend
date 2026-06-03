@@ -1,5 +1,6 @@
 "use strict";
 const { Model } = require("sequelize");
+
 module.exports = (sequelize, DataTypes) => {
   class Customer extends Model {
     /**
@@ -23,12 +24,30 @@ module.exports = (sequelize, DataTypes) => {
         primaryKey: true,
         allowNull: false,
       },
-      firstName: DataTypes.STRING,
-      lastName: DataTypes.STRING,
-      email: DataTypes.STRING,
-      password: DataTypes.STRING,
-      otp: DataTypes.STRING,
-      otpExpire: DataTypes.DATE,
+      firstName: {
+        type: DataTypes.STRING,
+        allowNull: false
+      },
+      lastName:{
+        type:  DataTypes.STRING,
+        allowNull: false
+      },
+      email: {
+        type: DataTypes.STRING,
+        allowNull: false,
+      },
+      password: {
+        type: DataTypes.STRING,
+        allowNull: false, 
+      },
+      otp: {
+        type: DataTypes.STRING,
+        allowNull: true
+      },
+      otpExpire: {
+        type: DataTypes.DATE,
+        allowNull: true
+      },
       role: {
         type: DataTypes.STRING,
         defaultValue: "customer",
@@ -46,3 +65,4 @@ module.exports = (sequelize, DataTypes) => {
   );
   return Customer;
 };
+
