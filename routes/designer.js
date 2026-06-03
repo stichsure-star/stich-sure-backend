@@ -1,10 +1,8 @@
 const router = require('express').Router();
 
-const { createDesingner, setPassword, forgetPassword } = require('../controller/designer')
+const { createDesingner, loginDesigner } = require('../controller/designer')
 
 router.post('/', createDesingner);
-
-router.post('/set-password', setPassword)
-router.post('/forget-password', forgetPassword)
+router.post('/login', loginDesigner);
 
 module.exports = router
