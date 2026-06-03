@@ -44,6 +44,7 @@ paths:
   /api/v1/customer/login:
     post:
       summary: Customer login
+      tags: [customer]
       requestBody:
         required: true
         content:
@@ -89,6 +90,7 @@ paths:
   /api/v1/customer/set-password:
     post:
       summary: Customer set new password
+      tags: [customer]
       requestBody:
         required: true
         content:
@@ -108,6 +110,7 @@ paths:
   /api/v1/customer/otp:
     post:
       summary: Customer request OTP for password reset
+      tags: [customer]
       requestBody:
         required: true
         content:
@@ -126,6 +129,7 @@ paths:
   /api/v1/customer/update-profile/{id}:
     put:
       summary: Update customer profile
+      tags: [customer]
       parameters:
         - in: path
           name: id
