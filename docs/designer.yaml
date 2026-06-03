@@ -1,0 +1,71 @@
+
+openapi: 3.0.0
+info:
+  title: StitchSure API Documentation
+  version: 1.0.0
+  description: API documentation for designer account endpoints in the StitchSure application.
+paths:
+  /api/v1/designer:
+    post:
+      summary: Create a new designer
+      description: Creates a designer account and generates an OTP for email verification.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - firstName
+                - lastName
+                - email
+                - password
+              properties:
+                firstName:
+                  type: string
+                  example: Jane
+                  description: The first name of the designer.
+                lastName:
+                  type: string
+                  example: Tailor
+                  description: The last name of the designer.
+                email:
+                  type: string
+                  format: email
+                  example: janetailor@gmail.com
+                  description: The email address of the designer.
+                password:
+                  type: string
+                  format: password
+                  example: password123
+                  description: The password for the designer account.
+      responses:
+        '200':
+          description: Account created successfully
+  /api/v1/designer/login:
+    post:
+      summary: Designer login
+      description: Authenticates a designer and returns a JWT token for authorized access to protected endpoints.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: janetailor@gmail.com
+                password:
+                  type: string
+                  format: password
+                  example: password123
+      responses:
+        '200':
+          description: Logged in successfully
+        '401':
+          description: Unauthorized, invalid email or password

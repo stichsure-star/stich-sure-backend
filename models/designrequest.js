@@ -1,11 +1,16 @@
-const { Sequelize, DataTypes, Model } = require('sequelize') 
-const Sequelize = require('../Database/database')
-class designRequest extends Model {}
-  designRequest.init({
-    description: DataTypes.STRING,
-    Image: DataTypes.STRING
-  }, {
-    sequelize,
-    modelName: 'designRequest',
-  });
-  return designRequest;
+const { DataTypes, Model } = require('sequelize')
+
+module.exports = (sequelize, DataTypes) => {
+  class DesignRequest extends Model {}
+
+DesignRequest.init({
+  description: DataTypes.STRING,
+  Image: DataTypes.STRING
+}, {
+  sequelize,
+  modelName: 'DesignRequest',
+});
+
+  return DesignRequest;
+};
+

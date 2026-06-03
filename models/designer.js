@@ -1,6 +1,7 @@
-const { Sequelize, DataTypes, Model } = require('sequelize') 
-const sequelize = require('../Database/database') 
-class Designer extends Model {} 
+const { Model } = require('sequelize') 
+
+module.exports = (sequelize, DataTypes) => {
+  class Designer extends Model {} 
 Designer.init({ 
   id: { 
     type: DataTypes.UUID, 
@@ -44,4 +45,5 @@ Designer.init({
   sequelize, 
   modelName: 'Designer',
  }); 
- module.exports = Designer
+ return Designer;
+};
