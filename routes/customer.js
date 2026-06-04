@@ -4,14 +4,14 @@ const { createCustomer, loginCustomer, forgetPassword, setPassword, verifyOtp, l
 const { profile, loginProfile } = require('../middlewares/passport')
 const { upload } = require('../middlewares/multer')
 const { authentication } = require('../middlewares/authentication')
-const { customerValidator, loginValidator } = require('../middlewares/customerValidation')
+const { customerValidator, loginValidator, updateValidator } = require('../middlewares/customerValidation')
 
 router.post('/register', customerValidator, createCustomer);
 router.post('/login', loginValidator, loginCustomer);
 router.post('/forget-password', forgetPassword)
 router.post('/set-password', setPassword)
 router.post('/otp', verifyOtp)
-router.put('/update-profile/:id', upload.single('profilePhoto'), updateCustomerProfile);
+router.put('/update-profile/:id', updateValidator, upload.single('profilePhoto'), updateCustomerProfile);
 router.get('/auth/google', profile)
 router.get('/auth/google/callback', loginProfile, loginWithGoogle)
 

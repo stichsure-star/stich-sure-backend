@@ -3,7 +3,7 @@ const Joi = require("joi");
 exports.customerValidator = (req, res, next) => {
   const schema = Joi.object({
     firstName: Joi.string()
-      .pattern(/^[a-zA-Z]{3,}$/)
+      .pattern(/^[a-zA-Z]{6,}$/)
       .required()
       .messages({
         "any.required": "first Name is required",
@@ -12,7 +12,7 @@ exports.customerValidator = (req, res, next) => {
           "first Name cannot contain digits or whitespace and must be minimum of 3 characters",
       }),
     lastName: Joi.string()
-      .pattern(/^[a-zA-Z]{3,}$/)
+      .pattern(/^[a-zA-Z]{6,}$/)
       .required()
       .messages({
         "any.required": "last Name is required",
@@ -74,7 +74,7 @@ exports.loginValidator = (req, res, next) => {
 exports.updateValidator = (req, res, next) => {
   const schema = Joi.object({
     firstName: Joi.string()
-      .pattern(/^[a-zA-Z]{3,}$/)
+      .pattern(/^[a-zA-Z]{6,}$/)
       .required()
       .messages({
         "any.required": "first Name is required",
@@ -83,7 +83,7 @@ exports.updateValidator = (req, res, next) => {
           "first Name cannot contain digits or whitespace and must be minimum of 3 characters",
       }),
     lastName: Joi.string()
-      .pattern(/^[a-zA-Z]{3,}$/)
+      .pattern(/^[a-zA-Z]{6,}$/)
       .required()
       .messages({
         "any.required": "last Name is required",

@@ -67,6 +67,7 @@ paths:
   /api/v1/customer/forget-password:
     post:
       summary: Customer forget password
+      tags: [customer]
       requestBody:
         required: true
         content:
@@ -128,33 +129,32 @@ paths:
   /api/v1/customer/update-profile/{id}:
     put:
       summary: Update customer profile
-      tags: [customer]
       parameters:
         - in: path
           name: id
-          required: true
-          schema:
-            type: UUID
-          description: The ID of the customer to update
+      tags: [customer]
       requestBody:
         required: true
         content:
-          application/json:
+          muultipart/form-data:
             schema:
               type: object
+              required:
+                - firstName
+                - lastName
+                - email
+                - profilePhoto
               properties:
                 firstName:
                   type: String,
-                  example: John,
-                  description: "The first name of the customer"
+                  example: John
                 lastName:
                   type: String,
-                  example: Doe,
-                  description: "The last name of the customer"
+                  example: Doe
                 email:
                   type: String,
-                  example: johndoe@gmail.com,
-                  description: "The email address of the customer"
+                  example: johndoe@gmail.com
+                profilePhoto:
       responses:
         '200':
-          description: Customer profile updated successfully
+          description: Profile updated successfully
