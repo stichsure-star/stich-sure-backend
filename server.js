@@ -10,6 +10,10 @@ const { passport } = require('./middlewares/passport');
 const customerRoutes = require('./routes/customer');
 const authRoutes = require('./routes/auth');
 const designerRoutes = require('./routes/designer');
+const request = require('./routes/request')
+const designs = require('./routes/designs')
+const designImage = require('./routes/DesignImage')
+const requestImage = require('./routes/requestImage')
 
 app.use(express.json());
 
@@ -27,10 +31,10 @@ app.use('/apiDocs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 app.use('/api/v1/customer', customerRoutes);
 app.use('/api/v1/designer', designerRoutes);
 app.use('/api/v1/auth', authRoutes);
-
-
-
-
+app.use('/api/v1/request', request);
+app.use('/api/v1/designs', designs);
+app.use('/api/v1/designImage', designImage);
+app.use('/api/v1/requestImage', requestImage);
 const startServer = async () => {
   try {
     await sequelize.authenticate();
