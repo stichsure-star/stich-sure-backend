@@ -1,7 +1,14 @@
 const { Model } = require('sequelize') 
 
 module.exports = (sequelize, DataTypes) => {
-  class Designer extends Model {} 
+  class Designer extends Model {
+    static associate(models) {
+      Designer.hasOne(models.Wallet, {
+        foreignKey: 'designerId',
+        as: 'wallet'
+      });
+    }
+  } 
 Designer.init({ 
   id: { 
     type: DataTypes.UUID, 
