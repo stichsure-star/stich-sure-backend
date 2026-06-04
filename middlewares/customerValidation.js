@@ -9,7 +9,7 @@ exports.customerValidator = (req, res, next) => {
         "any.required": "first Name is required",
         "string.empty": "first Name cannot be empty",
         "string.pattern.base":
-          "first Name cannot contain digits or whitespace and must be minimum of 3 characters",
+          "first Name cannot contain digits or whitespace and must be minimum of 6 characters",
       }),
     lastName: Joi.string()
       .pattern(/^[a-zA-Z]{6,}$/)
@@ -18,7 +18,7 @@ exports.customerValidator = (req, res, next) => {
         "any.required": "last Name is required",
         "string.empty": "last Name cannot be empty",
         "string.pattern.base":
-          "last Name cannot contain digits or whitespace and must be minimum of 3 characters",
+          "last Name cannot contain digits or whitespace and must be minimum of 6 characters",
       }),
     email: Joi.string().email().required().messages({
       "any.required": "Email is required",
@@ -80,7 +80,7 @@ exports.updateValidator = (req, res, next) => {
         "any.required": "first Name is required",
         "string.empty": "first Name cannot be empty",
         "string.pattern.base":
-          "first Name cannot contain digits or whitespace and must be minimum of 3 characters",
+          "first Name cannot contain digits or whitespace and must be minimum of 6 characters",
       }),
     lastName: Joi.string()
       .pattern(/^[a-zA-Z]{6,}$/)
@@ -89,7 +89,7 @@ exports.updateValidator = (req, res, next) => {
         "any.required": "last Name is required",
         "string.empty": "last Name cannot be empty",
         "string.pattern.base":
-          "last Name cannot contain digits or whitespace and must be minimum of 3 characters",
+          "last Name cannot contain digits or whitespace and must be minimum of 6 characters",
       }),
     email: Joi.string().email().required().messages({
       "any.required": "Email is required",
