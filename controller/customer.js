@@ -1,12 +1,11 @@
-const { Customer } = require("../models");
+ const { Customer } = require("../models");
 const bcrypt = require("bcrypt");
 const otpGenerator = require("otp-generator");
 const fs = require("fs");
 const jwt = require("jsonwebtoken");
 const cloudinary = require("../middlewares/cloudinary");
 const {signUpTemplate} = require('../utils/emailTemplates')
-const { sendSingleEmail } = require("../utils/brevo");
-
+const { sendSingleEmail } = require('../utils/brevo');
 const otpExpire = Date.now() + 3 * 60 * 1000;
 
 const otp = otpGenerator.generate(6, {
@@ -80,10 +79,7 @@ exports.createCustomer = async (req, res) => {
       }
     })();
   } catch (error) {
-    console.log(error.message);
-    res.status(500).json({
-      message: error.message,
-    });
+    next(error);
   }
 };
 
@@ -125,10 +121,7 @@ exports.loginCustomer = async (req, res) => {
       data: existingCustomer,
     });
   } catch (error) {
-    console.log(error.message);
-    res.status(500).json({
-      message: "Something went wrong",
-    });
+    next(error);
   }
 };
 
@@ -161,10 +154,7 @@ exports.forgetPassword = async (req, res) => {
       message: "Otp sent successfully",
     });
   } catch (error) {
-    console.log(error.message);
-    res.status(500).json({
-      message: "Something went wrong",
-    });
+    next(error);
   }
 };
 
@@ -172,6 +162,9 @@ exports.setPassword = async (req, res) => {
   try {
     const { password } = req.body;
     const customer = await Customer.findByPk(req.user.id);
+    if (!customer) {
+      return res.status(404).json({ message: 'Customer not found' });
+    }
     const salt = await bcrypt.genSalt(10);
     const hashPassword = await bcrypt.hash(password, salt);
     customer.password = hashPassword;
@@ -180,14 +173,11 @@ exports.setPassword = async (req, res) => {
       message: "Password set successfully",
     });
   } catch (error) {
-    console.log(error.message);
-    res.status(500).json({
-      message: "Something went wrong",
-    });
+    next(error);
   }
 };
 
-exports.verifyOtp = async (req, res) => {
+exports.verifyEmail = async (req, res) => {
   try {
     const { otp, email } = req.body;
 
@@ -224,10 +214,7 @@ exports.verifyOtp = async (req, res) => {
       message: "OTP verified successfully",
     });
   } catch (error) {
-    console.log(error.message);
-    res.status(500).json({
-      message: "Something went wrong",
-    });
+    next(error);
   }
 };
 
@@ -257,10 +244,7 @@ exports.loginWithGoogle = async (req, res) => {
       token,
     });
   } catch (error) {
-    console.log(error.message);
-    res.status(500).json({
-      message: "Something went wrong",
-    });
+    next(error);
   }
 };
 
@@ -297,10 +281,7 @@ exports.updateCustomerProfile = async (req, res) => {
       message: "Customer updated successfully",
     });
   } catch (error) {
-    console.log(error.message);
-    res.status(500).json({
-      message: "Something went wrong",
-    });
+    next(error);
   }
 };
 
@@ -337,9 +318,6 @@ exports.updatePassword = async (req, res) => {
       message: "Password updated successfully",
     });
   } catch (error) {
-    console.log(error.message);
-    res.status(500).json({
-      message: "Something went wrong",
-    });
+    next(error);
   }
 };

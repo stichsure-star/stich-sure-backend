@@ -2,7 +2,7 @@
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.createTable('Orders', {
+    await queryInterface.createTable('requests', {
       id: {
         allowNull: false,
         primaryKey: true,
@@ -11,51 +11,37 @@ module.exports = {
       },
       customerId: {
         type: Sequelize.UUID,
-        allowNull: false,
-        references: {
+        references : {
           model: 'Customers',
           key: 'id'
         },
         onUpdate: 'CASCADE',
-        onDelete: 'CASCADE'
+        onDelete: 'SET NULL'
       },
       designerId: {
         type: Sequelize.UUID,
-        allowNull: false,
-        references: {
+        references : {
           model: 'Designers',
           key: 'id'
         },
         onUpdate: 'CASCADE',
-        onDelete: 'CASCADE'
+        onDelete: 'SET NULL'
       },
-      title: {
+      fullName: {
         type: Sequelize.STRING,
         allowNull: false
       },
-      description: {
-        type: Sequelize.TEXT,
-        allowNull: false
+      deadLine: {
+        type: Sequelize.DATE
       },
-      amount: {
-        type: Sequelize.DECIMAL,
-        allowNull: false,
-        precision: 10,
-        scale: 2
+      description: {
+        type: Sequelize.STRING
+      },
+      measurement: {
+        type: Sequelize.STRING
       },
       status: {
-        type: Sequelize.ENUM,
-        values: ['pending', 'active', 'ready', 'completed', 'cancelled'],
-        allowNull: false,
-        defaultValue: 'pending'
-      },
-      deadLine: {
-        type: Sequelize.DATE,
-        allowNull: true
-      },
-      completedAt: {
-        type: Sequelize.DATE,
-        allowNull: true
+        type: Sequelize.STRING
       },
       createdAt: {
         allowNull: false,
@@ -68,6 +54,6 @@ module.exports = {
     });
   },
   async down(queryInterface, Sequelize) {
-    await queryInterface.dropTable('Orders');
+    await queryInterface.dropTable('requests');
   }
 };
