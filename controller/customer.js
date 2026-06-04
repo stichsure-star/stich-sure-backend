@@ -1,4 +1,4 @@
-const Customer = require("../models/customer");
+const { Customer } = require("../models");
 const bcrypt = require("bcrypt");
 const otpGenerator = require("otp-generator");
 const fs = require("fs");
@@ -103,17 +103,8 @@ exports.loginCustomer = async (req, res) => {
       existingCustomer.password,
     );
      if (!correctPassword) {
-            // Increment login attempts and lock acccount if neccessary
-            user.loginAttempts += 1;
-            if(user.loginAttempts >= 5) {
-                user.lockUntil = new Date(Date.now() + 2 * 60000);
-                user.loginAttempts = 0;
-            }
-            await user.save();
-            console.log(user.loginAttempts);
-           return next({
-            message: 'Invalid Credentials',
-            statusCode: 400
+           return res.status(400).json({
+            message: 'Invalid Credentials'
            })     
         }
 
@@ -318,7 +309,7 @@ exports.updatePassword = async (req, res) => {
     const { id } = req.customer;
     const { currentPassword, newPassword, confirmPassword } = req.body;
 
-    const customer = await customer.findByPk(id);
+    const customer = await Customer.findByPk(id);
 
     if (!customer) {
       return res.status(404).json({

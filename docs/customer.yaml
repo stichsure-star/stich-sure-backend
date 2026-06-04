@@ -4,7 +4,7 @@ info:
   version: 1.0.0
   description: API documentation for the StitchSure application, which connects customers with tailors and designers for custom clothing services.
 paths:
-  /api/v1/customer:
+  /api/v1/customer/register:
     post:
       summary: Create a new customer
       tags: [customer]
@@ -38,9 +38,7 @@ paths:
                   description: "The password for the customer's account"
       responses:
         '201':
-          description: Customer created successfully
-        '400':
-          description: Bad request, invalid input data
+          description: Account created successfully
   /api/v1/customer/login:
     post:
       summary: Customer login
@@ -65,9 +63,7 @@ paths:
                   description: "The password for the customer's account"
       responses:
         '200':
-          description: Customer logged in successfully  
-        '401':
-          description: Unauthorized, invalid email or password
+          description: Logged in successfully 
   /api/v1/customer/forget-password:
     post:
       summary: Customer forget password
@@ -126,6 +122,9 @@ paths:
                 email:
                   type: String,
                   example: johndoe@gmail.com
+      responses:
+        '200':
+          description: Verified successfully
   /api/v1/customer/update-profile/{id}:
     put:
       summary: Update customer profile
