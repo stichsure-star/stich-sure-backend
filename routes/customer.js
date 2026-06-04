@@ -6,7 +6,7 @@ const { upload } = require('../middlewares/multer')
 const { authentication } = require('../middlewares/authentication')
 const { customerValidator, loginValidator } = require('../middlewares/customerValidation')
 
-router.post('/', customerValidator, createCustomer);
+router.post('/register', customerValidator, createCustomer);
 router.post('/login', loginValidator, loginCustomer);
 router.post('/forget-password', forgetPassword)
 router.post('/set-password', setPassword)
