@@ -21,20 +21,20 @@ paths:
                 - password
               properties:
                 firstName:
-                  type: String,
-                  example: John,
+                  type: string
+                  example: John
                   description: "The first name of the customer"
                 lastName:
-                  type: String,
-                  example: Doe,
+                  type: string
+                  example: Doe
                   description: "The last name of the customer"
                 email:
-                  type: String,
-                  example: johndoe@gmail.com,
+                  type: string
+                  example: johndoe@gmail.com
                   description: "The email address of the customer"
                 password:
-                  type: String,
-                  example: password123,
+                  type: string
+                  example: Password123!
                   description: "The password for the customer's account"
       responses:
         '201':
@@ -54,12 +54,12 @@ paths:
                 - password
               properties:
                 email:
-                  type: String,
+                  type: string
                   example: johndoe@gmail.com
                   description: "The email address of the customer"
                 password:
-                  type: String,
-                  example: password123
+                  type: string
+                  example: Password123!
                   description: "The password for the customer's account"
       responses:
         '200':
@@ -78,7 +78,7 @@ paths:
                 - email
               properties:
                 email:
-                  type: String,
+                  type: string
                   example: johndoe@gmail.com
                   description: "The email address of the customer"
       responses:
@@ -98,8 +98,8 @@ paths:
                - password
               properties:
                 password:
-                  type: String,
-                  example: password123
+                  type: string
+                  example: Password123!
                   description: "The new password for the customer's account"
       responses:
         '200':
@@ -119,9 +119,9 @@ paths:
                 - email
               properties:
                 otp:
-                  type: String
+                  type: string
                 email:
-                  type: String,
+                  type: string
                   example: johndoe@gmail.com
       responses:
         '200':
@@ -136,25 +136,22 @@ paths:
       requestBody:
         required: true
         content:
-          muultipart/form-data:
+          multipart/form-data:
             schema:
               type: object
-              required:
-                - firstName
-                - lastName
-                - email
-                - profilePhoto
               properties:
                 firstName:
-                  type: String,
+                  type: string
                   example: John
                 lastName:
-                  type: String,
+                  type: string
                   example: Doe
                 email:
-                  type: String,
+                  type: string
                   example: johndoe@gmail.com
                 profilePhoto:
+                  type: string
+                  format: binary
       responses:
         '200':
           description: Profile updated successfully
