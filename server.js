@@ -4,6 +4,7 @@ const app = express();
 const { sequelize } = require('./models');
 const swaggerUi = require('swagger-ui-express')
 const PORT = process.env.PORT || 7001;
+const cors = require('cors')
 const swaggerDocument = require('./swaggerDocumentation');
 const express_session = require('express-session');
 const { passport } = require('./middlewares/passport');
@@ -15,6 +16,11 @@ const designs = require('./routes/designs')
 const designerProfile = require('./routes/designerProfile')
 
 app.use(express.json());
+app.use(cors({
+    origin: '*',
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    allowedHeaders: ['Content-Type', 'Authorization']
+}))
 
 app.use(express_session({
     secret: 'Stich-Sure',
