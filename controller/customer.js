@@ -39,8 +39,9 @@ exports.createCustomer = async (req, res) => {
     });
 
     res.status(200).json({
+      success: true,
       message:
-        "Account created successfully. Check email for verrification otp",
+        "Account created successfully. Please check your email for the verification OTP.",
     });
 
     (async () => {
@@ -79,7 +80,11 @@ exports.createCustomer = async (req, res) => {
       }
     })();
   } catch (error) {
-    next(error);
+    console.log(error.message)
+    res.status(500).json({
+      success: false,
+      message: "Something went wrong"
+    })
   }
 };
 
@@ -116,12 +121,17 @@ exports.loginCustomer = async (req, res) => {
       { expiresIn: "1d" },
     );
     res.status(200).json({
-      message: "Customer logged in successfully",
+      success: true,
+      message: "Customer logged in successfully.",
       token,
       data: existingCustomer,
     });
   } catch (error) {
-    next(error);
+    console.log(error.message)
+    res.status(500).json({
+      success: false,
+      message: "Something went wrong"
+    })
   }
 };
 
@@ -151,29 +161,41 @@ exports.forgetPassword = async (req, res) => {
     await existingEmail.save();
 
     res.status(200).json({
-      message: "Otp sent successfully",
+      success: true,
+      message: "OTP has been sent to your email address. Use it to reset your password.",
     });
   } catch (error) {
-    next(error);
+    console.log(error.message)
+    res.status(500).json({
+      success: false,
+      message: "Something went wrong"
+    })
   }
 };
 
-exports.setPassword = async (req, res) => {
+exports.resetPassword = async (req, res) => {
   try {
     const { password } = req.body;
     const customer = await Customer.findByPk(req.user.id);
     if (!customer) {
-      return res.status(404).json({ message: 'Customer not found' });
+      return res.status(404).json({
+         message: 'Customer not found' 
+        });
     }
     const salt = await bcrypt.genSalt(10);
     const hashPassword = await bcrypt.hash(password, salt);
     customer.password = hashPassword;
     await customer.save();
     res.status(200).json({
-      message: "Password set successfully",
+      success: true,
+      message: "Your password has been reset successfully.",
     });
   } catch (error) {
-    next(error);
+    console.log(error.message)
+    res.status(500).json({
+      success: flase,
+      message: "Something went wrong"
+    })
   }
 };
 
@@ -211,10 +233,15 @@ exports.verifyEmail = async (req, res) => {
     await customer.save();
 
     res.status(200).json({
-      message: "OTP verified successfully",
+      success: true,
+      message: "Your email has been verified successfully.",
     });
   } catch (error) {
-    next(error);
+    console.log(error.message);
+    res.status(500).json({
+      success: false,
+      message: "Something went wrong"
+    })
   }
 };
 
@@ -239,12 +266,16 @@ exports.loginWithGoogle = async (req, res) => {
     );
 
     res.status(200).json({
-      message: "Login successfully",
+      success: true,
+      message: "Logged in successfully with Google.",
       data: customer,
       token,
     });
   } catch (error) {
-    next(error);
+    res.status(500).json({
+      success: false,
+      message: "Something went wrong"
+    })
   }
 };
 
@@ -278,7 +309,8 @@ exports.updateCustomerProfile = async (req, res) => {
     });
 
     res.status(200).json({
-      message: "Customer updated successfully",
+      success: true,
+      message: "Customer profile updated successfully.",
     });
   } catch (error) {
     next(error);
@@ -315,9 +347,14 @@ exports.updatePassword = async (req, res) => {
     customer.password = hashPassword;
     await customer.save();
     res.status(200).json({
-      message: "Password updated successfully",
+      success: true,
+      message: "Customer password updated successfully.",
     });
   } catch (error) {
-    next(error);
+    console.log(error.message)
+    res.status(500).json({
+      success: false,
+      message: "Something went wrong"
+    })
   }
 };

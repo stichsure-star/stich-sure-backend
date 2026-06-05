@@ -19,7 +19,7 @@ exports.createRequest = async (req, res) => {
 
     return res.status(201).json({
       success: true,
-      message: "Request created successfully",
+      message: "Request created successfully.",
       data: newRequest,
     });
   } catch (error) {
@@ -35,7 +35,8 @@ exports.getAllRequests = async (req, res) => {
     const requests = await request.findAll();
 
     return res.status(200).json({
-      message: "Requests retrieved successfully",
+      success: true,
+      message: "Requests loaded successfully.",
       data: requests,
     });
   } catch (error) {
@@ -55,7 +56,8 @@ exports.getOneRequest = async (req, res, next) => {
     }
 
     return res.status(200).json({
-      message: "Request retrieved successfully",
+      success: true,
+      message: "Request details retrieved successfully.",
       data: foundRequest,
     });
   } catch (error) {
@@ -73,7 +75,8 @@ exports.getCustomerRequests = async (req, res, ) => {
     });
 
     return res.status(200).json({
-      message: "Customer requests retrieved successfully",
+      success: true,
+      message: "Customer requests loaded successfully.",
       data: requests,
     });
   } catch (error) {
@@ -94,7 +97,8 @@ exports.getDesignerRequests = async (req, res, next) => {
     });
 
     return res.status(200).json({
-      message: "Designer requests retrieved successfully",
+      success: true,
+      message: "Designer requests loaded successfully.",
       data: requests,
     });
   } catch (error) {
@@ -123,7 +127,8 @@ exports.updateRequest = async (req, res, next) => {
     }, { where: { id: id } });
 
     return res.status(200).json({
-      message: "Request updated successfully",
+      success: true,
+      message: "Request updated successfully.",
       data: updateRequest,
     });
   } catch (error) {
@@ -147,7 +152,8 @@ exports.deleteRequest = async (req, res, next) => {
     await deletedRequest.destroy({ where: { id: id } });
 
     return res.status(200).json({
-      message: "Request deleted successfully",
+      success: true,
+      message: "Request deleted successfully.",
     });
   } catch (error) {
     next(error);

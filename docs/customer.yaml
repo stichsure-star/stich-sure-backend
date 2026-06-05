@@ -104,9 +104,9 @@ paths:
       responses:
         '200':
           description: Password updated successfully
-  /api/v1/customer/otp:
+  /api/v1/customer/verify-email:
     post:
-      summary: Customer request OTP for password reset
+      summary: 
       tags: [customer]
       requestBody:
         required: true

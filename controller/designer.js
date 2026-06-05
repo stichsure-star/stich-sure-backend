@@ -42,11 +42,13 @@ exports.createDesingner = async (req, res) => {
     await newDesiner.save();
 
     res.status(200).json({
-      message: "Designer created successfully"
+      success: true,
+      message: "Designer account created successfully. Please check your email for verification instructions.",
     });
   } catch (error) {
     console.log(error.message)
     res.status(500).json({
+      success: false,
       message: 'Something went wrong'
     })
   }
@@ -86,13 +88,15 @@ exports.loginDesigner = async (req, res) => {
     );
 
     res.status(200).json({
-      message: "Login successfully",
+      success: true,
+      message: "Designer logged in successfully.",
       data: existingDesigner,
-      token
+      token,
     })
   } catch (error) {
     console.log(error.message)
     res.status(500).json({
+      success: false,
       message: 'Something wrong'
     })
   }
@@ -124,11 +128,13 @@ exports.forgetPassword = async (req, res) => {
     await existingEmail.save();
 
     res.status(200).json({
-      message: "Otp sent successfully",
+      success: true,
+      message: "OTP has been sent to your email address. Use it to reset your password.",
     });
   } catch (error) {
     console.log(error.message)
     res.status(500).json({
+      success: false,
       message: 'Something went wrong'
     })
   }
@@ -157,7 +163,8 @@ exports.resetPassword = async (req, res) => {
     designer.password = hashPassword;
     await designer.save();
     res.status(200).json({
-      message: "Password reset successfully",
+      success: true,
+      message: "Designer password reset successfully.",
     });
   } catch (error) {
     console.log(error.message)
