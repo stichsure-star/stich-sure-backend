@@ -26,8 +26,9 @@ exports.createDesignerProfile = async (req, res) => {
     });
 
     res.status(201).json({
-      message: "Profile created successfully",
-      data: designerProfile
+      success: true,
+      message: "Designer profile created successfully.",
+      data: designerProfile,
     })
   } catch (error) {
     console.log(error.message)
@@ -42,8 +43,9 @@ exports.getAllDesignerProfiles = async (req, res) => {
     const designerProfiles = await DesignerProfile.findAll();
 
     res.status(200).json({
-      message: "Designer profiles retrieved successfully",
-      data: designerProfiles
+      success: true,
+      message: "Designer profiles loaded successfully.",
+      data: designerProfiles,
     });
   } catch (error) {
     console.log(error.message);
@@ -68,8 +70,9 @@ exports.getDesignerProfile = async (req, res) => {
     }
 
     res.status(200).json({
-      message: "Designer profile retrieved successfully",
-      data: designerProfile
+      success: true,
+      message: "Designer profile loaded successfully.",
+      data: designerProfile,
     });
   } catch (error) {
     console.log(error.message);
@@ -113,8 +116,9 @@ exports.updateDesignerProfile = async (req, res) => {
     });
 
     res.status(200).json({
-      message: "Designer profile updated successfully",
-      data: designerProfile
+      success: true,
+      message: "Designer profile updated successfully.",
+      data: designerProfile,
     });
   } catch (error) {
     console.log(error.message);
@@ -141,7 +145,8 @@ exports.deleteDesignerProfile = async (req, res) => {
     await designerProfile.destroy();
 
     res.status(200).json({
-      message: "Designer profile deleted successfully"
+      success: true,
+      message: "Designer profile deleted successfully.",
     });
   } catch (error) {
     console.log(error.message);

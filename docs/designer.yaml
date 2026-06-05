@@ -4,7 +4,7 @@ info:
   version: 1.0.0
   description: API documentation for designer account endpoints in the StitchSure application.
 paths:
-  /api/v1/designer:
+  /api/v1/designer/create:
     post:
       summary: Create a new designer
       tags: [designer]
@@ -60,7 +60,7 @@ paths:
           description: Logged in successfully
   /api/v1/designer/forget-password:
     post:
-      summary: Request password reset OTP
+      summary: Forget Password
       tags: [designer]
       requestBody:
         required: true
@@ -79,7 +79,7 @@ paths:
           description: Otp sent successfully
   /api/v1/designer/reset-password:
     post:
-      summary: Set a new password
+      summary: Reset Password
       tags: [designer]
       requestBody:
         required: true
@@ -95,4 +95,4 @@ paths:
                   example: newSecureP@ssw0rd
       responses:
         '200':
-          description: Password set successfully
+          description: Password reset successfully

@@ -26,7 +26,7 @@ exports.createDesign = async (req, res, next) => {
 
     return res.status(201).json({
       success: true,
-      message: "Design created successfully",
+      message: "Design created successfully.",
       data: newDesign,
     });
   } catch (error) {
@@ -40,7 +40,7 @@ exports.getAllDesigns = async (req, res, next) => {
 
     return res.status(200).json({
       success: true,
-      message: 'All designs retrieved successfully',
+      message: 'All designs loaded successfully.',
       data: designs,
     });
   } catch (error) {
@@ -60,7 +60,8 @@ exports.getDesignById = async (req, res, next) => {
     }
 
     return res.status(200).json({
-      message: 'Design retrieved successfully',
+      success: true,
+      message: 'Design details retrieved successfully.',
       data: design,
     });
   } catch (error) {
@@ -74,7 +75,8 @@ exports.getDesignerDesigns = async (req, res, next) => {
     const designs = await Designs.findAll({where: {designerId: designerId}});
 
     return res.status(200).json({
-      message: 'Designer designs retrieved successfully',
+      success: true,
+      message: 'Designer designs loaded successfully.',
       data: designs,
     });
   } catch (error) {
@@ -113,7 +115,8 @@ exports.updateDesign = async (req, res, next) => {
     });
 
     return res.status(200).json({
-      message: "Design updated successfully",
+      success: true,
+      message: "Design updated successfully.",
       data: design,
     });
   } catch (error) {
@@ -136,7 +139,7 @@ exports.deleteDesign = async (req, res, next) => {
 
     return res.status(200).json({
       success: true,
-      message: "Design deleted successfully",
+      message: "Design deleted successfully.",
     });
   } catch (error) {
     next(error);
