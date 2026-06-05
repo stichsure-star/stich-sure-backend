@@ -1,4 +1,4 @@
- const { Customer } = require("../models");
+const { Customer } = require("../models");
 const bcrypt = require("bcrypt");
 const otpGenerator = require("otp-generator");
 const fs = require("fs");

@@ -33,6 +33,7 @@ app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/request', request);
 app.use('/api/v1/designs', designs);
 app.use('/api/v1/designerProfile', designerProfile);
+
 const startServer = async () => {
   try {
     await sequelize.authenticate();
