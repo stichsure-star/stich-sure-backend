@@ -1,9 +1,19 @@
 const { Designs } = require("../models");
+const cloudinary = require("../utils/cloudinary");
+const fs = require("fs");
 
 
 exports.createDesign = async (req, res, next) => {
   try {
     const { designerId, title, category, price, description } = req.body;
+    let designImage = null;
+
+    if (req.file) {
+      const filePath = req.file.path;
+      const uploadToCloudinary = await cloudinary.uploader.upload(filePath);
+      designImage = uploadToCloudinary.secure_url;
+      fs.unlinkSync(filePath);
+    }
 
     const newDesign = await Designs.create({
       designerId: designerId,
@@ -11,6 +21,7 @@ exports.createDesign = async (req, res, next) => {
       category: category,
       price: price,
       description: description,
+      designImage: designImage,
     });
 
     return res.status(201).json({
@@ -25,10 +36,11 @@ exports.createDesign = async (req, res, next) => {
 
 exports.getAllDesigns = async (req, res, next) => {
   try {
-    const designs = await Designs.findAll()
+    const designs = await Designs.findAll();
 
     return res.status(200).json({
-        message: 'All designs retrieved successfully',
+      success: true,
+      message: 'All designs retrieved successfully',
       data: designs,
     });
   } catch (error) {
@@ -83,16 +95,26 @@ exports.updateDesign = async (req, res, next) => {
       });
     }
 
-    const updatedDesign = await Designs.update({
-      title: title,
-      category: category,
-      price: price,
-      description: description,
-    }, { where: { id: id }});
+    let designImage = design.designImage;
+
+    if (req.file) {
+      const filePath = req.file.path;
+      const uploadToCloudinary = await cloudinary.uploader.upload(filePath);
+      designImage = uploadToCloudinary.secure_url;
+      fs.unlinkSync(filePath);
+    }
+
+    await design.update({
+      title: title || design.title,
+      category: category || design.category,
+      price: price || design.price,
+      description: description || design.description,
+      designImage: designImage,
+    });
 
     return res.status(200).json({
       message: "Design updated successfully",
-      data: updatedDesign,
+      data: design,
     });
   } catch (error) {
     next(error);
@@ -110,12 +132,11 @@ exports.deleteDesign = async (req, res, next) => {
       });
     }
 
-    const deletedDesign = await Designs.destroy({ where: { id: id } });
+    await design.destroy();
 
     return res.status(200).json({
       success: true,
       message: "Design deleted successfully",
-      data: deletedDesign,
     });
   } catch (error) {
     next(error);

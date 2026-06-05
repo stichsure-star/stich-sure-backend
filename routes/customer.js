@@ -9,7 +9,7 @@ const { customerValidator, loginValidator, updateValidator } = require('../middl
 router.post('/register', customerValidator, createCustomer);
 router.post('/login', loginValidator, loginCustomer);
 router.post('/forget-password', forgetPassword)
-router.post('/set-password', setPassword)
+router.post('/set-password', authentication, setPassword)
 router.post('/verify', verifyEmail)
 router.put('/update-profile/:id', updateValidator, upload.single('profilePhoto'), updateCustomerProfile);
 router.get('/auth/google', profile)

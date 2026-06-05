@@ -1,7 +1,7 @@
 const { request} = require('../models/request')
 
 
-exports.createRequest = async (req, res, next) => {
+exports.createRequest = async (req, res) => {
   try {
     const { customerId, designerId, fullName, deadLine, description, measurement } = req.body;
 
@@ -23,11 +23,14 @@ exports.createRequest = async (req, res, next) => {
       data: newRequest,
     });
   } catch (error) {
-    next(error);
+    console.log(error.message);
+    res.status(500).json({
+      message: "Something went wrong"
+    });
   }
 };
 
-exports.getAllRequests = async (req, res, next) => {
+exports.getAllRequests = async (req, res) => {
   try {
     const requests = await request.findAll();
 
@@ -60,7 +63,7 @@ exports.getOneRequest = async (req, res, next) => {
   }
 };
 
-exports.getCustomerRequests = async (req, res, next) => {
+exports.getCustomerRequests = async (req, res, ) => {
   try {
     const { customerId } = req.params;
     const requests = await request.findAll({
@@ -74,7 +77,10 @@ exports.getCustomerRequests = async (req, res, next) => {
       data: requests,
     });
   } catch (error) {
-    next(error);
+    console.log(error.message);
+    res.status(500).json({
+      message: "Something went wrong"
+    });
   }
 };
 
@@ -92,7 +98,10 @@ exports.getDesignerRequests = async (req, res, next) => {
       data: requests,
     });
   } catch (error) {
-    next(error);
+    console.log(error.message);
+    res.status(500).json({
+      message: "Something went wrong"
+    });
   }
 };
 
