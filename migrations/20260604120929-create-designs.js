@@ -11,6 +11,7 @@ module.exports = {
       },
       designerId: {
         type: Sequelize.UUID,
+        defaultValue: Sequelize.UUIDV4,
         references: {
           model: 'Designers',
           key: 'id'

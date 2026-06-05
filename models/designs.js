@@ -30,7 +30,8 @@ module.exports = (sequelize, DataTypes) => {
     title: DataTypes.STRING,
     category: DataTypes.STRING,
     price: DataTypes.DECIMAL(10, 2),
-    description: DataTypes.TEXT
+    description: DataTypes.TEXT,
+    designImage: DataTypes.TEXT
   }, {
     sequelize,
     modelName: 'Designs',

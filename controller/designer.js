@@ -1,20 +1,21 @@
-const  Designer  = require("../models/designer");
+const { Designer } = require("../models");
 const bcrypt = require("bcrypt");
 const otpGenerator = require("otp-generator");
 const jwt = require("jsonwebtoken");
 
+const otpExpire = Date.now() + 3 * 60 * 1000;
 
-exports.createDesingner = async (req, res, next) => {
+const otp = otpGenerator.generate(6, {
+  upperCaseAlphabets: false,
+  lowerCaseAlphabets: false,
+  specialChars: false,
+});
+
+exports.createDesingner = async (req, res) => {
   try {
     const { firstName, lastName, email, password } = req.body;
 
-    const otp = otpGenerator.generate(6, {
-      upperCaseAlphabets: false,
-      lowerCaseAlphabets: false,
-      specialChars: false,
-    });
     
-    const otpExpire = Date.now() + 3 * 60 * 1000;
 
     const existingEmail = await Designer.findOne({where:{email: email.toLowerCase(), }});
     if (existingEmail) {
@@ -35,20 +36,23 @@ exports.createDesingner = async (req, res, next) => {
       otpExpire,
       role: "designer",
     });
+    console.log(otp)
 
     isEmailVerified = false;
     await newDesiner.save();
 
     res.status(200).json({
-      message: "Designer created successfully",
-      data: newDesiner,
+      message: "Designer created successfully"
     });
   } catch (error) {
-    return next(error)
+    console.log(error.message)
+    res.status(500).json({
+      message: 'Something went wrong'
+    })
   }
 };
 
-exports.loginDesigner = async (req, res, next) => {
+exports.loginDesigner = async (req, res) => {
   try {
     const { email, password } = req.body;
     const existingDesigner = await Designer.findOne({
@@ -80,12 +84,21 @@ exports.loginDesigner = async (req, res, next) => {
       process.env.JWT_SECRET,
       { expiresIn: "1d" },
     );
+
+    res.status(200).json({
+      message: "Login successfully",
+      data: existingDesigner,
+      token
+    })
   } catch (error) {
-    return next(error)
+    console.log(error.message)
+    res.status(500).json({
+      message: 'Something wrong'
+    })
   }
 };
 
-exports.forgetPassword = async (req, res, next) => {
+exports.forgetPassword = async (req, res) => {
   try {
     const { email } = req.body;
 
@@ -114,27 +127,42 @@ exports.forgetPassword = async (req, res, next) => {
       message: "Otp sent successfully",
     });
   } catch (error) {
-    return next(error)
-    
+    console.log(error.message)
+    res.status(500).json({
+      message: 'Something went wrong'
+    })
   }
 };
 
-exports.setPassword = async (req, res) => {
+exports.resetPassword = async (req, res) => {
   try {
     const { password } = req.body;
 
-    const customer = await Designer.findByPk(req.user.id);
+    if (!req.user || !req.user.id) {
+      return res.status(401).json({
+         message: 'Unauthorized' 
+        });
+    }
+
+    const designer = await Designer.findByPk(req.user.id);
+
+    if (!designer) {
+      return res.status(404).json({
+         message: 'Designer not found' 
+        });
+    }
 
     const salt = await bcrypt.genSalt(10);
     const hashPassword = await bcrypt.hash(password, salt);
-    customer.password = hashPassword;
-    await Designer.save();
+    designer.password = hashPassword;
+    await designer.save();
     res.status(200).json({
-      message: "Password set successfully",
+      message: "Password reset successfully",
     });
   } catch (error) {
+    console.log(error.message)
     res.status(500).json({
-      message: error.message
+      message: "Something went wrong"
     })
   }
 }
