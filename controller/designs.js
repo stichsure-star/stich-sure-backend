@@ -5,7 +5,7 @@ const fs = require("fs");
 
 exports.createDesign = async (req, res, next) => {
   try {
-    const { designerId, title, category, price, description } = req.body;
+    const { designerId, designTitle, category, price, description, measurement } = req.body;
     let designImage = null;
 
     if (req.file) {
@@ -17,11 +17,12 @@ exports.createDesign = async (req, res, next) => {
 
     const newDesign = await Designs.create({
       designerId: designerId,
-      title: title,
+      designTitle: designTitle,
       category: category,
       price: price,
       description: description,
       designImage: designImage,
+      measurement: measurement
     });
 
     return res.status(201).json({
@@ -87,7 +88,7 @@ exports.getDesignerDesigns = async (req, res, next) => {
 exports.updateDesign = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { title, category, price, description } = req.body;
+    const { designTitle, category, price, description } = req.body;
     const design = await Designs.findByPk(id);
 
     if (!design) {

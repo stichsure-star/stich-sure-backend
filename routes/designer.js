@@ -1,12 +1,17 @@
 const router = require('express').Router();
 
-const { createDesingner, loginDesigner, forgetPassword, resetPassword } = require('../controller/designer')
-const { designerValidator } = require('../middlewares/designerValidator')
-const { authentication } = require('../middlewares/authentication')
+const { createDesingner, loginDesigner, forgetPassword, resetPassword } = require('../controller/designer');
+const {
+  createDesignerValidator,
+  loginValidator,
+  forgetPasswordValidator,
+  resetPasswordValidator,
+} = require('../middlewares/designerValidator');
+const { authentication } = require('../middlewares/authentication');
 
-router.post('/create', designerValidator, createDesingner);
-router.post('/login', loginDesigner);
-router.post('/forget-password', forgetPassword);
-router.post('/reset-password', authentication, resetPassword);
+router.post('/create', createDesignerValidator, createDesingner);
+router.post('/login', loginValidator, loginDesigner);
+router.post('/forget-password', forgetPasswordValidator, forgetPassword);
+router.post('/reset-password', authentication, resetPasswordValidator, resetPassword);
 
-module.exports = router
+module.exports = router;

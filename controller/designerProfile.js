@@ -1,12 +1,41 @@
-const {DesignerProfile} = require('../models');
-const cloudinary = require('../utils/cloudinary');
-const fs = require('fs');
+const { Designer, DesignerProfile, Designs } = require("../models");
+const cloudinary = require("../utils/cloudinary");
+const fs = require("fs");
 
-exports.createDesignerProfile = async (req, res) => {
+const parseSpecialization = (specialization) => {
+  if (!specialization) {
+    return specialization;
+  }
+
+  if (Array.isArray(specialization)) {
+    return specialization;
+  }
+
   try {
-    const { designerId, businessName, currentHouseAddress, specialization, yearsOfExperience, shortBio } = req.body;
-    
-    let profilePhoto = null;
+    return JSON.parse(specialization);
+  } catch (error) {
+    return specialization;
+  }
+};
+
+exports.createOrUpdateDesignerProfile = async (req, res) => {
+  try {
+    const designerId = req.user.id;
+
+    const {
+      businessName,
+      currentHouseAddress,
+      specialization,
+      yearsOfExperience,
+      shortBio,
+    } = req.body;
+    const parsedSpecialization = parseSpecialization(specialization);
+
+    let profile = await DesignerProfile.findOne({
+      where: { designerId },
+    });
+
+    let profilePhoto = profile ? profile.profilePhoto : null;
 
     if (req.file) {
       const filePath = req.file.path;
@@ -15,42 +44,75 @@ exports.createDesignerProfile = async (req, res) => {
       fs.unlinkSync(filePath);
     }
 
-    const designerProfile = await DesignerProfile.create({
-      designerId,
-      businessName,
-      currentHouseAddress,
-      profilePhoto,
-      specialization: JSON.parse(specialization),
-      yearsOfExperience,
-      shortBio
-    });
+    const isProfileCompleted =
+      businessName &&
+      currentHouseAddress &&
+      parsedSpecialization &&
+      yearsOfExperience &&
+      shortBio &&
+      profilePhoto;
 
-    res.status(201).json({
-      success: true,
-      message: "Designer profile created successfully.",
-      data: designerProfile,
-    })
-  } catch (error) {
-    console.log(error.message)
-    res.status(500).json({
-      message: "Something went wrong"
-    })
-  }
-}
-
-exports.getAllDesignerProfiles = async (req, res) => {
-  try {
-    const designerProfiles = await DesignerProfile.findAll();
+    if (profile) {
+      await profile.update({
+        businessName,
+        currentHouseAddress,
+        specialization: parsedSpecialization,
+        yearsOfExperience,
+        shortBio,
+        profilePhoto,
+        isProfileCompleted: !!isProfileCompleted,
+      });
+    } else {
+      profile = await DesignerProfile.create({
+        designerId,
+        businessName,
+        currentHouseAddress,
+        specialization: parsedSpecialization,
+        yearsOfExperience,
+        shortBio,
+        profilePhoto,
+        isProfileCompleted: !!isProfileCompleted,
+      });
+    }
 
     res.status(200).json({
       success: true,
-      message: "Designer profiles loaded successfully.",
-      data: designerProfiles,
+      message: "Designer profile saved successfully.",
+      data: profile,
     });
   } catch (error) {
     console.log(error.message);
     res.status(500).json({
-      message: "Something went wrong"
+       message: "Something went wrong"
+    });
+  }
+};
+
+exports.getAllDesignerProfiles = async (req, res) => {
+  try {
+    const designers = await Designer.findAll({
+      attributes: ["id", "firstName", "lastName", "email"],
+      include: [
+        {
+          model: DesignerProfile,
+          as: "profile",
+        },
+        {
+          model: Designs,
+          as: "designs",
+        },
+      ],
+    });
+
+    res.status(200).json({
+      success: true,
+      message: "Designer profiles loaded successfully.",
+      data: designers,
+    });
+  } catch (error) {
+    console.log(error.message);
+    res.status(500).json({
+      message: "Something went wrong",
     });
   }
 };
@@ -59,45 +121,61 @@ exports.getDesignerProfile = async (req, res) => {
   try {
     const { designerId } = req.params;
 
-    const designerProfile = await DesignerProfile.findOne({
-      where: { designerId }
+    const designer = await Designer.findByPk(designerId, {
+      attributes: ["id", "firstName", "lastName", "email"],
+      include: [
+        {
+          model: DesignerProfile,
+          as: "profile",
+        },
+        {
+          model: Designs,
+          as: "designs",
+        },
+      ],
     });
 
-    if (!designerProfile) {
+    if (!designer) {
       return res.status(404).json({
-        message: "Designer profile not found"
+        message: 'Designer not found'
       });
     }
 
     res.status(200).json({
       success: true,
-      message: "Designer profile loaded successfully.",
-      data: designerProfile,
+      message: "Designer profile loaded successfully",
+      data: designer,
     });
   } catch (error) {
     console.log(error.message);
     res.status(500).json({
-      message: "Something went wrong"
+      message: "Something went wrong",
     });
   }
 };
 
 exports.updateDesignerProfile = async (req, res) => {
   try {
-    const  designerId = req.user.id;
-    const { businessName, currentHouseAddress, specialization, yearsOfExperience, shortBio } = req.body;
+    const designerId = req.user.id;
+    const {
+      businessName,
+      currentHouseAddress,
+      specialization,
+      yearsOfExperience,
+      shortBio,
+    } = req.body;
 
-    const designerProfile = await DesignerProfile.findOne({
-      where: { designerId }
+    const profile = await DesignerProfile.findOne({
+      where: { designerId },
     });
 
-    if (!designerProfile) {
+    if (!profile) {
       return res.status(404).json({
-        message: "Designer profile not found"
+        message: "Designer profile not found",
       });
     }
 
-    let profilePhoto = designerProfile.profilePhoto;
+    let profilePhoto = profile.profilePhoto;
 
     if (req.file) {
       const filePath = req.file.path;
@@ -106,43 +184,62 @@ exports.updateDesignerProfile = async (req, res) => {
       fs.unlinkSync(filePath);
     }
 
-    await designerProfile.update({
-      businessName: businessName || designerProfile.businessName,
-      currentHouseAddress: currentHouseAddress || designerProfile.currentHouseAddress,
+    const updatedBusinessName = businessName || profile.businessName;
+    const updatedCurrentHouseAddress =
+      currentHouseAddress || profile.currentHouseAddress;
+    const updatedSpecialization = specialization
+      ? parseSpecialization(specialization)
+      : profile.specialization;
+    const updatedYearsOfExperience =
+      yearsOfExperience || profile.yearsOfExperience;
+    const updatedShortBio = shortBio || profile.shortBio;
+
+    const isProfileCompleted =
+      updatedBusinessName &&
+      updatedCurrentHouseAddress &&
+      updatedSpecialization &&
+      updatedYearsOfExperience &&
+      updatedShortBio &&
+      profilePhoto;
+
+    await profile.update({
+      businessName: updatedBusinessName,
+      currentHouseAddress: updatedCurrentHouseAddress,
+      specialization: updatedSpecialization,
+      yearsOfExperience: updatedYearsOfExperience,
+      shortBio: updatedShortBio,
       profilePhoto,
-      specialization: specialization ? JSON.parse(specialization) : designerProfile.specialization,
-      yearsOfExperience: yearsOfExperience || designerProfile.yearsOfExperience,
-      shortBio: shortBio || designerProfile.shortBio
+      isProfileCompleted: !!isProfileCompleted,
     });
 
     res.status(200).json({
       success: true,
       message: "Designer profile updated successfully.",
-      data: designerProfile,
+      data: profile,
     });
   } catch (error) {
     console.log(error.message);
     res.status(500).json({
-      message: "Something went wrong"
+      message: "Something went wrong",
     });
   }
 };
 
 exports.deleteDesignerProfile = async (req, res) => {
   try {
-    const { designerId } = req.params;
+    const designerId = req.user.id;
 
-    const designerProfile = await DesignerProfile.findOne({
-      where: { designerId }
+    const profile = await DesignerProfile.findOne({
+      where: { designerId },
     });
 
-    if (!designerProfile) {
+    if (!profile) {
       return res.status(404).json({
-        message: "Designer profile not found"
+        message: "Designer profile not found",
       });
     }
 
-    await designerProfile.destroy();
+    await profile.destroy();
 
     res.status(200).json({
       success: true,
@@ -151,7 +248,7 @@ exports.deleteDesignerProfile = async (req, res) => {
   } catch (error) {
     console.log(error.message);
     res.status(500).json({
-      message: "Something went wrong"
+      message: "Something went wrong",
     });
   }
 };

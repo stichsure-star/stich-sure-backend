@@ -1,52 +1,76 @@
-const { request} = require('../models/request')
+const { Op } = require("sequelize");
+const { request, DesignerProfile } = require("../models");
 
+const updateDesignerStats = async (designerId) => {
+  const profile = await DesignerProfile.findOne({
+    where: { designerId },
+  });
+
+  if (!profile) {
+    return;
+  }
+
+  const completedOrders = await request.count({
+    where: {
+      designerId,
+      status: "completed",
+    },
+  });
+
+  const totalAcceptedJobs = await request.count({
+    where: {
+      designerId,
+      status: {
+        [Op.in]: ["accepted", "completed"],
+      },
+    },
+  });
+
+  const reliabilityScore =
+    totalAcceptedJobs === 0
+      ? 0
+      : Math.round((completedOrders / totalAcceptedJobs) * 100);
+
+  await profile.update({
+    completedOrders,
+    reliabilityScore,
+  });
+};
 
 exports.createRequest = async (req, res) => {
   try {
-    const { customerId, designerId, fullName, deadLine, description, measurement } = req.body;
+    const customerId = req.user.id;
+    const { designerId, fullName, deadLine, measurement, description } = req.body;
 
     const newRequest = await request.create({
-
-      customerId: customerId,
-      designerId: designerId,
-      fullName: fullName,
-      deadLine: deadLine,
-      description: description,
-      measurement: measurement,
+      customerId,
+      designerId,
+      fullName,
+      deadLine,
+      measurement,
+      description,
       status: "pending",
-
     });
 
-    return res.status(201).json({
+    res.status(201).json({
       success: true,
-      message: "Request created successfully.",
+      message: "Request created successfully",
       data: newRequest,
     });
   } catch (error) {
     console.log(error.message);
     res.status(500).json({
-      message: "Something went wrong"
+      message: "Something went wrong",
     });
   }
 };
 
-exports.getAllRequests = async (req, res) => {
-  try {
-    const requests = await request.findAll();
-
-    return res.status(200).json({
-      success: true,
-      message: "Requests loaded successfully.",
-      data: requests,
-    });
-  } catch (error) {
-    next(error);
-  }
-};
-
-exports.getOneRequest = async (req, res, next) => {
+exports.sendOffer = async (req, res) => {
   try {
     const { id } = req.params;
+
+    const { priceOffer, designerMessage } = req.body;
+
     const foundRequest = await request.findByPk(id);
 
     if (!foundRequest) {
@@ -55,107 +79,193 @@ exports.getOneRequest = async (req, res, next) => {
       });
     }
 
+    if (foundRequest.status !== "pending") {
+      return res.status(400).json({
+        message: "You can only send an offer for a pending request",
+      });
+    }
+
+    await foundRequest.update({
+      priceOffer,
+      designerMessage,
+      status: "proposal_sent",
+    });
+
     return res.status(200).json({
       success: true,
-      message: "Request details retrieved successfully.",
+      message: "Offer sent successfully",
       data: foundRequest,
     });
   } catch (error) {
-    next(error);
+    console.log(error.message);
+    res.status(500).json({
+      message: "Something went wrong",
+    });
   }
 };
 
-exports.getCustomerRequests = async (req, res, ) => {
+exports.acceptRequest = async (req, res) => {
   try {
-    const { customerId } = req.params;
-    const requests = await request.findAll({
-      where: {
-        customerId: customerId,
-      },
+    const { id } = req.params;
+
+    const foundRequest = await request.findByPk(id);
+
+    if (!foundRequest) {
+      return res.status(404).json({
+        message: "Request not found"
+      })
+    }
+
+    if (foundRequest.status !== "proposal_sent") {
+      return res.status(400).json({
+        message: "Only requests with an offer can be accepted",
+      });
+    }
+
+    await foundRequest.update({
+      status: "accepted",
     });
 
     return res.status(200).json({
       success: true,
-      message: "Customer requests loaded successfully.",
-      data: requests,
+      message: "Request accepted successfully.",
+      data: foundRequest,
     });
   } catch (error) {
     console.log(error.message);
     res.status(500).json({
       message: "Something went wrong"
-    });
+    })
   }
-};
+}
 
-exports.getDesignerRequests = async (req, res, next) => {
+exports.rejectRequest = async (req, res) => {
   try {
-    const { designerId } = req.params;  
-    const requests = await request.findAll({
-      where: {
-        designerId: designerId,
-      },
+    const { id } = req.params;
+
+    const foundRequest = await request.findByPk(id);
+
+    if (!foundRequest) {
+      return res.status(404).json({
+         message: "Request not found"
+      });
+    }
+
+    if (foundRequest.status !== "proposal_sent") {
+      return res.status(400).json({
+        message: "Only requests with an offer can be rejected",
+      });
+    }
+
+    await foundRequest.update({
+      status: "rejected",
     });
 
     return res.status(200).json({
       success: true,
-      message: "Designer requests loaded successfully.",
-      data: requests,
+      message: "Request rejected successfully.",
+      data: foundRequest,
     });
   } catch (error) {
     console.log(error.message);
     res.status(500).json({
-      message: "Something went wrong"
+       message: "Something went wrong"
     });
   }
 };
 
-exports.updateRequest = async (req, res, next) => {
+exports.completeRequest = async (req, res) => {
   try {
     const { id } = req.params;
-    const updateRequest = await request.findByPk(id);
 
-    if (!updateRequest) {
+    const foundRequest = await request.findByPk(id);
+
+    if (!foundRequest) {
       return res.status(404).json({
         message: "Request not found",
       });
     }
 
-    await updateRequest.update({
-      description: req.body.description,
-      measurement: req.body.measurement,
-      fullName: req.body.fullName
-    }, { where: { id: id } });
+    if (foundRequest.status !== "accepted") {
+      return res.status(400).json({
+        message: "Only accepted requests can be completed",
+      });
+    }
+
+    await foundRequest.update({
+      status: "completed",
+    });
+
+    await updateDesignerStats(foundRequest.designerId);
 
     return res.status(200).json({
       success: true,
-      message: "Request updated successfully.",
-      data: updateRequest,
+      message: "Request completed successfully.",
+      data: foundRequest,
     });
   } catch (error) {
-    next(error);
+    console.log(error.message);
+    res.status(500).json({
+      message: "Something went wrong",
+    });
   }
 };
 
-
-exports.deleteRequest = async (req, res, next) => {
+exports.rateDesigner = async (req, res) => {
   try {
     const { id } = req.params;
-    const deletedRequest = await request.findByPk(id);
+    const { rating } = req.body;
+    const ratingValue = Number(rating);
 
-    if (!deletedRequest) {
+    if (!ratingValue || ratingValue < 1 || ratingValue > 5) {
+      return res.status(400).json({
+        message: "Rating must be between 1 and 5",
+      });
+    }
+
+    const foundRequest = await request.findByPk(id);
+
+    if (!foundRequest) {
       return res.status(404).json({
-        success: false,
         message: "Request not found",
       });
     }
 
-    await deletedRequest.destroy({ where: { id: id } });
+    if (foundRequest.status !== "completed") {
+      return res.status(400).json({
+        message: "You can only rate completed requests",
+      });
+    }
+
+    const profile = await DesignerProfile.findOne({
+      where: { designerId: foundRequest.designerId },
+    });
+
+    if (!profile) {
+      return res.status(404).json({
+        message: "Designer profile not found",
+      });
+    }
+
+    const oldAverage = Number(profile.ratingAverage);
+    const oldCount = profile.ratingCount;
+    const newAverage =
+      (oldAverage * oldCount + ratingValue) / (oldCount + 1);
+
+    await profile.update({
+      ratingAverage: newAverage.toFixed(2),
+      ratingCount: oldCount + 1,
+    });
 
     return res.status(200).json({
       success: true,
-      message: "Request deleted successfully.",
+      message: "Designer rated successfully.",
+      data: profile,
     });
   } catch (error) {
-    next(error);
+    console.log(error.message);
+    res.status(500).json({
+      message: "Something went wrong",
+    });
   }
 };

@@ -46,6 +46,11 @@ module.exports = {
         type: Sequelize.STRING,
         allowNull: true
       },
+      completedOrders: {
+        type: Sequelize.INTEGER,
+        allowNull: false,
+        defaultValue: 0,
+      },
       ratingAverage: {
         type: Sequelize.DECIMAL(3, 2),
         allowNull: false,

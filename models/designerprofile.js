@@ -49,6 +49,11 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.TEXT,
       allowNull: true
     },
+    completedOrders: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      defaultValue: 0,      
+    },
     ratingAverage: {
       type: DataTypes.DECIMAL(3, 2),
       allowNull: false,
