@@ -27,10 +27,11 @@ module.exports = (sequelize, DataTypes) => {
     designerId: {
       type: DataTypes.UUID
     },
-    title: DataTypes.STRING,
+    designTitle: DataTypes.STRING,
     category: DataTypes.STRING,
     price: DataTypes.DECIMAL(10, 2),
     description: DataTypes.TEXT,
+    measurement: DataTypes.STRING,
     designImage: DataTypes.TEXT
   }, {
     sequelize,

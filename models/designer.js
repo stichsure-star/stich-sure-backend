@@ -11,6 +11,10 @@ module.exports = (sequelize, DataTypes) => {
         foreignKey: 'designerId',
         as: 'designs'
       });
+      Designer.hasMany(models.request, {
+        foreignKey: 'designerId',
+        as: 'requests'
+      });
     }
   } 
 Designer.init({ 

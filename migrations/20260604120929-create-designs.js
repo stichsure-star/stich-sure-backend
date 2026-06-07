@@ -19,7 +19,7 @@ module.exports = {
         onUpdate: 'CASCADE',
         onDelete: 'SET NULL'
       },
-      title: {
+      designTitle: {
         type: Sequelize.STRING,
         allowNull: false
       },
@@ -28,7 +28,12 @@ module.exports = {
         allowNull: false
       },
       price: {
-        type: Sequelize.DECIMAL
+        type: Sequelize.DECIMAL,
+        precision: 10,
+        scale: 2
+      },
+      measurement: {
+        type: Sequelize.STRING
       },
       description: {
         type: Sequelize.STRING

@@ -40,6 +40,19 @@ app.use('/api/v1/request', request);
 app.use('/api/v1/designs', designs);
 app.use('/api/v1/designerProfile', designerProfile);
 
+app.use((req, res) => {
+    res.status(404).json({
+        message: 'Route not found'
+    })
+})
+
+app.use((err, req, res, next) => {
+    console.log(err.message)
+    res.status(500).json({
+        message: err.message
+    })
+})
+
 const startServer = async () => {
   try {
     await sequelize.authenticate();

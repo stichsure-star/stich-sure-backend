@@ -1,12 +1,13 @@
 const router = require('express').Router()
 
-const {createRequest, getAllRequests, getOneRequest, getDesignerRequests, updateRequest, deleteRequest} = require('../controller/request')
+const {createRequest, sendOffer, acceptRequest, rejectRequest, completeRequest, rateDesigner } = require('../controller/request')
+const { authentication } = require('../middlewares/authentication')
 
-router.post('/create', createRequest)
-router.get('/getAll', getAllRequests)
-router.get('/getById/:id', getOneRequest)
-router.get('/getDesignerRequests/:designerId', getDesignerRequests)
-router.put('/update/:id', updateRequest)
-router.delete('/delete/:id', deleteRequest)
+router.post('/create', authentication, createRequest);
+router.put('/send-offer/:id', authentication, sendOffer);
+router.put('/accept/:id', authentication, acceptRequest);
+router.put('/reject/:id', authentication, rejectRequest);
+router.put('/complete/:id', authentication, completeRequest);
+router.put('/rate/:id', authentication, rateDesigner);
 
 module.exports = router

@@ -30,7 +30,10 @@ const options = {
     },
     apis: [
         './docs/customer.yaml',
-        './docs/designer.yaml'
+        './docs/designer.yaml',
+        './docs/designerprofile.yaml',
+        './docs/request.yaml',
+        './docs/designs.yaml'
     ]
 }
 

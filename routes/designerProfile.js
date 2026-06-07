@@ -1,18 +1,18 @@
 const router = require('express').Router();
 const { upload } = require('../middlewares/multer');
 const {
-  createDesignerProfile,
-  getDesignerProfile,
+  createOrUpdateDesignerProfile,
   getAllDesignerProfiles,
+  getDesignerProfile,
   updateDesignerProfile,
-  deleteDesignerProfile
-} = require('../controller/designerProfile');
+  deleteDesignerProfile,
+} = require('../controller/designerProfile')
 const { authentication } = require('../middlewares/authentication')
 
-router.post('/create', authentication, upload.single('profilePhoto'), createDesignerProfile);
+router.post('/create', authentication, upload.single('profilePhoto'), createOrUpdateDesignerProfile);
 router.get('/getAll', getAllDesignerProfiles);
 router.get('/getByDesigner/:designerId', getDesignerProfile);
-router.put('/update/:designerId', authentication, upload.single('profilePhoto'), updateDesignerProfile);
-router.delete('/delete/:designerId', authentication, deleteDesignerProfile);
+router.put('/update', authentication, upload.single('profilePhoto'), updateDesignerProfile);
+router.delete('/delete', authentication, deleteDesignerProfile);
 
 module.exports = router;

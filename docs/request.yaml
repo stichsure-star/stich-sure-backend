@@ -1,0 +1,181 @@
+openapi: 3.0.0
+info:
+  title: StitchSure API Documentation
+  version: 1.0.0
+  description: API documentation for request endpoints in the StitchSure application.
+paths:
+  /api/v1/request/create:
+    post:
+      summary: Create a new request
+      tags: [request]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - designerId
+                - fullName
+                - deadLine
+                - measurement
+                - description
+              properties:
+                designerId:
+                  type: string
+                  example: "c7b4f3c9-31f3-4f6e-b1d4-abc123def456"
+                  description: "The ID of the designer receiving the request"
+                fullName:
+                  type: string
+                  example: "Jane Doe"
+                  description: "The full name for the request reference"
+                deadLine:
+                  type: string
+                  format: date-time
+                  example: "2026-07-15T00:00:00.000Z"
+                  description: "The request deadline"
+                measurement:
+                  type: string
+                  example: "Bust: 34, Waist: 26, Hips: 36"
+                  description: "Measurement details for the request"
+                description:
+                  type: string
+                  example: "Need a bridal dress with lace sleeves and embroidery."
+                  description: "A description of the requested design"
+      responses:
+        '201':
+          description: Request created successfully
+  /api/v1/request/send-offer/{id}:
+    put:
+      summary: Send an offer for a pending request
+      tags: [request]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: "The ID of the request to send an offer for"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - priceOffer
+                - designerMessage
+              properties:
+                priceOffer:
+                  type: number
+                  format: float
+                  example: 150.50
+                  description: "The price offered by the designer"
+                designerMessage:
+                  type: string
+                  example: "I can complete this design within two weeks."
+                  description: "A message from the designer to the customer"
+      responses:
+        '200':
+          description: Offer sent successfully
+        '400':
+          description: Request is not pending or invalid status
+        '404':
+          description: Request not found
+  /api/v1/request/accept/{id}:
+    put:
+      summary: Accept a request offer
+      tags: [request]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: "The ID of the request to accept"
+      responses:
+        '200':
+          description: Request accepted successfully
+        '400':
+          description: Only requests with an offer can be accepted
+        '404':
+          description: Request not found
+  /api/v1/request/reject/{id}:
+    put:
+      summary: Reject a request offer
+      tags: [request]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: "The ID of the request to reject"
+      responses:
+        '200':
+          description: Request rejected successfully
+        '400':
+          description: Only requests with an offer can be rejected
+        '404':
+          description: Request not found
+  /api/v1/request/complete/{id}:
+    put:
+      summary: Mark a request as completed
+      tags: [request]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: "The ID of the request to complete"
+      responses:
+        '200':
+          description: Request completed successfully
+        '400':
+          description: Only accepted requests can be completed
+        '404':
+          description: Request not found
+  /api/v1/request/rate/{id}:
+    put:
+      summary: Rate a completed request's designer
+      tags: [request]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: "The ID of the completed request to rate"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - rating
+              properties:
+                rating:
+                  type: integer
+                  example: 5
+                  description: "Rating value between 1 and 5"
+      responses:
+        '200':
+          description: Designer rated successfully
+        '400':
+          description: Rating must be between 1 and 5 or request is not completed
+        '404':
+          description: Request not found

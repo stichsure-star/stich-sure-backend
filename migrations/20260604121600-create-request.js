@@ -36,14 +36,23 @@ module.exports = {
       deadLine: {
         type: Sequelize.DATE
       },
-      description: {
-        type: Sequelize.STRING
-      },
       measurement: {
         type: Sequelize.STRING
       },
-      status: {
+      description: {
         type: Sequelize.STRING
+      },
+      status: {
+        type: Sequelize.ENUM('pending', 'proposal_sent', 'accepted', 'rejected', 'completed'),
+        defaultValue: 'pending'
+      },
+      priceOffer: {
+        type: Sequelize.DECIMAL(10, 2),
+        allowNull: true
+      },
+      designerMessage: {
+        type: Sequelize.TEXT,
+        allowNull: true
       },
       createdAt: {
         allowNull: false,

@@ -1,0 +1,152 @@
+openapi: 3.0.0
+info:
+  title: StitchSure API Documentation
+  version: 1.0.0
+  description: API documentation for templates and designer designs endpoints in the StitchSure application.
+paths:
+  /api/v1/designs/create:
+    post:
+      summary: Create a new design
+      tags: [designs]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - designerId
+                - designTitle
+                - category
+                - price
+              properties:
+                designerId:
+                  type: string
+                  format: uuid
+                  example: "d9f1b4c2-1d2d-4e9b-8a14-1e11f4dd4a79"
+                  description: "ID of the designer who owns this design"
+                designTitle:
+                  type: string
+                  example: "Summer Wedding Gown"
+                  description: "Title of the design"
+                category:
+                  type: string
+                  example: "Bridal"
+                  description: "Design category"
+                price:
+                  type: number
+                  format: float
+                  example: 450.00
+                  description: "Price of the design"
+                description:
+                  type: string
+                  example: "Elegant lace wedding gown with hand embroidery."
+                  description: "Optional long description of the design"
+                measurement:
+                  type: string
+                  example: "Bust: 34, Waist: 28, Hips: 38"
+                  description: "Optional measurements or sizing details"
+                designImage:
+                  type: string
+                  format: binary
+                  description: "Optional design image file upload"
+      responses:
+        '201':
+          description: Design created successfully
+  /api/v1/designs/getAll:
+    get:
+      summary: Get all designs
+      tags: [designs]
+      responses:
+        '200':
+          description: All designs loaded successfully
+  /api/v1/designs/getById/{id}:
+    get:
+      summary: Get a design by id
+      tags: [designs]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: "Design ID"
+      responses:
+        '200':
+          description: Design details retrieved successfully
+        '404':
+          description: Design not found
+  /api/v1/designs/getDesignerDesigns/{designerId}:
+    get:
+      summary: Get all designs for a specific designer
+      tags: [designs]
+      parameters:
+        - in: path
+          name: designerId
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: "Designer ID"
+      responses:
+        '200':
+          description: Designer designs loaded successfully
+  /api/v1/designs/update/{id}:
+    put:
+      summary: Update an existing design
+      tags: [designs]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: "Design ID"
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                designTitle:
+                  type: string
+                  example: "Summer Wedding Gown"
+                category:
+                  type: string
+                  example: "Bridal"
+                price:
+                  type: number
+                  format: float
+                  example: 450.00
+                description:
+                  type: string
+                  example: "Elegant lace wedding gown with hand embroidery."
+                designImage:
+                  type: string
+                  format: binary
+                  description: "Optional replacement image file upload"
+      responses:
+        '200':
+          description: Design updated successfully
+        '404':
+          description: Design not found
+  /api/v1/designs/delete/{id}:
+    delete:
+      summary: Delete a design
+      tags: [designs]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: "Design ID"
+      responses:
+        '200':
+          description: Design deleted successfully
+        '404':
+          description: Design not found

@@ -29,10 +29,12 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: false
     },
     customerId: {
-      type: DataTypes.UUID
+      type: DataTypes.UUID,
+      defaultValue: DataTypes.UUIDV4
     },
     designerId: {
-      type: DataTypes.UUID
+      type: DataTypes.UUID,
+      defaultValue: DataTypes.UUIDV4
     },
     fullName: {
       type: DataTypes.STRING,
@@ -41,7 +43,12 @@ module.exports = (sequelize, DataTypes) => {
     deadLine: DataTypes.DATE,
     description: DataTypes.STRING,
     measurement: DataTypes.STRING,
-    status: DataTypes.STRING
+    status: {
+      type: DataTypes.ENUM('pending', 'proposal_sent', 'accepted', 'rejected', 'completed'),
+      defaultValue: 'pending'
+    },
+    priceOffer: DataTypes.DECIMAL(10, 2),
+    designerMessage: DataTypes.TEXT
   }, {
     sequelize,
     modelName: 'request',

@@ -1,0 +1,123 @@
+openapi: 3.0.0
+info:
+  title: StitchSure API Documentation
+  version: 1.0.0
+  description: API documentation for designer profile endpoints in the StitchSure application.
+paths:
+  /api/v1/designerProfile/create:
+    post:
+      summary: Create or update designer profile
+      tags: [designerProfile]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - businessName
+                - currentHouseAddress
+                - specialization
+                - yearsOfExperience
+                - shortBio
+              properties:
+                businessName:
+                  type: string
+                  example: "Stitch Masters"
+                  description: "The designer's business name"
+                currentHouseAddress:
+                  type: string
+                  example: "123 Fashion Avenue"
+                  description: "The designer's current work address"
+                specialization:
+                  type: string
+                  example: "Bridal, Formal Wear"
+                  description: "Designer specialization, can be comma-separated or JSON array"
+                yearsOfExperience:
+                  type: integer
+                  example: 5
+                  description: "Years of experience in the designer's field"
+                shortBio:
+                  type: string
+                  example: "Experienced bridal and couture designer."
+                  description: "Short bio of the designer"
+                profilePhoto:
+                  type: string
+                  format: binary
+                  description: "Profile photo file upload"
+      responses:
+        '200':
+          description: Designer profile saved successfully
+  /api/v1/designerProfile/getAll:
+    get:
+      summary: Get all designer profiles
+      tags: [designerProfile]
+      responses:
+        '200':
+          description: List of all designer profiles loaded successfully
+  /api/v1/designerProfile/getByDesigner/{designerId}:
+    get:
+      summary: Get a designer profile by designer id
+      tags: [designerProfile]
+      parameters:
+        - in: path
+          name: designerId
+          required: true
+          schema:
+            type: integer
+          description: "The ID of the designer whose profile should be returned"
+      responses:
+        '200':
+          description: Designer profile loaded successfully
+        '404':
+          description: Designer not found
+  /api/v1/designerProfile/update:
+    put:
+      summary: Update designer profile
+      tags: [designerProfile]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                businessName:
+                  type: string
+                  example: "Stitch Masters"
+                currentHouseAddress:
+                  type: string
+                  example: "123 Fashion Avenue"
+                specialization:
+                  type: string
+                  example: "Bridal, Formal Wear"
+                yearsOfExperience:
+                  type: integer
+                  example: 5
+                shortBio:
+                  type: string
+                  example: "Experienced bridal and couture designer."
+                profilePhoto:
+                  type: string
+                  format: binary
+                  description: "New profile photo file upload"
+      responses:
+        '200':
+          description: Designer profile updated successfully
+        '404':
+          description: Designer profile not found
+  /api/v1/designerProfile/delete:
+    delete:
+      summary: Delete designer profile
+      tags: [designerProfile]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Designer profile deleted successfully
+        '404':
+          description: Designer profile not found
