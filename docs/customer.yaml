@@ -107,7 +107,7 @@ paths:
       responses:
         '200':
           description: Password updated successfully
-  /api/v1/customer/verify-email:
+  /api/v1/customer/verify:
     post:
       summary: 
       tags: [customer]
