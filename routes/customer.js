@@ -7,7 +7,7 @@ const { authentication } = require('../middlewares/authentication')
 const { authorizeRoles } = require('../middlewares/authorization')
 const { customerValidator, loginValidator, forgetPasswordValidator, resetPaswordValidator, updateCustomerProfileValidator, updatePasswordValidator } = require('../middlewares/customerValidation')
 
-router.post('/register', authentication, authorizeRoles('customer'), customerValidator, createCustomer);
+router.post('/register', authorizeRoles('customer'), customerValidator, createCustomer);
 router.post('/login', loginValidator, loginCustomer);
 router.post('/forget-password', forgetPasswordValidator, forgetPassword)
 router.post('/reset-password', authentication, authorizeRoles('customer'), resetPaswordValidator, resetPassword)
