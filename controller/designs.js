@@ -27,7 +27,7 @@ exports.createDesign = async (req, res, next) => {
 
     return res.status(201).json({
       success: true,
-      message: "Design created successfully.",
+      message: "New design has been created successfully.",
       data: newDesign,
     });
   } catch (error) {
@@ -41,7 +41,7 @@ exports.getAllDesigns = async (req, res, next) => {
 
     return res.status(200).json({
       success: true,
-      message: 'All designs loaded successfully.',
+      message: "All designs have been loaded successfully.",
       data: designs,
     });
   } catch (error) {
@@ -62,7 +62,7 @@ exports.getDesignById = async (req, res, next) => {
 
     return res.status(200).json({
       success: true,
-      message: 'Design details retrieved successfully.',
+      message: "Design details have been retrieved successfully.",
       data: design,
     });
   } catch (error) {
@@ -77,7 +77,7 @@ exports.getDesignerDesigns = async (req, res, next) => {
 
     return res.status(200).json({
       success: true,
-      message: 'Designer designs loaded successfully.',
+      message: "Designs for the requested designer have been loaded successfully.",
       data: designs,
     });
   } catch (error) {
@@ -108,7 +108,7 @@ exports.updateDesign = async (req, res, next) => {
     }
 
     await design.update({
-      title: title || design.title,
+      designTitle: designTitle || design.designTitle,
       category: category || design.category,
       price: price || design.price,
       description: description || design.description,
@@ -117,7 +117,7 @@ exports.updateDesign = async (req, res, next) => {
 
     return res.status(200).json({
       success: true,
-      message: "Design updated successfully.",
+      message: "The design has been updated successfully.",
       data: design,
     });
   } catch (error) {
@@ -140,7 +140,7 @@ exports.deleteDesign = async (req, res, next) => {
 
     return res.status(200).json({
       success: true,
-      message: "Design deleted successfully.",
+      message: "The design has been deleted successfully.",
     });
   } catch (error) {
     next(error);

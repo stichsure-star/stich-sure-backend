@@ -9,9 +9,9 @@ const { customerValidator, loginValidator, forgetPasswordValidator, resetPasword
 router.post('/register', customerValidator, createCustomer);
 router.post('/login', loginValidator, loginCustomer);
 router.post('/forget-password', forgetPasswordValidator, forgetPassword)
-router.post('/reset-password', authentication, resetPaswordValidator, resetPassword)
+router.post('/reset-password', authentication,  resetPaswordValidator, resetPassword)
 router.post('/verify', verifyEmail)
-router.put('/update-profile/:id', updateCustomerProfileValidator, upload.single('profilePhoto'), updateCustomerProfile);
+router.put('/update-profile/:id', authentication, updateCustomerProfileValidator, upload.single('profilePhoto'), updateCustomerProfile);
 router.put('/update-password', authentication, updatePasswordValidator, updatePassword)
 router.get('/auth/google', profile)
 router.get('/auth/google/callback', loginProfile, loginWithGoogle)

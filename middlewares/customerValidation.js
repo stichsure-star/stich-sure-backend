@@ -92,7 +92,7 @@ exports.resetPaswordValidator = async (req, res, next) => {
 }
 
 exports.updateCustomerProfileValidator = async (req, res, next) => {
-  const schema = joi.object({
+  const schema = Joi.object({
     firstName: nameRule("First name").required(),
     lastName: nameRule("Last name").required(),
     email: Joi.string().email().required().messages({

@@ -54,7 +54,7 @@ exports.createRequest = async (req, res) => {
 
     res.status(201).json({
       success: true,
-      message: "Request created successfully",
+      message: "Your request has been created successfully.",
       data: newRequest,
     });
   } catch (error) {
@@ -93,7 +93,7 @@ exports.sendOffer = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      message: "Offer sent successfully",
+      message: "The offer has been sent successfully.",
       data: foundRequest,
     });
   } catch (error) {
@@ -128,7 +128,7 @@ exports.acceptRequest = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      message: "Request accepted successfully.",
+      message: "The request has been accepted successfully.",
       data: foundRequest,
     });
   } catch (error) {
@@ -163,7 +163,7 @@ exports.rejectRequest = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      message: "Request rejected successfully.",
+      message: "The request has been rejected successfully.",
       data: foundRequest,
     });
   } catch (error) {
@@ -200,7 +200,7 @@ exports.completeRequest = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      message: "Request completed successfully.",
+      message: "The request has been marked as completed successfully.",
       data: foundRequest,
     });
   } catch (error) {
@@ -259,7 +259,7 @@ exports.rateDesigner = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      message: "Designer rated successfully.",
+      message: "The designer has been rated successfully.",
       data: profile,
     });
   } catch (error) {

@@ -106,7 +106,7 @@ exports.getAllDesignerProfiles = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      message: "Designer profiles loaded successfully.",
+      message: "All designer profiles have been loaded successfully.",
       data: designers,
     });
   } catch (error) {
@@ -143,7 +143,7 @@ exports.getDesignerProfile = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      message: "Designer profile loaded successfully",
+      message: "Designer profile has been loaded successfully.",
       data: designer,
     });
   } catch (error) {

@@ -122,6 +122,7 @@ exports.loginCustomer = async (req, res) => {
     );
     res.status(200).json({
       success: true,
+      
       message: "Customer logged in successfully.",
       token,
       data: existingCustomer,
@@ -193,7 +194,7 @@ exports.resetPassword = async (req, res) => {
   } catch (error) {
     console.log(error.message)
     res.status(500).json({
-      success: flase,
+      success: false,
       message: "Something went wrong"
     })
   }
@@ -319,8 +320,8 @@ exports.updateCustomerProfile = async (req, res) => {
 
 exports.updatePassword = async (req, res) => {
   try {
-    const { id } = req.customer;
-    const { currentPassword, newPassword, confirmPassword } = req.body;
+    const { id } = req.user;
+    const { currentPassword, newPassword } = req.body;
 
     const customer = await Customer.findByPk(id);
 
@@ -348,7 +349,7 @@ exports.updatePassword = async (req, res) => {
     await customer.save();
     res.status(200).json({
       success: true,
-      message: "Customer password updated successfully.",
+      message: "Your password has been updated successfully.",
     });
   } catch (error) {
     console.log(error.message)
