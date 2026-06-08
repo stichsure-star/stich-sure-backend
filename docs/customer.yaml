@@ -8,8 +8,7 @@ paths:
     post:
       summary: Create a new customer
       tags: [customer]
-      security:
-        - bearerAuth: []
+
       requestBody:
         required: true
         content:
