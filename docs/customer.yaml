@@ -89,6 +89,8 @@ paths:
     post:
       summary: Customer reset password
       tags: [customer]
+      security:
+        - bearerAuth: []
       requestBody:
         required: true
         content:
