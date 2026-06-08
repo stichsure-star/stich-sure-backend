@@ -33,7 +33,8 @@ const options = {
         './docs/designer.yaml',
         './docs/designerprofile.yaml',
         './docs/request.yaml',
-        './docs/designs.yaml'
+        './docs/designs.yaml',
+        './docs/collaboration.yaml'
     ]
 }
 
