@@ -8,6 +8,8 @@ paths:
     post:
       summary: Create a new design
       tags: [designs]
+      security:
+        - bearerAuth: []
       requestBody:
         required: true
         content:
