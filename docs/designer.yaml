@@ -58,6 +58,33 @@ paths:
       responses:
         '200':
           description: Logged in successfully
+  /api/v1/designer/verify:
+    post:
+      summary: Verify designer email
+      tags: [designer]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - otp
+              properties:
+                email:
+                  type: string
+                  example: janetailor@gmail.com
+                otp:
+                  type: string
+                  example: "123456"
+      responses:
+        '200':
+          description: Designer email verified successfully
+        '400':
+          description: OTP is invalid or expired
+        '404':
+          description: Designer account not found
   /api/v1/designer/forget-password:
     post:
       summary: Forget Password

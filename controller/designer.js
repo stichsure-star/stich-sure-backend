@@ -35,10 +35,10 @@ exports.createDesingner = async (req, res) => {
       otp,
       otpExpire,
       role: "designer",
+      isEmailVerified: false,
     });
     console.log(otp)
 
-    isEmailVerified = false;
     await newDesiner.save();
 
     res.status(200).json({
@@ -99,6 +99,58 @@ exports.loginDesigner = async (req, res) => {
       success: false,
       message: 'Something wrong'
     })
+  }
+};
+
+exports.verifyEmail = async (req, res) => {
+  try {
+    const { otp, email } = req.body;
+
+    const designer = await Designer.findOne({
+      where: { email: email.toLowerCase() },
+    });
+
+    if (!designer) {
+      return res.status(404).json({
+        message: "Designer account not found",
+      });
+    }
+
+    if (designer.isEmailVerified) {
+      return res.status(400).json({
+        message: "Designer email is already verified",
+      });
+    }
+
+    if (designer.otpExpire < Date.now()) {
+      return res.status(400).json({
+        message: "OTP has expired",
+      });
+    }
+
+    if (designer.otp !== otp) {
+      return res.status(400).json({
+        message: "OTP is invalid",
+      });
+    }
+
+    Object.assign(designer, {
+      isEmailVerified: true,
+      otp: null,
+      otpExpire: null,
+    });
+    await designer.save();
+
+    return res.status(200).json({
+      success: true,
+      message: "Designer email verified successfully.",
+    });
+  } catch (error) {
+    console.log(error.message);
+    res.status(500).json({
+      success: false,
+      message: "Something went wrong",
+    });
   }
 };
 

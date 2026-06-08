@@ -78,3 +78,14 @@ exports.resetPasswordValidator = (req, res, next) => {
   });
   validateBody(schema, req, res, next);
 };
+
+exports.verifyEmailValidator = (req, res, next) => {
+  const schema = Joi.object({
+    email: emailRule,
+    otp: Joi.string().required().messages({
+      "any.required": "OTP is required",
+      "string.empty": "OTP cannot be empty",
+    }),
+  });
+  validateBody(schema, req, res, next);
+};
