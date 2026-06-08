@@ -84,7 +84,7 @@ paths:
                   description: "The email address of the customer"
       responses:
         '200':
-          description: Password reset successfully
+          description: OTP sent successfully
   /api/v1/customer/reset-password:
     post:
       summary: Customer reset password
@@ -109,7 +109,7 @@ paths:
           description: Password updated successfully
   /api/v1/customer/verify:
     post:
-      summary: 
+      summary: Verify customer email with OTP
       tags: [customer]
       requestBody:
         required: true
@@ -129,13 +129,24 @@ paths:
       responses:
         '200':
           description: Verified successfully
+        '400':
+          description: Invalid or expired OTP
+        '404':
+          description: Account not found
   /api/v1/customer/update-profile/{id}:
     put:
       summary: Update customer profile
+      tags: [customer]
+      security:
+        - bearerAuth: []
       parameters:
         - in: path
           name: id
-      tags: [customer]
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: "Customer ID"
       requestBody:
         required: true
         content:
@@ -158,3 +169,50 @@ paths:
       responses:
         '200':
           description: Profile updated successfully
+  /api/v1/customer/update-password:
+    put:
+      summary: Update customer password
+      tags: [customer]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - currentPassword
+                - newPassword
+              properties:
+                currentPassword:
+                  type: string
+                  example: Password123!
+                  description: "The current customer password"
+                newPassword:
+                  type: string
+                  example: NewPassw0rd!
+                  description: "The new password to set"
+      responses:
+        '200':
+          description: Password updated successfully
+        '400':
+          description: Invalid current password
+        '404':
+          description: Customer not found
+  /api/v1/auth/google:
+    get:
+      summary: Start Google OAuth login
+      tags: [auth]
+      responses:
+        '302':
+          description: Redirect to Google for authentication
+  /api/v1/auth/google/callback:
+    get:
+      summary: Google OAuth callback endpoint
+      tags: [auth]
+      responses:
+        '200':
+          description: Logged in successfully with Google
+        '401':
+          description: Google authentication failed

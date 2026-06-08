@@ -98,6 +98,8 @@ paths:
     put:
       summary: Update an existing design
       tags: [designs]
+      security:
+        - bearerAuth: []
       parameters:
         - in: path
           name: id
@@ -139,6 +141,8 @@ paths:
     delete:
       summary: Delete a design
       tags: [designs]
+      security:
+        - bearerAuth: []
       parameters:
         - in: path
           name: id

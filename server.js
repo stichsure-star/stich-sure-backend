@@ -14,6 +14,7 @@ const designerRoutes = require('./routes/designer');
 const request = require('./routes/request')
 const designs = require('./routes/designs')
 const designerProfile = require('./routes/designerProfile')
+const collaboration = require('./routes/collaboration')
 
 app.use(express.json());
 app.use(cors({
@@ -39,6 +40,7 @@ app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/request', request);
 app.use('/api/v1/designs', designs);
 app.use('/api/v1/designerProfile', designerProfile);
+app.use('/api/v1/collaboration', collaboration);
 
 app.use((req, res) => {
     res.status(404).json({
