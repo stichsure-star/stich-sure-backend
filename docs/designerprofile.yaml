@@ -66,8 +66,9 @@ paths:
           name: designerId
           required: true
           schema:
-            type: integer
-          description: "The ID of the designer whose profile should be returned"
+            type: string
+            format: uuid
+          description: "The UUID of the designer whose profile should be returned"
       responses:
         '200':
           description: Designer profile loaded successfully
