@@ -84,9 +84,9 @@ paths:
       responses:
         '200':
           description: Password reset successfully
-  /api/v1/customer/set-password:
+  /api/v1/customer/reset-password:
     post:
-      summary: Customer set new password
+      summary: Customer reset password
       tags: [customer]
       requestBody:
         required: true
