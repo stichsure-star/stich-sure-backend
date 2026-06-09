@@ -104,27 +104,6 @@ paths:
       responses:
         '200':
           description: Otp sent successfully
-  /api/v1/designer/reset-password:
-    post:
-      summary: Reset Password
-      tags: [designer]
-      security:
-        - bearerAuth: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required:
-                - password
-              properties:
-                password:
-                  type: string
-                  example: newSecureP@ssw0rd
-      responses:
-        '200':
-          description: Password reset successfully
   /api/v1/designer/resend-otp:
     post:
       summary: Resend OTP for email verification
@@ -146,3 +125,25 @@ paths:
       responses:
         '200':
           description: OTP sent successfully
+  /api/v1/designer/reset-password:
+    post:
+      summary: Reset Password
+      tags: [designer]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - password
+              properties:
+                password:
+                  type: string
+                  example: newSecureP@ssw0rd
+      responses:
+        '200':
+          description: Password reset successfully
+  
