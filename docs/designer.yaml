@@ -128,7 +128,7 @@ paths:
   /api/v1/designer/resend-otp:
     post:
       summary: Resend OTP for email verification
-      tags: [customer]
+      tags: [designer]
       security:
         - bearerAuth: []
       requestBody:
