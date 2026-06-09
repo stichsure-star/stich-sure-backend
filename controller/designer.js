@@ -121,11 +121,17 @@ exports.loginDesigner = async (req, res) => {
       process.env.JWT_SECRET,
       { expiresIn: "1d" },
     );
+    const data = {
+      id: existingDesigner.id,
+      email: existingDesigner.email,
+      role: existingDesigner.role,
+      fullName: existingDesigner.firstName + " " + existingDesigner.lastName,
+    }
 
     res.status(200).json({
       success: true,
       message: "Designer logged in successfully.",
-      data: existingDesigner,
+      data,
       token,
     })
   } catch (error) {

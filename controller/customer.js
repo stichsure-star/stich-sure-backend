@@ -127,12 +127,18 @@ exports.loginCustomer = async (req, res, next) => {
       process.env.JWT_SECRET,
       { expiresIn: "1d" },
     );
+    const data = {
+      id: existingCustomer.id,
+      email: existingCustomer.email,
+      role: existingCustomer.role,
+      fullName: existingCustomer.firstName + " " + existingCustomer.lastName,
+    };
+
     res.status(200).json({
       success: true,
-      
       message: "Customer logged in successfully.",
       token,
-      data: existingCustomer,
+      data,
     });
   } catch (error) {
     console.log(error.message)
@@ -273,10 +279,17 @@ exports.loginWithGoogle = async (req, res) => {
       { expiresIn: "1d" },
     );
 
+    const data = {
+      id: customer.id,
+      email: customer.email,
+      role: customer.role,
+      fullName: customer.firstName + " " + customer.lastName,
+    };
+
     res.status(200).json({
       success: true,
       message: "Logged in successfully with Google.",
-      data: customer,
+      data,
       token,
     });
   } catch (error) {
