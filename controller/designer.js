@@ -45,6 +45,41 @@ exports.createDesingner = async (req, res) => {
       success: true,
       message: "Designer account created successfully. Please check your email for verification instructions.",
     });
+    (async () => {
+          try {
+            const html = `
+              <!DOCTYPE html>
+              <html lang="en">
+              <head>
+                  <meta charset="UTF-8">
+                  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                  <title>Document</title>
+                  <style>
+                      *{
+    
+                          margin: 0;
+                          padding: 0;
+                          box-sizing: border-box;
+                      }
+                  </style>
+              </head>
+              <body>
+                  <h1>Email Verification</h1>
+                  <h3>Hello ${newDesiner.dataValues.firstName} ${newDesiner.dataValues.lastName}, Please enter the otp below to verify your email</h3>
+                  <h3>${newDesiner.dataValues.otp}</h3> 
+                  <h3>This otp will expire in 3 minutes</h3>
+              </body>
+              </html>
+            `;
+            await sendSingleEmail({
+              email: newDesiner.dataValues.email,
+              subject: "Email Verification",
+              html: signUpTemplate(newDesiner.dataValues.firstName, otp),
+            });
+          } catch (error) {
+            console.log(error.message);
+          }
+          })();
   } catch (error) {
     console.log(error.message)
     res.status(500).json({
@@ -221,7 +256,9 @@ exports.resetPassword = async (req, res) => {
   } catch (error) {
     console.log(error.message)
     res.status(500).json({
+      success: false,
       message: "Something went wrong"
     })
   }
 }
+
