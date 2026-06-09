@@ -107,10 +107,10 @@ paths:
       responses:
         '200':
           description: Password updated successfully
-  /api/v1/designer/resend-otp:
+  /api/v1/customer/resend-otp:
     post:
       summary: Resend OTP for email verification
-      tags: [designer]
+      tags: [customer]
       security:
         - bearerAuth: []
       requestBody:
