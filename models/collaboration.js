@@ -34,14 +34,14 @@ module.exports = (sequelize, DataTypes) => {
       defaultValue: DataTypes.UUIDV4,
       allowNull: false
     },
-    title: {
+    taskType: {
       type: DataTypes.STRING,
       allowNull: false
     },
-    description: DataTypes.TEXT,
-    specialtyNeeded: DataTypes.STRING,
     deadline: DataTypes.DATE,
-    priceOffer: DataTypes.DECIMAL(10, 2),
+    currentAddress: DataTypes.TEXT,
+    offeredPayment: DataTypes.DECIMAL(10, 2),
+    taskDetails: DataTypes.STRING,
     status: {
       type: DataTypes.ENUM('pending', 'accepted', 'rejected', 'completed', 'cancelled'),
       defaultValue: 'pending'
