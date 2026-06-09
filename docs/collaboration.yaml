@@ -1,0 +1,155 @@
+openapi: 3.0.0
+info:
+  title: StitchSure API Documentation
+  version: 1.0.0
+  description: API documentation for designer collaboration endpoints.
+paths:
+  /api/v1/collaboration/create:
+    post:
+      summary: Send a collaboration request to another designer
+      tags: [collaboration]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - receiverDesignerId
+                - title
+              properties:
+                receiverDesignerId:
+                  type: string
+                  format: uuid
+                  example: "9f9b19b3-38e4-46d8-b87c-0b980844bd71"
+                taskType:
+                  type: string
+                  example: "Embroidery"
+                taskDetails:
+                  type: string
+                  example: "Hand embroidery for a bridal gown."
+                currentAddress:
+                  type: string
+                  example: "123 Fashion Street, Lagos"
+                deadline:
+                  type: string
+                  format: date-time
+                  example: "2026-07-15T00:00:00.000Z"
+                offeredPayment:
+                  type: number
+                  format: float
+                  example: 50000
+      responses:
+        '201':
+          description: Collaboration request sent successfully
+  /api/v1/collaboration/sent:
+    get:
+      summary: Get collaborations sent by the logged-in designer
+      tags: [collaboration]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Sent collaborations loaded successfully
+  /api/v1/collaboration/received:
+    get:
+      summary: Get collaborations received by the logged-in designer
+      tags: [collaboration]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Received collaborations loaded successfully
+  /api/v1/collaboration/stats:
+    get:
+      summary: Get collaboration dashboard stats for the logged-in designer
+      tags: [collaboration]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Collaboration stats loaded successfully
+  /api/v1/collaboration/getById/{id}:
+    get:
+      summary: Get one collaboration by id
+      tags: [collaboration]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Collaboration loaded successfully
+        '404':
+          description: Collaboration not found
+  /api/v1/collaboration/accept/{id}:
+    put:
+      summary: Accept a collaboration request
+      tags: [collaboration]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Collaboration accepted successfully
+  /api/v1/collaboration/reject/{id}:
+    put:
+      summary: Reject a collaboration request
+      tags: [collaboration]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Collaboration rejected successfully
+  /api/v1/collaboration/complete/{id}:
+    put:
+      summary: Mark an accepted collaboration as completed
+      tags: [collaboration]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Collaboration completed successfully
+  /api/v1/collaboration/cancel/{id}:
+    put:
+      summary: Cancel a collaboration request
+      tags: [collaboration]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Collaboration cancelled successfully
