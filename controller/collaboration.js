@@ -2,6 +2,8 @@ const { Op } = require("sequelize");
 const { Collaboration, Designer } = require("../models");
 
 const designerAttributes = ["id", "firstName", "lastName", "email"];
+const uuidPattern =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 const collaborationInclude = [
   {
@@ -144,11 +146,20 @@ exports.getOneCollaboration = async (req, res) => {
 
 exports.acceptCollaboration = async (req, res) => {
   try {
-    const collaboration = await Collaboration.findByPk(req.params.id);
+    const { id } = req.params;
+
+    if (!uuidPattern.test(id)) {
+      return res.status(400).json({
+        message: "Invalid collaboration id",
+      });
+    }
+
+    const collaboration = await Collaboration.findByPk(id);
 
     if (!collaboration) {
       return res.status(404).json({
-        message: "Collaboration not found",
+        message:
+          "Collaboration not found. Use the collaboration id from /api/v1/collaboration/received, not the designer id.",
       });
     }
 
@@ -181,11 +192,20 @@ exports.acceptCollaboration = async (req, res) => {
 
 exports.rejectCollaboration = async (req, res) => {
   try {
-    const collaboration = await Collaboration.findByPk(req.params.id);
+    const { id } = req.params;
+
+    if (!uuidPattern.test(id)) {
+      return res.status(400).json({
+        message: "Invalid collaboration id",
+      });
+    }
+
+    const collaboration = await Collaboration.findByPk(id);
 
     if (!collaboration) {
       return res.status(404).json({
-        message: "Collaboration not found",
+        message:
+          "Collaboration not found. Use the collaboration id from /api/v1/collaboration/received, not the designer id.",
       });
     }
 
@@ -218,11 +238,20 @@ exports.rejectCollaboration = async (req, res) => {
 
 exports.completeCollaboration = async (req, res) => {
   try {
-    const collaboration = await Collaboration.findByPk(req.params.id);
+    const { id } = req.params;
+
+    if (!uuidPattern.test(id)) {
+      return res.status(400).json({
+        message: "Invalid collaboration id",
+      });
+    }
+
+    const collaboration = await Collaboration.findByPk(id);
 
     if (!collaboration) {
       return res.status(404).json({
-        message: "Collaboration not found",
+        message:
+          "Collaboration not found. Use the collaboration id from /api/v1/collaboration/sent or /api/v1/collaboration/received.",
       });
     }
 
@@ -258,11 +287,20 @@ exports.completeCollaboration = async (req, res) => {
 
 exports.cancelCollaboration = async (req, res) => {
   try {
-    const collaboration = await Collaboration.findByPk(req.params.id);
+    const { id } = req.params;
+
+    if (!uuidPattern.test(id)) {
+      return res.status(400).json({
+        message: "Invalid collaboration id",
+      });
+    }
+
+    const collaboration = await Collaboration.findByPk(id);
 
     if (!collaboration) {
       return res.status(404).json({
-        message: "Collaboration not found",
+        message:
+          "Collaboration not found. Use the collaboration id from /api/v1/collaboration/sent, not the designer id.",
       });
     }
 
