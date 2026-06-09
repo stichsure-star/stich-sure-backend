@@ -88,17 +88,24 @@ exports.createCustomer = async (req, res) => {
   }
 };
 
-exports.loginCustomer = async (req, res) => {
+exports.loginCustomer = async (req, res, next) => {
   try {
     const { email, password } = req.body;
     const existingCustomer = await Customer.findOne({
       where: { email: email.toLowerCase() },
     });
+    console.log( 'existingCustomer:', existingCustomer)
     if (!existingCustomer) {
       return res.status(404).json({
         message: "Invalid email or password",
       });
     }
+    if (existingCustomer.isEmailVerified == false) {
+           return next({
+            message: 'Please verify your email to continue',
+            statusCode: 403
+           })
+        }
     const correctPassword = await bcrypt.compare(
       password,
       existingCustomer.password,
