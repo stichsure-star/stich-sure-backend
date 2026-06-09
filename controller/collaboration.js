@@ -23,11 +23,11 @@ exports.createCollaboration = async (req, res) => {
     const senderDesignerId = req.user.id;
     const {
       receiverDesignerId,
-      title,
-      description,
-      specialtyNeeded,
+      taskType,
+      taskDetails,
       deadline,
-      priceOffer,
+      currentAddress,
+      offeredPayment,
     } = req.body;
 
     if (senderDesignerId === receiverDesignerId) {
@@ -47,11 +47,11 @@ exports.createCollaboration = async (req, res) => {
     const collaboration = await Collaboration.create({
       senderDesignerId,
       receiverDesignerId,
-      title,
-      description,
-      specialtyNeeded,
+      taskType,
+      taskDetails,
       deadline,
-      priceOffer,
+      currentAddress,
+      offeredPayment,
       status: "pending",
     });
 
