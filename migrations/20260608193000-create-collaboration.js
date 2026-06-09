@@ -32,24 +32,24 @@ module.exports = {
         onUpdate: 'CASCADE',
         onDelete: 'CASCADE'
       },
-      title: {
+      taskType: {
         type: Sequelize.STRING,
         allowNull: false
-      },
-      description: {
-        type: Sequelize.TEXT,
-        allowNull: true
-      },
-      specialtyNeeded: {
-        type: Sequelize.STRING,
-        allowNull: true
       },
       deadline: {
         type: Sequelize.DATE,
         allowNull: true
       },
-      priceOffer: {
+      currentAddress: {
+        type: Sequelize.TEXT,
+        allowNull: true
+      },
+      offeredPayment: {
         type: Sequelize.DECIMAL(10, 2),
+        allowNull: true
+      },
+      taskDetails: {
+        type: Sequelize.STRING,
         allowNull: true
       },
       status: {

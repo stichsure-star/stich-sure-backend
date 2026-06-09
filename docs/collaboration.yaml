@@ -24,20 +24,20 @@ paths:
                   type: string
                   format: uuid
                   example: "9f9b19b3-38e4-46d8-b87c-0b980844bd71"
-                title:
+                taskType:
                   type: string
-                  example: "Embroidery support for bridal gown"
-                description:
+                  example: "Embroidery"
+                taskDetails:
                   type: string
-                  example: "Need help completing hand embroidery for a wedding dress."
-                specialtyNeeded:
+                  example: "Hand embroidery for a bridal gown."
+                currentAddress:
                   type: string
-                  example: "Custom Embroidery"
+                  example: "123 Fashion Street, Lagos"
                 deadline:
                   type: string
                   format: date-time
                   example: "2026-07-15T00:00:00.000Z"
-                priceOffer:
+                offeredPayment:
                   type: number
                   format: float
                   example: 50000
