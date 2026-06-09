@@ -15,6 +15,10 @@ module.exports = (sequelize, DataTypes) => {
         foreignKey: 'designerId',
         as: 'requests'
       });
+      Designer.hasOne(models.DesignerWallet, {
+        foreignKey: 'designerId',
+        as: 'wallet'
+      });
       Designer.hasMany(models.Collaboration, {
         foreignKey: 'senderDesignerId',
         as: 'sentCollaborations'
