@@ -216,3 +216,27 @@ paths:
           description: Logged in successfully with Google
         '401':
           description: Google authentication failed
+  /api/v1/designer/resend-otp:
+    post:
+      summary: Resend OTP for email verification
+      tags: [designer]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+               - email
+              properties:
+                email:
+                  type: string
+                  example: johndoe@gmail.com
+      responses:
+        '200':
+          description: OTP sent successfully
+
+  
+  
