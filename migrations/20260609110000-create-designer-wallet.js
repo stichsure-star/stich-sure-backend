@@ -12,6 +12,7 @@ module.exports = {
       },
       designerId: {
         type: Sequelize.UUID,
+        defaultValue: Sequelize.UUIDV4,
         allowNull: false,
         unique: true,
         references: {
@@ -33,10 +34,20 @@ module.exports = {
         type: Sequelize.STRING,
         allowNull: true,
       },
-      isWalletVerified: {
-        type: Sequelize.BOOLEAN,
+      totalEarnings: {
+        type: Sequelize.INTEGER,
         allowNull: false,
-        defaultValue: false,
+        defaultValue: 0,
+      },
+      availableBalance: {
+        type: Sequelize.INTEGER,
+        allowNull: false,
+        defaultValue: 0,
+      },
+      withdrawn: {
+        type: Sequelize.INTEGER,
+        allowNull: false,
+        defaultValue: 0,
       },
       createdAt: {
         allowNull: false,

@@ -151,15 +151,11 @@ paths:
                   type: string
                   example: "John Doe"
                   description: "The name on the bank account"
-                isWalletVerified:
-                  type: boolean
-                  example: false
-                  description: "Whether the wallet is verified"
       responses:
         '201':
-          description: Designer wallet created successfully
+          description: "Designer wallet created successfully. Initial values: totalEarnings=0, availableBalance=0, withdrawn=0"
         '400':
-          description: A wallet already exists for this designer
+          description: A wallet already exists for this designer. Use update instead.
   /api/v1/designerProfile/update-wallet:
     put:
       summary: Update a designer wallet
@@ -185,10 +181,6 @@ paths:
                   type: string
                   example: "Jane Doe"
                   description: "The name on the bank account"
-                isWalletVerified:
-                  type: boolean
-                  example: true
-                  description: "Whether the wallet is verified"
       responses:
         '200':
           description: Designer wallet updated successfully
@@ -202,6 +194,6 @@ paths:
         - bearerAuth: []
       responses:
         '200':
-          description: Designer wallet loaded successfully
+          description: "Designer wallet loaded successfully. Includes: bankName, accountNumber, accountName, totalEarnings, availableBalance, withdrawn"
         '404':
           description: Designer wallet not found

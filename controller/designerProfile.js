@@ -326,7 +326,7 @@ exports.deleteDesignerProfile = async (req, res) => {
 exports.createDesignerWallet = async (req, res) => {
   try {
     const designerId = req.user.id;
-    const { bankName, accountNumber, accountName, isWalletVerified } = req.body;
+    const { bankName, accountNumber, accountName } = req.body;
 
     const existingWallet = await DesignerWallet.findOne({
       where: { designerId },
@@ -344,7 +344,9 @@ exports.createDesignerWallet = async (req, res) => {
       bankName,
       accountNumber,
       accountName,
-      isWalletVerified: Boolean(isWalletVerified),
+      totalEarnings: 0,
+      availableBalance: 0,
+      withdrawn: 0,
     });
 
     return res.status(201).json({
@@ -363,7 +365,7 @@ exports.createDesignerWallet = async (req, res) => {
 exports.updateDesignerWallet = async (req, res) => {
   try {
     const designerId = req.user.id;
-    const { bankName, accountNumber, accountName, isWalletVerified } = req.body;
+    const { bankName, accountNumber, accountName } = req.body;
 
     const wallet = await DesignerWallet.findOne({
       where: { designerId },
@@ -380,10 +382,6 @@ exports.updateDesignerWallet = async (req, res) => {
       bankName: bankName || wallet.bankName,
       accountNumber: accountNumber || wallet.accountNumber,
       accountName: accountName || wallet.accountName,
-      isWalletVerified:
-        typeof isWalletVerified !== "undefined"
-          ? Boolean(isWalletVerified)
-          : wallet.isWalletVerified,
     });
 
     return res.status(200).json({
