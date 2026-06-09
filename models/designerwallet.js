@@ -35,10 +35,20 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.STRING,
       allowNull: true,
     },
-    isWalletVerified: {
-      type: DataTypes.BOOLEAN,
+    totalEarnings: {
+      type: DataTypes.INTEGER,
       allowNull: false,
-      defaultValue: false,
+      defaultValue: 0,
+    },
+    availableBalance: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      defaultValue: 0,
+    },
+    withdrawn: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      defaultValue: 0,
     },
   }, {
     sequelize,
