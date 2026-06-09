@@ -6,6 +6,9 @@ const {
   getDesignerProfile,
   updateDesignerProfile,
   deleteDesignerProfile,
+  createDesignerWallet,
+  updateDesignerWallet,
+  getDesignerWallet,
 } = require('../controller/designerProfile')
 const { authentication } = require('../middlewares/authentication')
 
@@ -14,5 +17,9 @@ router.get('/getAll', getAllDesignerProfiles);
 router.get('/getByDesigner/:designerId', getDesignerProfile);
 router.put('/update', authentication, upload.single('profilePhoto'), updateDesignerProfile);
 router.delete('/delete', authentication, deleteDesignerProfile);
+
+router.post('/wallet', authentication, createDesignerWallet);
+router.put('/update-wallet', authentication, updateDesignerWallet);
+router.get('/get-wallet', authentication, getDesignerWallet);
 
 module.exports = router;

@@ -1,6 +1,49 @@
-const { Designer, DesignerProfile, Designs } = require("../models");
+const { Designer, DesignerProfile, DesignerWallet, Designs } = require("../models");
 const cloudinary = require("../utils/cloudinary");
 const fs = require("fs");
+
+const reliabilityTiers = [
+  { name: "Bronze", min: 0 },
+  { name: "Silver", min: 50 },
+  { name: "Gold", min: 90 },
+  { name: "Diamond", min: 98 },
+];
+
+const getReliabilityTierInfo = (score) => {
+  const normalizedScore = Number(score) || 0;
+  let currentIndex = 0;
+
+  reliabilityTiers.forEach((tier, index) => {
+    if (normalizedScore >= tier.min) {
+      currentIndex = index;
+    }
+  });
+
+  const currentTier = reliabilityTiers[currentIndex];
+  const nextTier = reliabilityTiers[currentIndex + 1] || null;
+
+  if (!nextTier) {
+    return {
+      currentReliabilityTier: currentTier.name,
+      nextReliabilityTier: null,
+      nextReliabilityTierThreshold: currentTier.min,
+      nextReliabilityTierProgress: 100,
+      nextReliabilityTierLabel: `${currentTier.name} (${currentTier.min})`,
+    };
+  }
+
+  const progress = Math.round(
+    ((normalizedScore - currentTier.min) / (nextTier.min - currentTier.min)) * 100
+  );
+
+  return {
+    currentReliabilityTier: currentTier.name,
+    nextReliabilityTier: nextTier.name,
+    nextReliabilityTierThreshold: nextTier.min,
+    nextReliabilityTierProgress: Math.max(0, Math.min(100, progress)),
+    nextReliabilityTierLabel: `${nextTier.name} (${nextTier.min})`,
+  };
+};
 
 const parseSpecialization = (specialization) => {
   if (!specialization) {
@@ -98,16 +141,31 @@ exports.getAllDesignerProfiles = async (req, res) => {
           as: "profile",
         },
         {
+          model: DesignerWallet,
+          as: "wallet",
+        },
+        {
           model: Designs,
           as: "designs",
         },
       ],
     });
 
+    const data = designers.map((designer) => {
+      const designerData = designer.toJSON();
+      if (designerData.profile) {
+        designerData.profile = {
+          ...designerData.profile,
+          ...getReliabilityTierInfo(designerData.profile.reliabilityScore),
+        };
+      }
+      return designerData;
+    });
+
     res.status(200).json({
       success: true,
       message: "All designer profiles have been loaded successfully.",
-      data: designers,
+      data,
     });
   } catch (error) {
     console.log(error.message);
@@ -129,6 +187,10 @@ exports.getDesignerProfile = async (req, res) => {
           as: "profile",
         },
         {
+          model: DesignerWallet,
+          as: "wallet",
+        },
+        {
           model: Designs,
           as: "designs",
         },
@@ -141,10 +203,18 @@ exports.getDesignerProfile = async (req, res) => {
       });
     }
 
+    const data = designer.toJSON();
+    if (data.profile) {
+      data.profile = {
+        ...data.profile,
+        ...getReliabilityTierInfo(data.profile.reliabilityScore),
+      };
+    }
+
     res.status(200).json({
       success: true,
       message: "Designer profile has been loaded successfully.",
-      data: designer,
+      data,
     });
   } catch (error) {
     console.log(error.message);
@@ -244,6 +314,110 @@ exports.deleteDesignerProfile = async (req, res) => {
     res.status(200).json({
       success: true,
       message: "Designer profile deleted successfully.",
+    });
+  } catch (error) {
+    console.log(error.message);
+    res.status(500).json({
+      message: "Something went wrong",
+    });
+  }
+};
+
+exports.createDesignerWallet = async (req, res) => {
+  try {
+    const designerId = req.user.id;
+    const { bankName, accountNumber, accountName, isWalletVerified } = req.body;
+
+    const existingWallet = await DesignerWallet.findOne({
+      where: { designerId },
+    });
+
+    if (existingWallet) {
+      return res.status(400).json({
+        success: false,
+        message: "A wallet already exists for this designer. Use update instead.",
+      });
+    }
+
+    const wallet = await DesignerWallet.create({
+      designerId,
+      bankName,
+      accountNumber,
+      accountName,
+      isWalletVerified: Boolean(isWalletVerified),
+    });
+
+    return res.status(201).json({
+      success: true,
+      message: "Designer wallet created successfully.",
+      data: wallet,
+    });
+  } catch (error) {
+    console.log(error.message);
+    res.status(500).json({
+      message: "Something went wrong",
+    });
+  }
+};
+
+exports.updateDesignerWallet = async (req, res) => {
+  try {
+    const designerId = req.user.id;
+    const { bankName, accountNumber, accountName, isWalletVerified } = req.body;
+
+    const wallet = await DesignerWallet.findOne({
+      where: { designerId },
+    });
+
+    if (!wallet) {
+      return res.status(404).json({
+        success: false,
+        message: "Designer wallet not found",
+      });
+    }
+
+    await wallet.update({
+      bankName: bankName || wallet.bankName,
+      accountNumber: accountNumber || wallet.accountNumber,
+      accountName: accountName || wallet.accountName,
+      isWalletVerified:
+        typeof isWalletVerified !== "undefined"
+          ? Boolean(isWalletVerified)
+          : wallet.isWalletVerified,
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "Designer wallet updated successfully.",
+      data: wallet,
+    });
+  } catch (error) {
+    console.log(error.message);
+    res.status(500).json({
+      message: "Something went wrong",
+    });
+  }
+};
+
+exports.getDesignerWallet = async (req, res) => {
+  try {
+    const designerId = req.user.id;
+
+    const wallet = await DesignerWallet.findOne({
+      where: { designerId },
+    });
+
+    if (!wallet) {
+      return res.status(404).json({
+        success: false,
+        message: "Designer wallet not found",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Designer wallet loaded successfully.",
+      data: wallet,
     });
   } catch (error) {
     console.log(error.message);
