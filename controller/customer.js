@@ -38,47 +38,17 @@ exports.createCustomer = async (req, res) => {
       role: "customer",
     });
 
-    res.status(200).json({
+    await sendSingleEmail({
+      email: newCustomer.email,
+      subject: "Email Verification",
+      html: signUpTemplate(newCustomer.firstName, otp),
+    });
+
+    return res.status(200).json({
       success: true,
       message:
         "Account created successfully. Please check your email for the verification OTP.",
     });
-
-    (async () => {
-      try {
-        const html = `
-          <!DOCTYPE html>
-          <html lang="en">
-          <head>
-              <meta charset="UTF-8">
-              <meta name="viewport" content="width=device-width, initial-scale=1.0">
-              <title>Document</title>
-              <style>
-                  *{
-
-                      margin: 0;
-                      padding: 0;
-                      box-sizing: border-box;
-                  }
-              </style>
-          </head>
-          <body>
-              <h1>Email Verification</h1>
-              <h3>Hello ${newCustomer.dataValues.firstName} ${newCustomer.dataValues.lastName}, Please enter the otp below to verify your email</h3>
-              <h3>${newCustomer.dataValues.otp}</h3> 
-              <h3>This otp will expire in 3 minutes</h3>
-          </body>
-          </html>
-        `;
-        await sendSingleEmail({
-          email: newCustomer.dataValues.email,
-          subject: "Email Verification",
-          html: signUpTemplate(newCustomer.dataValues.firstName, otp),
-        });
-      } catch (error) {
-        console.log(error.message);
-      }
-    })();
   } catch (error) {
     console.log(error.message)
     res.status(500).json({
@@ -381,69 +351,42 @@ exports.updatePassword = async (req, res) => {
 };
 
 
-exports.resendOTP = async (req, res, next) => {
+exports.resendOTP = async (req, res) => {
     try {
         const { email } = req.body;
 
-        const user = await Designer.findOne({where: {email: email.toLowerCase()}})
+        const user = await Customer.findOne({where: {email: email.toLowerCase()}})
         if (!user) {
-        return next ({
-            message: 'User not found',
-            statusCode: 404 
-        })
+          return res.status(404).json({
+            message: 'User not found'
+          })
         }
 
-        const otp = otpGenerator.generate(6, { upperCaseAlphabets: false, lowerCaseAlphabets: false, specialChars: false });
-
+        const otp = otpGenerator.generate(6, {
+          upperCaseAlphabets: false,
+          lowerCaseAlphabets: false,
+          specialChars: false,
+        });
         const otpExpire = Date.now() + 3 * 60 * 1000;
 
         user.otp = otp;
-        user.otpExpiresAt = otpExpire;
-        await user.save()
+        user.otpExpire = otpExpire;
+        await user.save();
 
-        return next({
-        message:  'OTP sent successfully',
-        statusCode: 200
-       })
-  (async () => {
-          try {
-            const html = `
-              <!DOCTYPE html>
-              <html lang="en">
-              <head>
-                  <meta charset="UTF-8">
-                  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                  <title>Document</title>
-                  <style>
-                      *{
-    
-                          margin: 0;
-                          padding: 0;
-                          box-sizing: border-box;
-                      }
-                  </style>
-              </head>
-              <body>
-                  <h1>Email Verification</h1>
-                  <h3>Hello ${user.dataValues.firstName} ${user.dataValues.lastName}, Please enter the otp below to verify your email</h3>
-                  <h3>${user.dataValues.otp}</h3> 
-                  <h3>This otp will expire in 3 minutes</h3>
-              </body>
-              </html>
-            `;
-            await sendSingleEmail({
-              email: user.dataValues.email,
-              subject: "Email Verification",
-              html: signUpTemplate(user.dataValues.firstName, otp),
-            });
-          } catch (error) {
-            console.log(error.message);
-          }
-          })();
+        await sendSingleEmail({
+          email: user.email,
+          subject: "Email Verification",
+          html: signUpTemplate(user.firstName, otp),
+        });
+
+        return res.status(200).json({
+          success: true,
+          message: 'OTP sent successfully'
+        })
     } catch (error) {
-     return next({
-        error: error.message,
-        statusCode: 500
+      console.log(error.message)
+     return res.status(500).json({
+        message: 'Something went wrong'
      })
     }
 };
