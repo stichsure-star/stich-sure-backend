@@ -26,10 +26,12 @@ module.exports = (sequelize, DataTypes) => {
     },
     senderDesignerId: {
       type: DataTypes.UUID,
+      defaultValue: DataTypes.UUIDV4,
       allowNull: false
     },
     receiverDesignerId: {
       type: DataTypes.UUID,
+      defaultValue: DataTypes.UUIDV4,
       allowNull: false
     },
     title: {

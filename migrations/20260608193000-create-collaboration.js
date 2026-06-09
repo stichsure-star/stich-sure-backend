@@ -12,6 +12,7 @@ module.exports = {
       },
       senderDesignerId: {
         type: Sequelize.UUID,
+        defaultValue: Sequelize.UUIDV4,
         allowNull: false,
         references: {
           model: 'Designers',
@@ -22,6 +23,7 @@ module.exports = {
       },
       receiverDesignerId: {
         type: Sequelize.UUID,
+        defaultValue: Sequelize.UUIDV4,
         allowNull: false,
         references: {
           model: 'Designers',
