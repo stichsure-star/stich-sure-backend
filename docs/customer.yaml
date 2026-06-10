@@ -40,6 +40,32 @@ paths:
       responses:
         '201':
           description: Account created successfully
+  /api/v1/customer/verify:
+    post:
+      summary: Verify customer email with OTP
+      tags: [customer]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - otp
+                - email
+              properties:
+                otp:
+                  type: string
+                email:
+                  type: string
+                  example: johndoe@gmail.com
+      responses:
+        '200':
+          description: Verified successfully
+        '400':
+          description: Invalid or expired OTP
+        '404':
+          description: Account not found
   /api/v1/customer/login:
     post:
       summary: Customer login
@@ -111,8 +137,6 @@ paths:
     post:
       summary: Resend OTP for email verification
       tags: [customer]
-      security:
-        - bearerAuth: []
       requestBody:
         required: true
         content:
@@ -128,33 +152,6 @@ paths:
       responses:
         '200':
           description: OTP sent successfully
-
-  /api/v1/customer/verify:
-    post:
-      summary: Verify customer email with OTP
-      tags: [customer]
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required:
-                - otp
-                - email
-              properties:
-                otp:
-                  type: string
-                email:
-                  type: string
-                  example: johndoe@gmail.com
-      responses:
-        '200':
-          description: Verified successfully
-        '400':
-          description: Invalid or expired OTP
-        '404':
-          description: Account not found
   /api/v1/customer/update-profile/{id}:
     put:
       summary: Update customer profile
@@ -238,6 +235,3 @@ paths:
           description: Logged in successfully with Google
         '401':
           description: Google authentication failed
-  
-  
-  

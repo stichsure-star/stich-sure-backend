@@ -58,6 +58,52 @@ exports.createCustomer = async (req, res) => {
   }
 };
 
+exports.verifyEmail = async (req, res) => {
+  try {
+    const { otp, email } = req.body;
+
+    const customer = await Customer.findOne({
+      where: { email: email.toLowerCase() },
+    });
+
+    if (!customer) {
+      return res.status(404).json({
+        message: "Account not found",
+      });
+    }
+
+    if (customer.dataValues.otpExpire < Date.now()) {
+      return res.status(400).json({
+        message: "OTP has expired",
+      });
+    }
+
+    if (customer.dataValues.otp !== otp) {
+      return res.status(400).json({
+        message: "OTP is invalid",
+      });
+    }
+
+    Object.assign(customer, {
+      isEmailVerified: true,
+      otp: null,
+      otpExpire: null,
+    });
+    await customer.save();
+
+    res.status(200).json({
+      success: true,
+      message: "Your email has been verified successfully.",
+    });
+  } catch (error) {
+    console.log(error.message);
+    res.status(500).json({
+      success: false,
+      message: "Something went wrong"
+    })
+  }
+};
+
 exports.loginCustomer = async (req, res, next) => {
   try {
     const { email, password } = req.body;
@@ -189,52 +235,6 @@ exports.resetPassword = async (req, res) => {
     });
   } catch (error) {
     console.log(error.message)
-    res.status(500).json({
-      success: false,
-      message: "Something went wrong"
-    })
-  }
-};
-
-exports.verifyEmail = async (req, res) => {
-  try {
-    const { otp, email } = req.body;
-
-    const customer = await Customer.findOne({
-      where: { email: email.toLowerCase() },
-    });
-
-    if (!customer) {
-      return res.status(404).json({
-        message: "Account not found",
-      });
-    }
-
-    if (customer.dataValues.otpExpire < Date.now()) {
-      return res.status(400).json({
-        message: "OTP has expired",
-      });
-    }
-
-    if (customer.dataValues.otp !== otp) {
-      return res.status(400).json({
-        message: "OTP is invalid",
-      });
-    }
-
-    Object.assign(customer, {
-      isEmailVerified: true,
-      otp: null,
-      otpExpire: null,
-    });
-    await customer.save();
-
-    res.status(200).json({
-      success: true,
-      message: "Your email has been verified successfully.",
-    });
-  } catch (error) {
-    console.log(error.message);
     res.status(500).json({
       success: false,
       message: "Something went wrong"
