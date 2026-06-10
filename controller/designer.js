@@ -79,6 +79,11 @@ exports.loginDesigner = async (req, res) => {
         message: "Invaid email or password",
       });
     }
+     if (existingDesigner.isEmailVerified == false) {
+           return res.status(403).json({
+            message: 'Please verify your email to continue'
+           })
+        }
     const checkPassword = await bcrypt.compare(
       password,
       existingDesigner.password,
@@ -126,9 +131,7 @@ exports.verifyEmail = async (req, res) => {
   try {
     const { otp, email } = req.body;
 
-    const designer = await Designer.findOne({
-      where: { email: email.toLowerCase() },
-    });
+    const designer = await Designer.findOne({ where: { email: email.toLowerCase() } });
 
     if (!designer) {
       return res.status(404).json({
@@ -265,7 +268,48 @@ exports.resetPassword = async (req, res) => {
   } catch (error) {
     console.log(error.message)
     res.status(500).json({
+      success: false,
       message: "Something went wrong"
     })
   }
 }
+
+exports.resendOTP = async (req, res) => {
+    try {
+        const { email } = req.body;
+
+        const user = await Designer.findOne({where: {email: email.toLowerCase()}})
+        if (!user) {
+          return res.status(404).json({
+            message: 'User not found'
+          })
+        }
+
+        const otp = otpGenerator.generate(6, {
+          upperCaseAlphabets: false,
+          lowerCaseAlphabets: false,
+          specialChars: false,
+        });
+        const otpExpire = Date.now() + 3 * 60 * 1000;
+
+        user.otp = otp;
+        user.otpExpire = otpExpire;
+        await user.save();
+
+        await sendSingleEmail({
+          email: user.email,
+          subject: "Email Verification",
+          html: signUpTemplate(user.firstName, otp),
+        });
+
+        return res.status(200).json({
+          success: true,
+          message: 'OTP sent successfully'
+        })
+    } catch (error) {
+      console.log(error.message)
+     return res.status(500).json({
+        message: 'Something went wrong'
+     })
+    }
+};

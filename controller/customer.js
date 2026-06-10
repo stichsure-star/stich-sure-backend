@@ -38,7 +38,13 @@ exports.createCustomer = async (req, res) => {
       role: "customer",
     });
 
-    res.status(200).json({
+    await sendSingleEmail({
+      email: newCustomer.email,
+      subject: "Email Verification",
+      html: signUpTemplate(newCustomer.firstName, otp),
+    });
+
+    return res.status(200).json({
       success: true,
       message:
         "Account created successfully. Please check your email for the verification OTP.",
@@ -64,17 +70,24 @@ exports.createCustomer = async (req, res) => {
   }
 };
 
-exports.loginCustomer = async (req, res) => {
+exports.loginCustomer = async (req, res, next) => {
   try {
     const { email, password } = req.body;
     const existingCustomer = await Customer.findOne({
       where: { email: email.toLowerCase() },
     });
+    console.log( 'existingCustomer:', existingCustomer)
     if (!existingCustomer) {
       return res.status(404).json({
         message: "Invalid email or password",
       });
     }
+    if (existingCustomer.isEmailVerified == false) {
+           return next({
+            message: 'Please verify your email to continue',
+            statusCode: 403
+           })
+        }
     const correctPassword = await bcrypt.compare(
       password,
       existingCustomer.password,
@@ -371,4 +384,45 @@ exports.updatePassword = async (req, res) => {
       message: "Something went wrong"
     })
   }
+};
+
+
+exports.resendOTP = async (req, res) => {
+    try {
+        const { email } = req.body;
+
+        const user = await Customer.findOne({where: {email: email.toLowerCase()}})
+        if (!user) {
+          return res.status(404).json({
+            message: 'User not found'
+          })
+        }
+
+        const otp = otpGenerator.generate(6, {
+          upperCaseAlphabets: false,
+          lowerCaseAlphabets: false,
+          specialChars: false,
+        });
+        const otpExpire = Date.now() + 3 * 60 * 1000;
+
+        user.otp = otp;
+        user.otpExpire = otpExpire;
+        await user.save();
+
+        await sendSingleEmail({
+          email: user.email,
+          subject: "Email Verification",
+          html: signUpTemplate(user.firstName, otp),
+        });
+
+        return res.status(200).json({
+          success: true,
+          message: 'OTP sent successfully'
+        })
+    } catch (error) {
+      console.log(error.message)
+     return res.status(500).json({
+        message: 'Something went wrong'
+     })
+    }
 };
