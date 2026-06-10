@@ -15,7 +15,7 @@ const nameRule = (fieldName) =>
     });
 
 const passwordRule = Joi.string()
-  .pattern(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])\S{8,20}$/)
+  .pattern(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#])\S{8,20}$/)
   .required()
   .messages({
     "any.required": "Password is required",

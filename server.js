@@ -16,6 +16,7 @@ const designs = require('./routes/designs')
 const designerProfile = require('./routes/designerProfile')
 const collaboration = require('./routes/collaboration')
 const order = require('./routes/order')
+const designerWallet = require('./routes/designerWallet')
 
 app.use(express.json());
 app.use(cors({
@@ -43,6 +44,7 @@ app.use('/api/v1/designs', designs);
 app.use('/api/v1/designerProfile', designerProfile);
 app.use('/api/v1/collaboration', collaboration);
 app.use('/api/v1/orders', order);
+app.use('/api/v1/designerWallet', designerWallet);
 
 app.use((req, res) => {
     res.status(404).json({
