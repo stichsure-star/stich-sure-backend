@@ -33,7 +33,7 @@ const otp = otpGenerator.generate(6, {
   lowerCaseAlphabets: false,
   specialChars: false,
 });
-    const sat = await bcrypt.genSalt(10);
+    const salt = await bcrypt.genSalt(10);
     const hashPassword = await bcrypt.hash(password, salt);
 
     const newDesiner = await Designer.create({
@@ -128,8 +128,7 @@ exports.loginDesigner = async (req, res) => {
   } catch (error) {
     console.log(error.message)
     res.status(500).json({
-      success: false,
-      message: 'Something wrong'
+      error: error.message,
     })
   }
 };
