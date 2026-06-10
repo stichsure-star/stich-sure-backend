@@ -299,7 +299,7 @@ exports.resendOTP = async (req, res) => {
         await sendSingleEmail({
           email: user.email,
           subject: "Email Verification",
-          html: signUpTemplate(user.firstName, otp),
+          html: emailTemplate(user.firstName, otp),
         });
 
         return res.status(200).json({
