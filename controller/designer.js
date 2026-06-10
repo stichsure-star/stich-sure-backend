@@ -5,13 +5,7 @@ const jwt = require("jsonwebtoken");
 const { emailTemplate, resetPasswordTemplate, resetPasswordSuccessfulTemplate } = require('../utils/emailTemplates')
 const { sendSingleEmail } = require('../utils/brevo');
 
-const otpExpire = Date.now() + 3 * 60 * 1000;
 
-const otp = otpGenerator.generate(6, {
-  upperCaseAlphabets: false,
-  lowerCaseAlphabets: false,
-  specialChars: false,
-});
 
 exports.createDesingner = async (req, res) => {
   try {
@@ -25,7 +19,13 @@ exports.createDesingner = async (req, res) => {
         message: "Designer with this email already exists",
       });
     }
+    const otpExpire = Date.now() + 3 * 60 * 1000;
 
+const otp = otpGenerator.generate(6, {
+  upperCaseAlphabets: false,
+  lowerCaseAlphabets: false,
+  specialChars: false,
+});
     const salt = await bcrypt.genSalt(10);
     const hashPassword = await bcrypt.hash(password, salt);
 

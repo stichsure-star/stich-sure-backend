@@ -67,23 +67,23 @@ app.use((err, req, res, next) => {
     })
 })
 
-app.use((err, req, res, next) => {
-    if (err.name === 'MulterError'){
-        return res.status(400).json({
-            message: 'File upload failed'
-        })
-    }
-    console.log('rice', err);
+// app.use((err, req, res, next) => {
+//     if (err.name === 'MulterError'){
+//         return res.status(400).json({
+//             message: 'File upload failed'
+//         })
+//     }
+//     console.log('rice', err);
     
-    if (err.name === 'JsonWebTokenError') {
-        return res.status(401).json({
-            message: 'Session expired, please login again'
-        })
-    }
-    res.status(500).json({
-        message: err.message
-    })
-})
+//     if (err.name === 'JsonWebTokenError') {
+//         return res.status(401).json({
+//             message: 'Session expired, please login again'
+//         })
+//     }
+//     res.status(500).json({
+//         message: err.message
+//     })
+// })
 
 const startServer = async () => {
   try {
