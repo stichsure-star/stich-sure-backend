@@ -1,4 +1,5 @@
 const {Model} =  require('sequelize')
+
 module.exports = (sequelize, DataTypes) => {
   const Shipment = sequelize.define('Shipment', {
     orderId: {
@@ -26,6 +27,5 @@ module.exports = (sequelize, DataTypes) => {
       defaultValue: 'NGN',
     },
   });
-
   return Shipment;
 };
