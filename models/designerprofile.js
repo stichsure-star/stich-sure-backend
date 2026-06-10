@@ -67,7 +67,7 @@ module.exports = (sequelize, DataTypes) => {
     reliabilityScore: {
       type: DataTypes.INTEGER,
       allowNull: false,
-      defaultValue: 0
+      defaultValue: 100
     },
     isProfileCompleted: {
       type: DataTypes.BOOLEAN,

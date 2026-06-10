@@ -4,7 +4,7 @@ const otpGenerator = require("otp-generator");
 const fs = require("fs");
 const jwt = require("jsonwebtoken");
 const cloudinary = require("../utils/cloudinary");
-const {signUpTemplate} = require('../utils/emailTemplates')
+const { emailTemplate, resetPasswordTemplate, resetPasswordSuccessfulTemplate } = require('../utils/emailTemplates')
 const { sendSingleEmail } = require('../utils/brevo');
 const otpExpire = Date.now() + 3 * 60 * 1000;
 
@@ -49,6 +49,18 @@ exports.createCustomer = async (req, res) => {
       message:
         "Account created successfully. Please check your email for the verification OTP.",
     });
+
+    (async () => {
+      try {
+        await sendSingleEmail({
+          email: newCustomer.dataValues.email,
+          subject: "Email Verification",
+          html: emailTemplate(newCustomer.dataValues.firstName, otp),
+        });
+      } catch (error) {
+        console.log(error.message);
+      }
+    })();
   } catch (error) {
     console.log(error.message)
     res.status(500).json({
@@ -148,6 +160,18 @@ exports.forgetPassword = async (req, res) => {
       success: true,
       message: "OTP has been sent to your email address. Use it to reset your password.",
     });
+
+    (async () => {
+      try {
+        await sendSingleEmail({
+          email: existingEmail.email,
+          subject: "Reset Your Password",
+          html: resetPasswordTemplate(existingEmail.firstName, otp),
+        });
+      } catch (error) {
+        console.log(error.message);
+      }
+    })();
   } catch (error) {
     console.log(error.message)
     res.status(500).json({
@@ -174,6 +198,18 @@ exports.resetPassword = async (req, res) => {
       success: true,
       message: "Your password has been reset successfully.",
     });
+
+    (async () => {
+      try {
+        await sendSingleEmail({
+          email: customer.email,
+          subject: "Password Reset Successful",
+          html: resetPasswordSuccessfulTemplate(customer.firstName),
+        });
+      } catch (error) {
+        console.log(error.message);
+      }
+    })();
   } catch (error) {
     console.log(error.message)
     res.status(500).json({
