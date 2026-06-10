@@ -4,7 +4,7 @@ const otpGenerator = require("otp-generator");
 const fs = require("fs");
 const jwt = require("jsonwebtoken");
 const cloudinary = require("../utils/cloudinary");
-const {signUpTemplate} = require('../utils/emailTemplates')
+const { emailTemplate, resetPasswordTemplate, resetPasswordSuccessfulTemplate } = require('../utils/emailTemplates')
 const { sendSingleEmail } = require('../utils/brevo');
 const otpExpire = Date.now() + 3 * 60 * 1000;
 
@@ -46,34 +46,10 @@ exports.createCustomer = async (req, res) => {
 
     (async () => {
       try {
-        const html = `
-          <!DOCTYPE html>
-          <html lang="en">
-          <head>
-              <meta charset="UTF-8">
-              <meta name="viewport" content="width=device-width, initial-scale=1.0">
-              <title>Document</title>
-              <style>
-                  *{
-
-                      margin: 0;
-                      padding: 0;
-                      box-sizing: border-box;
-                  }
-              </style>
-          </head>
-          <body>
-              <h1>Email Verification</h1>
-              <h3>Hello ${newCustomer.dataValues.firstName} ${newCustomer.dataValues.lastName}, Please enter the otp below to verify your email</h3>
-              <h3>${newCustomer.dataValues.otp}</h3> 
-              <h3>This otp will expire in 3 minutes</h3>
-          </body>
-          </html>
-        `;
         await sendSingleEmail({
           email: newCustomer.dataValues.email,
           subject: "Email Verification",
-          html: signUpTemplate(newCustomer.dataValues.firstName, otp),
+          html: emailTemplate(newCustomer.dataValues.firstName, otp),
         });
       } catch (error) {
         console.log(error.message);
@@ -171,6 +147,18 @@ exports.forgetPassword = async (req, res) => {
       success: true,
       message: "OTP has been sent to your email address. Use it to reset your password.",
     });
+
+    (async () => {
+      try {
+        await sendSingleEmail({
+          email: existingEmail.email,
+          subject: "Reset Your Password",
+          html: resetPasswordTemplate(existingEmail.firstName, otp),
+        });
+      } catch (error) {
+        console.log(error.message);
+      }
+    })();
   } catch (error) {
     console.log(error.message)
     res.status(500).json({
@@ -197,6 +185,18 @@ exports.resetPassword = async (req, res) => {
       success: true,
       message: "Your password has been reset successfully.",
     });
+
+    (async () => {
+      try {
+        await sendSingleEmail({
+          email: customer.email,
+          subject: "Password Reset Successful",
+          html: resetPasswordSuccessfulTemplate(customer.firstName),
+        });
+      } catch (error) {
+        console.log(error.message);
+      }
+    })();
   } catch (error) {
     console.log(error.message)
     res.status(500).json({

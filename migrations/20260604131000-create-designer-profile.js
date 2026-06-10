@@ -64,7 +64,7 @@ module.exports = {
       reliabilityScore: {
         type: Sequelize.INTEGER,
         allowNull: false,
-        defaultValue: 0
+        defaultValue: 100
       },
       isProfileCompleted: {
         type: Sequelize.BOOLEAN,

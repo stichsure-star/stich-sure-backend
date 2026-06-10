@@ -13,6 +13,10 @@ module.exports = (sequelize, DataTypes) => {
         foreignKey: "customerId",
         as: "requests"
       });
+      Customer.hasMany(models.Order, {
+        foreignKey: "customerId",
+        as: "orders"
+      });
     }
   }
   Customer.init(

@@ -19,6 +19,10 @@ module.exports = (sequelize, DataTypes) => {
         foreignKey: "designerId",
         as: "designer"
       });
+      this.hasOne(models.Order, {
+        foreignKey: "requestId",
+        as: "order"
+      });
     }
   }
   request.init({
@@ -44,10 +48,17 @@ module.exports = (sequelize, DataTypes) => {
     description: DataTypes.STRING,
     measurement: DataTypes.STRING,
     status: {
-      type: DataTypes.ENUM('pending', 'proposal_sent', 'accepted', 'rejected', 'completed'),
+      type: DataTypes.ENUM('pending', 'proposal_sent', 'accepted', 'picked_up', 'ready', 'completed', 'rejected', 'cancelled'),
       defaultValue: 'pending'
     },
-    priceOffer: DataTypes.DECIMAL(10, 2),
+    progress: {
+      type: DataTypes.INTEGER,
+      defaultValue: 0
+    },
+    offerSentAt: DataTypes.DATE,
+    pickedUpAt: DataTypes.DATE,
+    readyAt: DataTypes.DATE,
+    completedAt: DataTypes.DATE,
     designerMessage: DataTypes.TEXT
   }, {
     sequelize,

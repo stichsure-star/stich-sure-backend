@@ -46,10 +46,6 @@ module.exports = {
         type: Sequelize.ENUM('pending', 'proposal_sent', 'accepted', 'rejected', 'completed'),
         defaultValue: 'pending'
       },
-      priceOffer: {
-        type: Sequelize.DECIMAL(10, 2),
-        allowNull: true
-      },
       designerMessage: {
         type: Sequelize.TEXT,
         allowNull: true

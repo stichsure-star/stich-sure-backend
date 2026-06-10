@@ -2,6 +2,8 @@ const { Designer } = require("../models");
 const bcrypt = require("bcrypt");
 const otpGenerator = require("otp-generator");
 const jwt = require("jsonwebtoken");
+const { emailTemplate, resetPasswordTemplate, resetPasswordSuccessfulTemplate } = require('../utils/emailTemplates')
+const { sendSingleEmail } = require('../utils/brevo');
 
 const otpExpire = Date.now() + 3 * 60 * 1000;
 
@@ -45,6 +47,18 @@ exports.createDesingner = async (req, res) => {
       success: true,
       message: "Designer account created successfully. Please check your email for verification instructions.",
     });
+
+    (async () => {
+      try {
+        await sendSingleEmail({
+          email: newDesiner.email,
+          subject: "Email Verification",
+          html: emailTemplate(newDesiner.firstName, otp),
+        });
+      } catch (error) {
+        console.log(error.message);
+      }
+    })();
   } catch (error) {
     console.log(error.message)
     res.status(500).json({
@@ -189,6 +203,18 @@ exports.forgetPassword = async (req, res) => {
       success: true,
       message: "OTP has been sent to your email address. Use it to reset your password.",
     });
+
+    (async () => {
+      try {
+        await sendSingleEmail({
+          email: existingEmail.email,
+          subject: "Reset Your Password",
+          html: resetPasswordTemplate(existingEmail.firstName, otp),
+        });
+      } catch (error) {
+        console.log(error.message);
+      }
+    })();
   } catch (error) {
     console.log(error.message)
     res.status(500).json({
@@ -224,6 +250,18 @@ exports.resetPassword = async (req, res) => {
       success: true,
       message: "Designer password reset successfully.",
     });
+
+    (async () => {
+      try {
+        await sendSingleEmail({
+          email: designer.email,
+          subject: "Password Reset Successful",
+          html: resetPasswordSuccessfulTemplate(designer.firstName),
+        });
+      } catch (error) {
+        console.log(error.message);
+      }
+    })();
   } catch (error) {
     console.log(error.message)
     res.status(500).json({

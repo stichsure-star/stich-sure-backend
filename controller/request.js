@@ -1,6 +1,36 @@
 const { Op } = require("sequelize");
 const { request, DesignerProfile } = require("../models");
 
+const progressByStatus = {
+  pending: 0,
+  proposal_sent: 0,
+  accepted: 0,
+  picked_up: 33,
+  ready: 66,
+  completed: 100,
+};
+
+const buildTrackingSteps = (foundRequest) => [
+  {
+    key: "picked_up",
+    label: "Picked Up",
+    completed: !!foundRequest.pickedUpAt,
+    completedAt: foundRequest.pickedUpAt,
+  },
+  {
+    key: "ready",
+    label: "Ready",
+    completed: !!foundRequest.readyAt,
+    completedAt: foundRequest.readyAt,
+  },
+  {
+    key: "completed",
+    label: "Delivered",
+    completed: !!foundRequest.completedAt,
+    completedAt: foundRequest.completedAt,
+  },
+];
+
 const updateDesignerStats = async (designerId) => {
   const profile = await DesignerProfile.findOne({
     where: { designerId },
@@ -21,14 +51,14 @@ const updateDesignerStats = async (designerId) => {
     where: {
       designerId,
       status: {
-        [Op.in]: ["accepted", "completed"],
+        [Op.in]: ["accepted", "picked_up", "ready", "completed"],
       },
     },
   });
 
   const reliabilityScore =
     totalAcceptedJobs === 0
-      ? 0
+      ? 100
       : Math.round((completedOrders / totalAcceptedJobs) * 100);
 
   await profile.update({
@@ -69,7 +99,7 @@ exports.sendOffer = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const { priceOffer, designerMessage } = req.body;
+    const { designerMessage } = req.body;
 
     const foundRequest = await request.findByPk(id);
 
@@ -86,9 +116,10 @@ exports.sendOffer = async (req, res) => {
     }
 
     await foundRequest.update({
-      priceOffer,
       designerMessage,
       status: "proposal_sent",
+      progress: progressByStatus.proposal_sent,
+      offerSentAt: new Date(),
     });
 
     return res.status(200).json({
@@ -124,6 +155,7 @@ exports.acceptRequest = async (req, res) => {
 
     await foundRequest.update({
       status: "accepted",
+      progress: progressByStatus.accepted,
     });
 
     return res.status(200).json({
@@ -186,22 +218,135 @@ exports.completeRequest = async (req, res) => {
       });
     }
 
-    if (foundRequest.status !== "accepted") {
+    if (!["accepted", "picked_up", "ready"].includes(foundRequest.status)) {
       return res.status(400).json({
-        message: "Only accepted requests can be completed",
+        message: "Only active requests can be completed",
       });
     }
 
     await foundRequest.update({
       status: "completed",
+      progress: progressByStatus.completed,
+      completedAt: foundRequest.completedAt || new Date(),
     });
 
     await updateDesignerStats(foundRequest.designerId);
 
     return res.status(200).json({
       success: true,
-      message: "The request has been marked as completed successfully.",
-      data: foundRequest,
+      message: "The request has been delivered and completed successfully.",
+      data: {
+        ...foundRequest.toJSON(),
+        trackingSteps: buildTrackingSteps(foundRequest),
+      },
+    });
+  } catch (error) {
+    console.log(error.message);
+    res.status(500).json({
+      message: "Something went wrong",
+    });
+  }
+};
+
+exports.updateRequestProgress = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const requestedStatus = req.body.status;
+    const nextStatus = requestedStatus === "delivered" ? "completed" : requestedStatus;
+
+    const allowedSteps = ["picked_up", "ready", "completed"];
+    const previousStatus = {
+      picked_up: "accepted",
+      ready: "picked_up",
+      completed: "ready",
+    };
+
+    if (!allowedSteps.includes(nextStatus)) {
+      return res.status(400).json({
+        message: "Status must be picked_up, ready, or delivered",
+      });
+    }
+
+    const foundRequest = await request.findByPk(id);
+
+    if (!foundRequest) {
+      return res.status(404).json({
+        message: "Request not found",
+      });
+    }
+
+    if (foundRequest.designerId !== req.user.id) {
+      return res.status(403).json({
+        message: "Only the assigned designer can update this request progress",
+      });
+    }
+
+    if (foundRequest.status !== previousStatus[nextStatus]) {
+      return res.status(400).json({
+        message: `You can only mark this request as ${nextStatus} after ${previousStatus[nextStatus]}`,
+      });
+    }
+
+    const updateData = {
+      status: nextStatus,
+      progress: progressByStatus[nextStatus],
+    };
+
+    if (nextStatus === "picked_up") {
+      updateData.pickedUpAt = new Date();
+    }
+
+    if (nextStatus === "ready") {
+      updateData.readyAt = new Date();
+    }
+
+    if (nextStatus === "completed") {
+      updateData.completedAt = new Date();
+    }
+
+    await foundRequest.update(updateData);
+
+    if (nextStatus === "completed") {
+      await updateDesignerStats(foundRequest.designerId);
+    }
+
+    await foundRequest.reload();
+
+    return res.status(200).json({
+      success: true,
+      message: "Request progress updated successfully.",
+      data: {
+        ...foundRequest.toJSON(),
+        trackingSteps: buildTrackingSteps(foundRequest),
+      },
+    });
+  } catch (error) {
+    console.log(error.message);
+    res.status(500).json({
+      message: "Something went wrong",
+    });
+  }
+};
+
+exports.getRequestTracking = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const foundRequest = await request.findByPk(id);
+
+    if (!foundRequest) {
+      return res.status(404).json({
+        message: "Request not found",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Request tracking loaded successfully.",
+      data: {
+        ...foundRequest.toJSON(),
+        trackingSteps: buildTrackingSteps(foundRequest),
+      },
     });
   } catch (error) {
     console.log(error.message);
