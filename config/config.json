@@ -1,9 +1,9 @@
- {
+{
   "development": {
-    "username": "sql8829958",
-    "password": "Uwzz82zzy2",
-    "database": "sql8829958",
-    "host": "sql8.freesqldatabase.com",
+    "username": "sql10829965",
+    "password": "ZnNTC3HMhn",
+    "database": "sql10829965",
+    "host": "sql10.freesqldatabase.com",
     "dialect": "mysql"
   },
   "test": {
@@ -14,10 +14,10 @@
     "dialect": "mysql"
   },
   "production": {
-    "username": "sql8829958",
-    "password": "Uwzz82zzy2",
-    "database": "sql8829958",
-    "host": "sql8.freesqldatabase.com",
+    "username": "sql10829965",
+    "password": "ZnNTC3HMhn",
+    "database": "sql10829965",
+    "host": "sql10.freesqldatabase.com",
     "dialect": "mysql"
   }
 }

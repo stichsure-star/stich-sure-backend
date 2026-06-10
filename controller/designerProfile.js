@@ -1,4 +1,4 @@
-const { Designer, DesignerProfile, DesignerWallet, Designs } = require("../models");
+const { Designer, DesignerProfile, DesignerWallet, Designs, request } = require("../models");
 const cloudinary = require("../utils/cloudinary");
 const fs = require("fs");
 
@@ -59,6 +59,34 @@ const parseSpecialization = (specialization) => {
   } catch (error) {
     return specialization;
   }
+};
+
+const getHoursBetween = (startDate, endDate) => {
+  if (!startDate || !endDate) {
+    return null;
+  }
+
+  return (new Date(endDate).getTime() - new Date(startDate).getTime()) / 36e5;
+};
+
+const formatDuration = (hours) => {
+  if (!hours || hours <= 0) {
+    return "0 hrs";
+  }
+
+  if (hours < 24) {
+    return `${Math.round(hours)} hrs`;
+  }
+
+  return `${Math.round(hours / 24)} days`;
+};
+
+const average = (numbers) => {
+  if (!numbers.length) {
+    return 0;
+  }
+
+  return numbers.reduce((total, number) => total + number, 0) / numbers.length;
 };
 
 exports.createOrUpdateDesignerProfile = async (req, res) => {
@@ -224,6 +252,90 @@ exports.getDesignerProfile = async (req, res) => {
   }
 };
 
+exports.getDesignerDashboardStats = async (req, res) => {
+  try {
+    const designerId = req.user.id;
+
+    const profile = await DesignerProfile.findOne({
+      where: { designerId },
+    });
+
+    const requests = await request.findAll({
+      where: { designerId },
+      order: [["createdAt", "DESC"]],
+    });
+
+    const completedRequests = requests.filter((item) => item.status === "completed");
+    const acceptedRequests = requests.filter((item) =>
+      ["accepted", "picked_up", "ready", "completed"].includes(item.status)
+    );
+
+    const reliabilityScore =
+      acceptedRequests.length === 0
+        ? 100
+        : Math.round((completedRequests.length / acceptedRequests.length) * 100);
+
+    const onTimeRequests = completedRequests.filter((item) => {
+      if (!item.deadLine || !item.completedAt) {
+        return false;
+      }
+
+      return new Date(item.completedAt).getTime() <= new Date(item.deadLine).getTime();
+    });
+
+    const onTimeRate =
+      completedRequests.length === 0
+        ? 0
+        : Math.round((onTimeRequests.length / completedRequests.length) * 100);
+
+    const deliveryHours = completedRequests
+      .map((item) => getHoursBetween(item.pickedUpAt || item.createdAt, item.completedAt))
+      .filter((hours) => hours !== null && hours >= 0);
+
+    const responseHours = requests
+      .filter((item) => item.offerSentAt)
+      .map((item) => getHoursBetween(item.createdAt, item.offerSentAt))
+      .filter((hours) => hours !== null && hours >= 0);
+
+    const ratingAverage = Number(profile?.ratingAverage || 0);
+    const ratingCount = Number(profile?.ratingCount || 0);
+
+    if (profile) {
+      await profile.update({
+        completedOrders: completedRequests.length,
+        reliabilityScore,
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Designer dashboard stats loaded successfully.",
+      data: {
+        reliabilityScore,
+        reliabilityLabel: `${reliabilityScore}/100`,
+        ...getReliabilityTierInfo(reliabilityScore),
+        totalOrders: requests.length,
+        activeOrders: requests.filter((item) =>
+          ["accepted", "picked_up", "ready"].includes(item.status)
+        ).length,
+        completedOrders: completedRequests.length,
+        onTimeRate,
+        onTimeRateLabel: `${onTimeRate}%`,
+        averageDeliveryTime: formatDuration(average(deliveryHours)),
+        customerSatisfaction: Number(ratingAverage.toFixed(1)),
+        customerSatisfactionLabel: `${ratingAverage.toFixed(1)}/5`,
+        ratingCount,
+        responseTime: formatDuration(average(responseHours)),
+      },
+    });
+  } catch (error) {
+    console.log(error.message);
+    res.status(500).json({
+      message: "Something went wrong",
+    });
+  }
+};
+
 exports.updateDesignerProfile = async (req, res) => {
   try {
     const designerId = req.user.id;
@@ -314,108 +426,6 @@ exports.deleteDesignerProfile = async (req, res) => {
     res.status(200).json({
       success: true,
       message: "Designer profile deleted successfully.",
-    });
-  } catch (error) {
-    console.log(error.message);
-    res.status(500).json({
-      message: "Something went wrong",
-    });
-  }
-};
-
-exports.createDesignerWallet = async (req, res) => {
-  try {
-    const designerId = req.user.id;
-    const { bankName, accountNumber, accountName } = req.body;
-
-    const existingWallet = await DesignerWallet.findOne({
-      where: { designerId },
-    });
-
-    if (existingWallet) {
-      return res.status(400).json({
-        success: false,
-        message: "A wallet already exists for this designer. Use update instead.",
-      });
-    }
-
-    const wallet = await DesignerWallet.create({
-      designerId,
-      bankName,
-      accountNumber,
-      accountName,
-      totalEarnings: 0,
-      availableBalance: 0,
-      withdrawn: 0,
-    });
-
-    return res.status(201).json({
-      success: true,
-      message: "Designer wallet created successfully.",
-      data: wallet,
-    });
-  } catch (error) {
-    console.log(error.message);
-    res.status(500).json({
-      message: "Something went wrong",
-    });
-  }
-};
-
-exports.updateDesignerWallet = async (req, res) => {
-  try {
-    const designerId = req.user.id;
-    const { bankName, accountNumber, accountName } = req.body;
-
-    const wallet = await DesignerWallet.findOne({
-      where: { designerId },
-    });
-
-    if (!wallet) {
-      return res.status(404).json({
-        success: false,
-        message: "Designer wallet not found",
-      });
-    }
-
-    await wallet.update({
-      bankName: bankName || wallet.bankName,
-      accountNumber: accountNumber || wallet.accountNumber,
-      accountName: accountName || wallet.accountName,
-    });
-
-    return res.status(200).json({
-      success: true,
-      message: "Designer wallet updated successfully.",
-      data: wallet,
-    });
-  } catch (error) {
-    console.log(error.message);
-    res.status(500).json({
-      message: "Something went wrong",
-    });
-  }
-};
-
-exports.getDesignerWallet = async (req, res) => {
-  try {
-    const designerId = req.user.id;
-
-    const wallet = await DesignerWallet.findOne({
-      where: { designerId },
-    });
-
-    if (!wallet) {
-      return res.status(404).json({
-        success: false,
-        message: "Designer wallet not found",
-      });
-    }
-
-    return res.status(200).json({
-      success: true,
-      message: "Designer wallet loaded successfully.",
-      data: wallet,
     });
   } catch (error) {
     console.log(error.message);

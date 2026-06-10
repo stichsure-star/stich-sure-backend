@@ -17,7 +17,7 @@ module.exports = {
           key: 'id'
         },
         onUpdate: 'CASCADE',
-        onDelete: 'SET NULL'
+        onDelete: 'CASCADE'
       },
       designTitle: {
         type: Sequelize.STRING,
@@ -37,6 +37,10 @@ module.exports = {
       },
       description: {
         type: Sequelize.STRING
+      },
+      designImage: {
+        type: Sequelize.TEXT,
+        allowNull: false
       },
       createdAt: {
         allowNull: false,

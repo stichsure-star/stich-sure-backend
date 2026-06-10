@@ -4,7 +4,7 @@ const otpGenerator = require("otp-generator");
 const fs = require("fs");
 const jwt = require("jsonwebtoken");
 const cloudinary = require("../utils/cloudinary");
-const {signUpTemplate} = require('../utils/emailTemplates')
+const { emailTemplate, resetPasswordTemplate, resetPasswordSuccessfulTemplate } = require('../utils/emailTemplates')
 const { sendSingleEmail } = require('../utils/brevo');
 const otpExpire = Date.now() + 3 * 60 * 1000;
 
@@ -20,7 +20,7 @@ exports.createCustomer = async (req, res) => {
 
     const existingEmail = await Customer.findOne({where: {email: email.toLowerCase()}})
     if (existingEmail) {
-      return res.status(404).json({
+      return res.status(409).json({
         message: "Customer with this email already exists",
       });
     }
@@ -31,7 +31,7 @@ exports.createCustomer = async (req, res) => {
     const newCustomer = await Customer.create({
       firstName,
       lastName,
-      email,
+      email: email.toLowerCase(),
       password: hashPassword,
       otp,
       otpExpire,
@@ -41,10 +41,10 @@ exports.createCustomer = async (req, res) => {
     await sendSingleEmail({
       email: newCustomer.email,
       subject: "Email Verification",
-      html: signUpTemplate(newCustomer.firstName, otp),
+      html: emailTemplate(newCustomer.firstName, otp),
     });
 
-    return res.status(200).json({
+    return res.status(201).json({
       success: true,
       message:
         "Account created successfully. Please check your email for the verification OTP.",
@@ -144,7 +144,13 @@ exports.forgetPassword = async (req, res) => {
 
     await existingEmail.save();
 
-    res.status(200).json({
+    await sendSingleEmail({
+      email: existingEmail.email,
+      subject: "Reset Your Password",
+      html: resetPasswordTemplate(existingEmail.firstName, otp),
+    });
+
+    return res.status(200).json({
       success: true,
       message: "OTP has been sent to your email address. Use it to reset your password.",
     });
@@ -170,7 +176,14 @@ exports.resetPassword = async (req, res) => {
     const hashPassword = await bcrypt.hash(password, salt);
     customer.password = hashPassword;
     await customer.save();
-    res.status(200).json({
+
+    await sendSingleEmail({
+      email: customer.email,
+      subject: "Password Reset Successful",
+      html: resetPasswordSuccessfulTemplate(customer.firstName),
+    });
+
+    return res.status(200).json({
       success: true,
       message: "Your password has been reset successfully.",
     });
@@ -376,7 +389,7 @@ exports.resendOTP = async (req, res) => {
         await sendSingleEmail({
           email: user.email,
           subject: "Email Verification",
-          html: signUpTemplate(user.firstName, otp),
+          html: emailTemplate(user.firstName, otp),
         });
 
         return res.status(200).json({
