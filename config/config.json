@@ -1,8 +1,8 @@
  {
   "development": {
-    "username": "sql8829172",
-    "password": "iCMHTalHkZ",
-    "database": "sql8829172",
+    "username": "sql8829958",
+    "password": "Uwzz82zzy2",
+    "database": "sql8829958",
     "host": "sql8.freesqldatabase.com",
     "dialect": "mysql"
   },
@@ -14,9 +14,9 @@
     "dialect": "mysql"
   },
   "production": {
-    "username": "sql8829172",
-    "password": "iCMHTalHkZ",
-    "database": "sql8829172",
+    "username": "sql8829958",
+    "password": "Uwzz82zzy2",
+    "database": "sql8829958",
     "host": "sql8.freesqldatabase.com",
     "dialect": "mysql"
   }
