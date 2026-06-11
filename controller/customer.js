@@ -1,4 +1,5 @@
 const { Customer } = require("../models");
+const { Designer } = require("../models");
 const bcrypt = require("bcrypt");
 const otpGenerator = require("otp-generator");
 const fs = require("fs");
@@ -6,6 +7,8 @@ const jwt = require("jsonwebtoken");
 const cloudinary = require("../utils/cloudinary");
 const { emailTemplate, resetPasswordTemplate, resetPasswordSuccessfulTemplate } = require('../utils/emailTemplates')
 const { sendSingleEmail } = require('../utils/brevo');
+
+const redisClient = require('../Redis/redisConnection')
 exports.createCustomer = async (req, res) => {
   try {
     const { firstName, lastName, email, password } = req.body;
@@ -16,17 +19,26 @@ exports.createCustomer = async (req, res) => {
         message: "Customer with this email already exists",
       });
     }
+    const existingDesigner = await Designer.findOne({
+      where: { email },
+    });
 
+    if (existingDesigner) {
+      return res.status(400).json({
+        success: false,
+        message: "This email is already registered as a designer",
+      });
+    }
+    const otpExpire = Date.now() + 3 * 60 * 1000;
+
+const otp = otpGenerator.generate(6, {
+  upperCaseAlphabets: false,
+  lowerCaseAlphabets: false,
+  specialChars: false,
+});
     const salt = await bcrypt.genSalt(10);
     const hashPassword = await bcrypt.hash(password, salt);
-
-    const otp = otpGenerator.generate(6, {
-      upperCaseAlphabets: false,
-      lowerCaseAlphabets: false,
-      specialChars: false,
-    });
-    const otpExpire = new Date(Date.now() + 10 * 60 * 1000);
-
+    
     const newCustomer = await Customer.create({
       firstName,
       lastName,
@@ -141,6 +153,8 @@ exports.loginCustomer = async (req, res, next) => {
       process.env.JWT_SECRET,
       { expiresIn: "1d" },
     );
+    redisClient.del(`customer_${existingCustomer.id}`);
+    redisClient.set(`customer_${ existingCustomer.id}`, token, {EX: 86400})
     const data = {
       id: existingCustomer.id,
       email: existingCustomer.email,
@@ -401,3 +415,30 @@ exports.resendOTP = async (req, res) => {
      })
     }
 };
+
+exports.logOut = async (req, res) => {
+  try {
+    const {id, role} = req.user
+
+     if (role !== 'customer') {
+      return res.status(403).json({
+        success: false,
+        message: 'Unauthorized. Only customers can perform this action'
+      });
+    }
+
+    await Customer.update({ isEmailVerified: false }, { where: { id } });
+
+    redisClient.del(`customer_${id}`);
+
+    return res.status(200).json({
+      success: true,
+      message: 'Logged out successfully'
+    })
+  } catch (error) {
+    console.log(error.message);
+    return res.status(500).json({
+      message: 'Something went wrong'
+    })
+  }
+}

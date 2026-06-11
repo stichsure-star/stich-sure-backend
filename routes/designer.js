@@ -1,6 +1,6 @@
 const router = require('express').Router();
 
-const { createDesingner, loginDesigner, verifyEmail, forgetPassword, resetPassword, resendOTP } = require('../controller/designer');
+const { createDesingner, loginDesigner, verifyEmail, forgetPassword, resetPassword, resendOTP, logOut } = require('../controller/designer');
 const {
   createDesignerValidator,
   loginValidator,
@@ -16,5 +16,5 @@ router.post('/verify', verifyEmailValidator, verifyEmail);
 router.post('/resend-otp', resendOTP)
 router.post('/forget-password', forgetPasswordValidator, forgetPassword);
 router.post('/reset-password', authentication, resetPasswordValidator, resetPassword);
-
+router.post('/logout', authentication, logOut )
 module.exports = router;

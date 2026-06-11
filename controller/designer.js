@@ -1,9 +1,13 @@
 const { Designer } = require("../models");
+const { Customer } = require("../models");
 const bcrypt = require("bcrypt");
 const otpGenerator = require("otp-generator");
 const jwt = require("jsonwebtoken");
+const redisClient = require('../Redis/redisConnection')
 const { emailTemplate, resetPasswordTemplate, resetPasswordSuccessfulTemplate } = require('../utils/emailTemplates')
 const { sendSingleEmail } = require('../utils/brevo');
+
+
 
 exports.createDesingner = async (req, res) => {
   try {
@@ -17,7 +21,19 @@ exports.createDesingner = async (req, res) => {
         message: "Designer with this email already exists",
       });
     }
+    const existMail = await Customer.findOne({where: {email: email.toLowerCase()}})
+    if(existMail){
+      return res.status(404).json({
+        message: 'Email already exists'
+      })
+    }
+    const otpExpire = Date.now() + 3 * 60 * 1000;
 
+const otp = otpGenerator.generate(6, {
+  upperCaseAlphabets: false,
+  lowerCaseAlphabets: false,
+  specialChars: false,
+});
     const salt = await bcrypt.genSalt(10);
     const hashPassword = await bcrypt.hash(password, salt);
 
@@ -97,6 +113,9 @@ exports.loginDesigner = async (req, res) => {
       process.env.JWT_SECRET,
       { expiresIn: "1d" },
     );
+    
+        redisClient.del(`Designer_${existingDesigner.id}`);
+        redisClient.set(`Designer_${ existingDesigner.id}`, token, {EX: 86400})
     const data = {
       id: existingDesigner.id,
       email: existingDesigner.email,
@@ -113,8 +132,7 @@ exports.loginDesigner = async (req, res) => {
   } catch (error) {
     console.log(error.message)
     res.status(500).json({
-      success: false,
-      message: 'Something wrong'
+      error: error.message,
     })
   }
 };
@@ -291,7 +309,7 @@ exports.resendOTP = async (req, res) => {
         await sendSingleEmail({
           email: user.email,
           subject: "Email Verification",
-          html: signUpTemplate(user.firstName, otp),
+          html: emailTemplate(user.firstName, otp),
         });
 
         return res.status(200).json({
@@ -305,3 +323,28 @@ exports.resendOTP = async (req, res) => {
      })
     }
 };
+
+exports.logOut = async (req, res) => {
+  try {
+    const {id, role} = req.user
+
+     if (role !== 'designer') {
+      return res.status(403).json({
+        success: false,
+        message: 'Unauthorized. Only designers can perform this action'
+      });
+    }
+    await Designer.update({ isEmailVerified: false }, { where: { id } });
+    redisClient.del(`Designer_${id}`);
+
+    return res.status(200).json({
+      success: true,
+      message: 'Logged out successfully'
+    })
+  } catch (error) {
+    console.log(error.message);
+    return res.status(500).json({
+      message: 'Something went wrong'
+    })
+  }
+}
