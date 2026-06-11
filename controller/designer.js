@@ -125,7 +125,7 @@ exports.loginDesigner = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      message: "Designer logged in successfully.",
+      message: "Logged in successfully.",
       token,
       data,
     })

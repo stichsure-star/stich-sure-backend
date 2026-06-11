@@ -7,8 +7,9 @@ const jwt = require("jsonwebtoken");
 const cloudinary = require("../utils/cloudinary");
 const { emailTemplate, resetPasswordTemplate, resetPasswordSuccessfulTemplate } = require('../utils/emailTemplates')
 const { sendSingleEmail } = require('../utils/brevo');
-
 const redisClient = require('../Redis/redisConnection')
+
+
 exports.createCustomer = async (req, res) => {
   try {
     const { firstName, lastName, email, password } = req.body;
@@ -29,7 +30,7 @@ exports.createCustomer = async (req, res) => {
         message: "This email is already registered as a designer",
       });
     }
-    const otpExpire = Date.now() + 3 * 60 * 1000;
+    const otpExpire = Date.now() + 5 * 60 * 1000;
 
 const otp = otpGenerator.generate(6, {
   upperCaseAlphabets: false,
@@ -164,7 +165,7 @@ exports.loginCustomer = async (req, res, next) => {
 
     res.status(200).json({
       success: true,
-      message: "Customer logged in successfully.",
+      message: "Logged in successfully.",
       token,
       data,
     });
