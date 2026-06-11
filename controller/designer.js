@@ -3,6 +3,7 @@ const { Customer } = require("../models");
 const bcrypt = require("bcrypt");
 const otpGenerator = require("otp-generator");
 const jwt = require("jsonwebtoken");
+const redisClient = require('../Redis/redisConnection')
 const { emailTemplate, resetPasswordTemplate, resetPasswordSuccessfulTemplate } = require('../utils/emailTemplates')
 const { sendSingleEmail } = require('../utils/brevo');
 
@@ -112,6 +113,9 @@ exports.loginDesigner = async (req, res) => {
       process.env.JWT_SECRET,
       { expiresIn: "1d" },
     );
+    
+        redisClient.del(`Designer_${existingDesigner.id}`);
+        redisClient.set(`Designer_${ existingDesigner.id}`, token, {EX: 86400})
     const data = {
       id: existingDesigner.id,
       email: existingDesigner.email,
@@ -319,3 +323,28 @@ exports.resendOTP = async (req, res) => {
      })
     }
 };
+
+exports.logOut = async (req, res) => {
+  try {
+    const {id, role} = req.user
+
+     if (role !== 'designer') {
+      return res.status(403).json({
+        success: false,
+        message: 'Unauthorized. Only designers can perform this action'
+      });
+    }
+    await Designer.update({ isEmailVerified: false }, { where: { id } });
+    redisClient.del(`Designer_${id}`);
+
+    return res.status(200).json({
+      success: true,
+      message: 'Logged out successfully'
+    })
+  } catch (error) {
+    console.log(error.message);
+    return res.status(500).json({
+      message: 'Something went wrong'
+    })
+  }
+}

@@ -1,6 +1,6 @@
 const router = require('express').Router()
 
-const { createCustomer, loginCustomer, forgetPassword, resetPassword, verifyEmail, loginWithGoogle, updateCustomerProfile, updatePassword, resendOTP } = require('../controller/customer')
+const { createCustomer, loginCustomer, forgetPassword, resetPassword, verifyEmail, loginWithGoogle, updateCustomerProfile, updatePassword, resendOTP, logOut } = require('../controller/customer')
 const { profile, loginProfile } = require('../middlewares/passport')
 const { upload } = require('../middlewares/multer')
 const { authentication } = require('../middlewares/authentication')
@@ -12,6 +12,7 @@ router.post('/login', loginValidator, loginCustomer);
 router.post('/forget-password', forgetPasswordValidator, forgetPassword)
 router.post('/reset-password', authentication, resetPaswordValidator, resetPassword)
 router.post('/resend-otp', resendOTP)
+router.post('/logout', authentication, logOut )
 router.put('/update-profile/:id', authentication, updateCustomerProfileValidator, upload.single('profilePhoto'), updateCustomerProfile);
 router.put('/update-password', authentication, updatePasswordValidator, updatePassword)
 router.get('/auth/google', profile)

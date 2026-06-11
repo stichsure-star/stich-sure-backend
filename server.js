@@ -3,6 +3,7 @@ const express = require('express');
 const app = express();
 const { sequelize } = require('./models');
 const swaggerUi = require('swagger-ui-express')
+const redisClient = require('./Redis/redisConnection')
 const PORT = process.env.PORT || 7001;
 const cors = require('cors')
 const swaggerDocument = require('./swaggerDocumentation');
@@ -87,6 +88,11 @@ app.use((err, req, res, next) => {
 
 const startServer = async () => {
   try {
+    redisClient.connect().then(()=>{
+        console.log('Connected to Redis successfully');
+    }).catch((err)=>{
+        console.log('Failed to connect to Redis', err);
+    });
     await sequelize.authenticate();
     console.log("Database connected successfully");
 
