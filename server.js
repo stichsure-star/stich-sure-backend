@@ -15,8 +15,12 @@ const request = require('./routes/request')
 const designs = require('./routes/designs')
 const designerProfile = require('./routes/designerProfile')
 const collaboration = require('./routes/collaboration')
+
+const shipbubble = require('./routes/shipbubble')
+
 const order = require('./routes/order')
 const designerWallet = require('./routes/designerWallet')
+
 
 app.use(express.json());
 app.use(cors({
@@ -43,8 +47,12 @@ app.use('/api/v1/request', request);
 app.use('/api/v1/designs', designs);
 app.use('/api/v1/designerProfile', designerProfile);
 app.use('/api/v1/collaboration', collaboration);
+
+app.use('/api/v1/shipment', shipbubble)
+
 app.use('/api/v1/orders', order);
 app.use('/api/v1/designerWallet', designerWallet);
+
 
 app.use((req, res) => {
     res.status(404).json({
@@ -52,9 +60,27 @@ app.use((req, res) => {
     })
 })
 
-app.use((err, req, res) => {
+app.use((err, req, res, next) => {
     console.log(err.message)
     return res.status(500).json({
+        message: err.message
+    })
+})
+
+app.use((err, req, res, next) => {
+    if (err.name === 'MulterError'){
+        return res.status(400).json({
+            message: 'File upload failed'
+        })
+    }
+    console.log('rice', err);
+    
+    if (err.name === 'JsonWebTokenError') {
+        return res.status(401).json({
+            message: 'Session expired, please login again'
+        })
+    }
+    res.status(500).json({
         message: err.message
     })
 })

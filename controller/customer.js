@@ -1,4 +1,5 @@
 const { Customer } = require("../models");
+const { Designer } = require("../models");
 const bcrypt = require("bcrypt");
 const otpGenerator = require("otp-generator");
 const fs = require("fs");
@@ -14,6 +15,16 @@ exports.createCustomer = async (req, res) => {
     if (existingEmail) {
       return res.status(409).json({
         message: "Customer with this email already exists",
+      });
+    }
+    const existingDesigner = await Designer.findOne({
+      where: { email },
+    });
+
+    if (existingDesigner) {
+      return res.status(400).json({
+        success: false,
+        message: "This email is already registered as a designer",
       });
     }
 

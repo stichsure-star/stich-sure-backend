@@ -1,9 +1,12 @@
 const { Designer } = require("../models");
+const { Customer } = require("../models");
 const bcrypt = require("bcrypt");
 const otpGenerator = require("otp-generator");
 const jwt = require("jsonwebtoken");
 const { emailTemplate, resetPasswordTemplate, resetPasswordSuccessfulTemplate } = require('../utils/emailTemplates')
 const { sendSingleEmail } = require('../utils/brevo');
+
+
 
 exports.createDesingner = async (req, res) => {
   try {
@@ -17,7 +20,19 @@ exports.createDesingner = async (req, res) => {
         message: "Designer with this email already exists",
       });
     }
+    const existMail = await Customer.findOne({where: {email: email.toLowerCase()}})
+    if(existMail){
+      return res.status(404).json({
+        message: 'Email already exists'
+      })
+    }
+    const otpExpire = Date.now() + 3 * 60 * 1000;
 
+const otp = otpGenerator.generate(6, {
+  upperCaseAlphabets: false,
+  lowerCaseAlphabets: false,
+  specialChars: false,
+});
     const salt = await bcrypt.genSalt(10);
     const hashPassword = await bcrypt.hash(password, salt);
 
@@ -113,8 +128,7 @@ exports.loginDesigner = async (req, res) => {
   } catch (error) {
     console.log(error.message)
     res.status(500).json({
-      success: false,
-      message: 'Something wrong'
+      error: error.message,
     })
   }
 };
@@ -291,7 +305,7 @@ exports.resendOTP = async (req, res) => {
         await sendSingleEmail({
           email: user.email,
           subject: "Email Verification",
-          html: signUpTemplate(user.firstName, otp),
+          html: emailTemplate(user.firstName, otp),
         });
 
         return res.status(200).json({
