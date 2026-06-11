@@ -7,8 +7,6 @@ const redisClient = require('../Redis/redisConnection')
 const { emailTemplate, resetPasswordTemplate, resetPasswordSuccessfulTemplate } = require('../utils/emailTemplates')
 const { sendSingleEmail } = require('../utils/brevo');
 
-
-
 exports.createDesingner = async (req, res) => {
   try {
     const { firstName, lastName, email, password } = req.body;
@@ -28,7 +26,6 @@ exports.createDesingner = async (req, res) => {
       })
     }
     const otpExpire = Date.now() + 3 * 60 * 1000;
-
 const otp = otpGenerator.generate(6, {
   upperCaseAlphabets: false,
   lowerCaseAlphabets: false,
@@ -37,7 +34,7 @@ const otp = otpGenerator.generate(6, {
     const salt = await bcrypt.genSalt(10);
     const hashPassword = await bcrypt.hash(password, salt);
 
-    const newDesiner = await Designer.create({
+    const newDesigner = await Designer.create({
       firstName,
       lastName,
       email,
@@ -47,31 +44,24 @@ const otp = otpGenerator.generate(6, {
       role: "designer",
       isEmailVerified: false,
     });
-    console.log(otp)
 
-    await newDesiner.save();
+    await newDesigner.save();
 
-    res.status(200).json({
-      success: true,
-      message: "Designer account created successfully. Please check your email for verification instructions.",
-    });
-
-    (async () => {
-      try {
-        await sendSingleEmail({
-          email: newDesiner.email,
+     await sendSingleEmail({
+          email: newDesigner.email,
           subject: "Email Verification",
-          html: emailTemplate(newDesiner.firstName, otp),
+          html: emailTemplate(newDesigner.firstName, otp),
         });
-      } catch (error) {
-        console.log(error.message);
-      }
-    })();
+        
+  return res.status(201).json({
+  success: true,
+  message: "Account created successfully. Please check your email for the verification OTP.",
+});
   } catch (error) {
     console.log(error.message)
     res.status(500).json({
       success: false,
-      message: 'Something went wrong'
+      error: error.message
     })
   }
 };
@@ -116,6 +106,7 @@ exports.loginDesigner = async (req, res) => {
     
         redisClient.del(`Designer_${existingDesigner.id}`);
         redisClient.set(`Designer_${ existingDesigner.id}`, token, {EX: 86400})
+
     const data = {
       id: existingDesigner.id,
       email: existingDesigner.email,
