@@ -34,7 +34,9 @@ const options = {
         './docs/designerprofile.yaml',
         './docs/request.yaml',
         './docs/designs.yaml',
-        './docs/collaboration.yaml'
+        './docs/collaboration.yaml',
+        './docs/order.yaml',
+        './docs/designerWallet.yaml'
     ]
 }
 

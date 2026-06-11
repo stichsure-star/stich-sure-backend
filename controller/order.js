@@ -1,5 +1,13 @@
 const { Op } = require("sequelize");
-const { Order, Customer, Designer, Designs, request } = require("../models");
+const {
+  Order,
+  Customer,
+  Designer,
+  Designs,
+  request,
+  DesignerWallet,
+  DesignerWalletTransaction,
+} = require("../models");
 
 const allowedStatuses = ["new", "preparing", "ready", "completed", "cancelled"];
 
@@ -31,6 +39,49 @@ const buildOrderWhere = (req) => {
   }
 
   return where;
+};
+
+const creditCompletedOrderToWallet = async (order) => {
+  const amount = Number(order.amount || 0);
+
+  if (amount <= 0) {
+    return;
+  }
+
+  const existingTransaction = await DesignerWalletTransaction.findOne({
+    where: { orderId: order.id },
+  });
+
+  if (existingTransaction) {
+    return;
+  }
+
+  let wallet = await DesignerWallet.findOne({
+    where: { designerId: order.designerId },
+  });
+
+  if (!wallet) {
+    wallet = await DesignerWallet.create({
+      designerId: order.designerId,
+      totalEarnings: 0,
+      availableBalance: 0,
+      withdrawn: 0,
+    });
+  }
+
+  await wallet.update({
+    totalEarnings: Number(wallet.totalEarnings) + amount,
+    availableBalance: Number(wallet.availableBalance) + amount,
+  });
+
+  await DesignerWalletTransaction.create({
+    designerWalletId: wallet.id,
+    designerId: order.designerId,
+    orderId: order.id,
+    amount,
+    status: "completed",
+    transactionDate: order.completedAt || new Date(),
+  });
 };
 
 exports.createOrder = async (req, res) => {
@@ -267,6 +318,11 @@ exports.updateOrderStatus = async (req, res) => {
     }
 
     await order.update(updateData);
+
+    if (status === "completed") {
+      await creditCompletedOrderToWallet(order);
+      await order.reload();
+    }
 
     return res.status(200).json({
       success: true,

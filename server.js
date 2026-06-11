@@ -89,11 +89,13 @@ app.use((err, req, res, next) => {
 
 const startServer = async () => {
   try {
-    redisClient.connect().then(()=>{
+    try {
+        await redisClient.connect();
         console.log('Connected to Redis successfully');
-    }).catch((err)=>{
-        console.log('Failed to connect to Redis', err);
-    });
+    } catch (err) {
+        console.log('Failed to connect to Redis:', err.message);
+    }
+
     await sequelize.authenticate();
     console.log("Database connected successfully");
 

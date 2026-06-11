@@ -8,6 +8,10 @@ module.exports = (sequelize, DataTypes) => {
         foreignKey: 'designerId',
         as: 'designer',
       });
+      DesignerWallet.hasMany(models.DesignerWalletTransaction, {
+        foreignKey: 'designerWalletId',
+        as: 'transactions',
+      });
     }
   }
 
