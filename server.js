@@ -8,7 +8,8 @@ const PORT = process.env.PORT || 7001;
 const cors = require('cors')
 const swaggerDocument = require('./swaggerDocumentation');
 const express_session = require('express-session');
-const { passport } = require('./middlewares/passport');
+const passport = require('passport')
+require('./middlewares/passport');
 const customerRoutes = require('./routes/customer');
 const authRoutes = require('./routes/auth');
 const designerRoutes = require('./routes/designer');
@@ -62,7 +63,7 @@ app.use((req, res) => {
 })
 
 app.use((err, req, res, next) => {
-    console.log(err.message)
+    console.log(err)
     return res.status(500).json({
         message: err.message
     })
