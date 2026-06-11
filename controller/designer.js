@@ -37,7 +37,7 @@ const otp = otpGenerator.generate(6, {
     const salt = await bcrypt.genSalt(10);
     const hashPassword = await bcrypt.hash(password, salt);
 
-    const newDesiner = await Designer.create({
+    const newDesigner = await Designer.create({
       firstName,
       lastName,
       email,
@@ -49,19 +49,27 @@ const otp = otpGenerator.generate(6, {
     });
     console.log(otp)
 
-    await newDesiner.save();
+    await newDesigner.save();
 
-    res.status(200).json({
-      success: true,
-      message: "Designer account created successfully. Please check your email for verification instructions.",
-    });
+     return res.status(201).json({
+  success: true,
+  message: "Account created successfully. Please check your email for the verification OTP.",
+  data: {
+    id: newDesigner.id,
+    firstName: newDesigner.firstName,
+    lastName: newDesigner.lastName,
+    email: newDesigner.email,
+    role: newDesigner.role,
+    isEmailVerified: newDesigner.isEmailVerified  // will return false on signup
+  }
+});
 
     (async () => {
       try {
         await sendSingleEmail({
-          email: newDesiner.email,
+          email: newDesigner.email,
           subject: "Email Verification",
-          html: emailTemplate(newDesiner.firstName, otp),
+          html: emailTemplate(newDesigner.firstName, otp),
         });
       } catch (error) {
         console.log(error.message);
@@ -71,7 +79,7 @@ const otp = otpGenerator.generate(6, {
     console.log(error.message)
     res.status(500).json({
       success: false,
-      message: 'Something went wrong'
+      error: error.message
     })
   }
 };
