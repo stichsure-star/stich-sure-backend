@@ -39,6 +39,7 @@ const otp = otpGenerator.generate(6, {
 });
     const salt = await bcrypt.genSalt(10);
     const hashPassword = await bcrypt.hash(password, salt);
+
     
     const newCustomer = await Customer.create({
       firstName,
@@ -57,10 +58,17 @@ const otp = otpGenerator.generate(6, {
     });
 
     return res.status(201).json({
-      success: true,
-      message:
-        "Account created successfully. Please check your email for the verification OTP.",
-    });
+  success: true,
+  message: "Account created successfully. Please check your email for the verification OTP.",
+  data: {
+    id: newCustomer.id,
+    firstName: newCustomer.firstName,
+    lastName: newCustomer.lastName,
+    email: newCustomer.email,
+    role: newCustomer.role,
+    isEmailVerified: newCustomer.isEmailVerified  // will return false on signup
+  }
+});
   } catch (error) {
     console.log(error.message)
     res.status(500).json({
@@ -156,6 +164,7 @@ exports.loginCustomer = async (req, res, next) => {
     );
     redisClient.del(`customer_${existingCustomer.id}`);
     redisClient.set(`customer_${ existingCustomer.id}`, token, {EX: 86400})
+    
     const data = {
       id: existingCustomer.id,
       email: existingCustomer.email,

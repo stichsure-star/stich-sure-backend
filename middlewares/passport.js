@@ -1,55 +1,62 @@
-const passport = require('passport');
 const GoogleStrategy = require('passport-google-oauth20').Strategy;
-const { Customer } = require('../models');
+const passport = require('passport');
+const {Customer} = require('../models');
+const jwt = require('jsonwebtoken');
 
+passport.use(
+  new GoogleStrategy(
+    {
+      clientID: process.env.GOOGLE_CLIENT_ID,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+      callbackURL: process.env.GOOGLE_CALLBACK_URL,
+      passReqToCallback: true,
+    },
 
-passport.use(new GoogleStrategy({
-    clientID: process.env.GOOGLE_CLIENT_ID,
-    clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-    callbackURL: process.env.GOOGLE_CALLBACK_URL
-  },
-  async (accessToken, refreshToken, profile, cb) => {
-    try {
-        console.log('Profile: ', profile)
-        const email = profile._json.email;
-        let customer = await Customer.findOne({ where: { email } });
-        
-        if (!customer) {
-          customer = await Customer.create({
-            firstName: profile.name?.givenName || profile._json.given_name || profile._json.name,
-            lastName: profile.name?.familyName || profile._json.family_name || '',
-            email,
-            password: null,
+    async function (request, accessToken, refreshToken, profile, done) {
+      try {
+        console.log('i am profile :', profile);
+
+        let token;
+        const checkUser = await Customer.findOne({
+          where: { email: profile._json.email },
+        });
+
+        if (checkUser) {
+          token = jwt.sign(
+            { id: checkUser.id, role: checkUser.role },
+            process.env.JWT_SECRET,
+            { expiresIn: '1d' }
+          );
+        } else {
+          const createUser = await Customer.create({
+            firstName: profile._json.given_name,
+            lastName: profile._json.given_name,
+            email: profile._json.email,
+            isEmailVerified: profile._json.email_verified,
             role: 'customer',
-            isEmailVerified: false,
-          })
+          });
+
+          token = jwt.sign(
+            { id: createUser.id, role: createUser.role },
+            process.env.JWT_SECRET,
+            { expiresIn: '1d' }
+          );
         }
 
-        return cb(null, customer)
-        
-    } catch (error) {
-        return cb(null, error)
+        return done(null, token);
+      } catch (error) {
+        return done(error, null);
+      }
     }
-  }
-));
+  )
+);
 
-passport.serializeUser((customer, cb) => {
-  console.log(customer)
-  cb(null, customer.id);
+passport.serializeUser((token, done) => {
+  return done(null, token);
 });
 
-passport.deserializeUser(async (id, cb) => {
-  // console.log(id)
-  const customer = await Customer.findByPk(id)
-
-  if (!customer) {
-    return cb(new Error('Customer not found'), null)
-  }
-  cb(null, customer)
+passport.deserializeUser((token, done) => {
+  return done(null, token);
 });
 
-const profile = passport.authenticate('google', {scope: ['profile', 'email'] })
-
-const loginProfile = passport.authenticate('google', { failureRedirect: '/login', session: false })
-
-module.exports = {passport, profile, loginProfile }
+module.exports = passport;
