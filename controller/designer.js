@@ -7,8 +7,6 @@ const redisClient = require('../Redis/redisConnection')
 const { emailTemplate, resetPasswordTemplate, resetPasswordSuccessfulTemplate } = require('../utils/emailTemplates')
 const { sendSingleEmail } = require('../utils/brevo');
 
-
-
 exports.createDesingner = async (req, res) => {
   try {
     const { firstName, lastName, email, password } = req.body;
@@ -28,7 +26,6 @@ exports.createDesingner = async (req, res) => {
       })
     }
     const otpExpire = Date.now() + 3 * 60 * 1000;
-
 const otp = otpGenerator.generate(6, {
   upperCaseAlphabets: false,
   lowerCaseAlphabets: false,
@@ -47,34 +44,19 @@ const otp = otpGenerator.generate(6, {
       role: "designer",
       isEmailVerified: false,
     });
-    console.log(otp)
 
     await newDesigner.save();
 
-     return res.status(201).json({
-  success: true,
-  message: "Account created successfully. Please check your email for the verification OTP.",
-  data: {
-    id: newDesigner.id,
-    firstName: newDesigner.firstName,
-    lastName: newDesigner.lastName,
-    email: newDesigner.email,
-    role: newDesigner.role,
-    isEmailVerified: newDesigner.isEmailVerified  // will return false on signup
-  }
-});
-
-    (async () => {
-      try {
-        await sendSingleEmail({
+     await sendSingleEmail({
           email: newDesigner.email,
           subject: "Email Verification",
           html: emailTemplate(newDesigner.firstName, otp),
         });
-      } catch (error) {
-        console.log(error.message);
-      }
-    })();
+        
+  return res.status(201).json({
+  success: true,
+  message: "Account created successfully. Please check your email for the verification OTP.",
+});
   } catch (error) {
     console.log(error.message)
     res.status(500).json({
@@ -124,6 +106,7 @@ exports.loginDesigner = async (req, res) => {
     
         redisClient.del(`Designer_${existingDesigner.id}`);
         redisClient.set(`Designer_${ existingDesigner.id}`, token, {EX: 86400})
+
     const data = {
       id: existingDesigner.id,
       email: existingDesigner.email,
