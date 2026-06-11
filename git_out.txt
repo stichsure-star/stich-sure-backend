@@ -1,7 +1,0 @@
-M  controller/customer.js
-M  controller/designer.js
-M  docs/customer.yaml
-M  docs/designer.yaml
-M  utils/emailTemplates.js
-?? git_out.txt
-?? tmp_status.txt

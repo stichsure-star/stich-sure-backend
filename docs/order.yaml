@@ -1,0 +1,172 @@
+openapi: 3.0.0
+info:
+  title: StitchSure API Documentation
+  version: 1.0.0
+  description: API documentation for order endpoints in the StitchSure application.
+paths:
+  /api/v1/orders/create:
+    post:
+      summary: Create an order
+      tags: [orders]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - itemName
+                - amount
+              properties:
+                requestId:
+                  type: string
+                  format: uuid
+                  example: "c7b4f3c9-31f3-4f6e-b1d4-abc123def456"
+                  description: "Optional request ID if this order came from a request."
+                designerId:
+                  type: string
+                  format: uuid
+                  example: "8ab4f3c9-31f3-4f6e-b1d4-abc123def999"
+                  description: "Required when requestId is not provided."
+                designId:
+                  type: string
+                  format: uuid
+                  example: "9bb4f3c9-31f3-4f6e-b1d4-abc123def888"
+                itemName:
+                  type: string
+                  example: "Bridal Gown"
+                amount:
+                  type: integer
+                  example: 180000
+      responses:
+        '201':
+          description: Order created successfully
+        '400':
+          description: designerId is required when requestId is not provided
+        '403':
+          description: You can only create an order from your own request
+        '404':
+          description: Request not found
+  /api/v1/orders/designer:
+    get:
+      summary: Get logged-in designer orders with pagination
+      tags: [orders]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: status
+          schema:
+            type: string
+            enum: [new, preparing, ready, completed, cancelled]
+          example: new
+        - in: query
+          name: search
+          schema:
+            type: string
+          example: Bridal
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 1
+          example: 1
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 10
+          example: 10
+      responses:
+        '200':
+          description: Designer orders loaded successfully
+  /api/v1/orders/customer:
+    get:
+      summary: Get logged-in customer orders with pagination
+      tags: [orders]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: status
+          schema:
+            type: string
+            enum: [new, preparing, ready, completed, cancelled]
+          example: completed
+        - in: query
+          name: search
+          schema:
+            type: string
+          example: Bridal
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 1
+          example: 1
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 10
+          example: 10
+      responses:
+        '200':
+          description: Customer orders loaded successfully
+  /api/v1/orders/{id}:
+    get:
+      summary: Get order by ID
+      tags: [orders]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: "The order UUID"
+      responses:
+        '200':
+          description: Order loaded successfully
+        '404':
+          description: Order not found
+  /api/v1/orders/{id}/status:
+    put:
+      summary: Update order status
+      tags: [orders]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: "The order UUID"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - status
+              properties:
+                status:
+                  type: string
+                  enum: [new, preparing, ready, completed, cancelled]
+                  example: completed
+      responses:
+        '200':
+          description: Order status updated successfully. Completing an order credits the designer wallet and creates a transaction history record.
+        '400':
+          description: Invalid order status
+        '403':
+          description: Only the assigned designer can update this order
+        '404':
+          description: Order not found

@@ -23,6 +23,11 @@ module.exports = (sequelize, DataTypes) => {
         foreignKey: 'designId',
         as: 'design',
       });
+
+      Order.hasOne(models.DesignerWalletTransaction, {
+        foreignKey: 'orderId',
+        as: 'walletTransaction',
+      });
     }
   }
 

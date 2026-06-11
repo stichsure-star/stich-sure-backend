@@ -68,14 +68,8 @@ paths:
             schema:
               type: object
               required:
-                - priceOffer
                 - designerMessage
               properties:
-                priceOffer:
-                  type: number
-                  format: float
-                  example: 150.50
-                  description: "The price offered by the designer"
                 designerMessage:
                   type: string
                   example: "I can complete this design within two weeks."
@@ -148,6 +142,62 @@ paths:
           description: Request completed successfully
         '400':
           description: Only accepted requests can be completed
+        '404':
+          description: Request not found
+  /api/v1/request/progress/{id}:
+    put:
+      summary: Update request progress
+      tags: [request]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: "The ID of the accepted request"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - status
+              properties:
+                status:
+                  type: string
+                  enum: [picked_up, ready, delivered]
+                  example: picked_up
+                  description: "Progress step to apply. delivered is saved as completed."
+      responses:
+        '200':
+          description: Request progress updated successfully
+        '400':
+          description: Invalid status or wrong progress order
+        '403':
+          description: Only the assigned designer can update progress
+        '404':
+          description: Request not found
+  /api/v1/request/tracking/{id}:
+    get:
+      summary: Get request tracking details
+      tags: [request]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: "The ID of the request to track"
+      responses:
+        '200':
+          description: Request tracking loaded successfully
         '404':
           description: Request not found
   /api/v1/request/rate/{id}:

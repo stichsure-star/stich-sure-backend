@@ -1,4 +1,3 @@
-// controllers/shipping.controller.js
 const { getShippingRates, createShipment, trackShipment, validateAddress, getPackageCategories } = require('../services/shipbubble.service');
 const { Shipment } = require('../models');
 
@@ -16,7 +15,6 @@ exports.createOrder = async (req, res) => {
     const result = await createShipment(req.body);
     const courier = result.data?.courier;
 
-    // Persist to DB via Sequelize
     const shipment = await Shipment.create({
       orderId: result.data?.order_id,
       trackingCode: courier?.tracking_code,
