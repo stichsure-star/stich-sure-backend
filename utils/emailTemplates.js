@@ -12,14 +12,13 @@ return `
             <div class="upper-div-1">
                 <h1>Email OTP Verification</h1>
                 <h3>Hello, ${name}</h3>
-                <p>Below is your one time passcode that you need to use to complete your authentication. The verification code will be valid for 7 minutes. Please do not share this code with anyone.</p>
+                <p>Below is your one time passcode that you need to use to complete your authentication. The verification code will be valid for 3 minutes. Please do not share this code with anyone.</p>
             </div>
             <div class="upper-div-2">
                 <h2> ${otp} </h2>
             </div>
             <div class="upper-div-3">
                 <p>If you are having any issues with your account, please don't hesitate to contact us.</p>
-                <p>Enjoy the fastest & most secure way to buy Airtime, Mobile Data & to pay Bills.</p>
             </div>
         </div>
         <div class="downer-div">
@@ -157,7 +156,7 @@ exports.resetPasswordSuccessfulTemplate = (name)=> {
 
                                 <!-- Security Warning -->
                                 <p style="font-size: 13px; color: #999999; margin-top: 40px; line-height: 1.4; border-top: 1px solid #f3f4f6; padding-top: 20px;">
-                                    <strong>Didn't do this?</strong> If you did not reset your password, please secure your account immediately by contacting our support team.
+                                    <strong>Didn't do this?</strong>please secure your account immediately by contacting our support team.
                                 </p>
                             </td>
                         </tr>

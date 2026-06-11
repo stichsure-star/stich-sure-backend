@@ -125,6 +125,37 @@ paths:
       responses:
         '200':
           description: OTP sent successfully
+  /api/v1/designer/logout:
+    post:
+      summary: Log out a designer
+      description: Logs out the authenticated designer by deleting their session from Redis.
+      tags: [auth]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Logged out successfully
+          content:
+            application/json:
+              schema:
+                type: object
+              properties:
+                success:
+                  type: boolean
+                  example: true
+                message:
+                  type: string
+                  example: Logged out successfully
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+              properties:
+                message:
+                  type: string
+                  example: Something went wrong  
   /api/v1/designer/reset-password:
     post:
       summary: Reset Password

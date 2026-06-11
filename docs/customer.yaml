@@ -235,3 +235,34 @@ paths:
           description: Logged in successfully with Google
         '401':
           description: Google authentication failed
+  /api/v1/customer/logout:
+    post:
+      summary: Log out a customer
+      description: Logs out the authenticated customer by deleting their session from Redis.
+      tags: [auth]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Logged out successfully
+          content:
+            application/json:
+              schema:
+                type: object
+              properties:
+                success:
+                  type: boolean
+                  example: true
+                message:
+                  type: string
+                  example: Logged out successfully
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+              properties:
+                message:
+                  type: string
+                  example: Something went wrong  
