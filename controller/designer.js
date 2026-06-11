@@ -5,14 +5,6 @@ const jwt = require("jsonwebtoken");
 const { emailTemplate, resetPasswordTemplate, resetPasswordSuccessfulTemplate } = require('../utils/emailTemplates')
 const { sendSingleEmail } = require('../utils/brevo');
 
-const otpExpire = Date.now() + 3 * 60 * 1000;
-
-const otp = otpGenerator.generate(6, {
-  upperCaseAlphabets: false,
-  lowerCaseAlphabets: false,
-  specialChars: false,
-});
-
 exports.createDesingner = async (req, res) => {
   try {
     const { firstName, lastName, email, password } = req.body;
@@ -198,7 +190,7 @@ exports.forgetPassword = async (req, res) => {
     console.log(otp);
 
     existingEmail.otp = otp;
-    existingEmail.otpExpire = new Date(Date.now() + 24 * 60 * 60 * 1000);
+    existingEmail.otpExpire = new Date(Date.now() + 10 * 60 * 1000);
 
     await existingEmail.save();
 

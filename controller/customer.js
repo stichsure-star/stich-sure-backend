@@ -6,14 +6,6 @@ const jwt = require("jsonwebtoken");
 const cloudinary = require("../utils/cloudinary");
 const { emailTemplate, resetPasswordTemplate, resetPasswordSuccessfulTemplate } = require('../utils/emailTemplates')
 const { sendSingleEmail } = require('../utils/brevo');
-const otpExpire = Date.now() + 3 * 60 * 1000;
-
-const otp = otpGenerator.generate(6, {
-  upperCaseAlphabets: false,
-  lowerCaseAlphabets: false,
-  specialChars: false,
-});
-
 exports.createCustomer = async (req, res) => {
   try {
     const { firstName, lastName, email, password } = req.body;
@@ -27,6 +19,13 @@ exports.createCustomer = async (req, res) => {
 
     const salt = await bcrypt.genSalt(10);
     const hashPassword = await bcrypt.hash(password, salt);
+
+    const otp = otpGenerator.generate(6, {
+      upperCaseAlphabets: false,
+      lowerCaseAlphabets: false,
+      specialChars: false,
+    });
+    const otpExpire = new Date(Date.now() + 10 * 60 * 1000);
 
     const newCustomer = await Customer.create({
       firstName,
@@ -110,7 +109,6 @@ exports.loginCustomer = async (req, res, next) => {
     const existingCustomer = await Customer.findOne({
       where: { email: email.toLowerCase() },
     });
-    console.log( 'existingCustomer:', existingCustomer)
     if (!existingCustomer) {
       return res.status(404).json({
         message: "Invalid email or password",
@@ -186,7 +184,7 @@ exports.forgetPassword = async (req, res) => {
     console.log(otp);
 
     existingEmail.otp = otp;
-    existingEmail.otpExpire = new Date(Date.now() + 24 * 60 * 60 * 1000);
+    existingEmail.otpExpire = new Date(Date.now() + 10 * 60 * 1000);
 
     await existingEmail.save();
 
@@ -380,7 +378,7 @@ exports.resendOTP = async (req, res) => {
           lowerCaseAlphabets: false,
           specialChars: false,
         });
-        const otpExpire = Date.now() + 3 * 60 * 1000;
+        const otpExpire = new Date(Date.now() + 10 * 60 * 1000);
 
         user.otp = otp;
         user.otpExpire = otpExpire;
