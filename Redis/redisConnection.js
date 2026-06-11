@@ -7,5 +7,6 @@ const redisClient = createClient({
         port: process.env.REDIS_PORT
     }
 })
+
 redisClient.on('error', (err) => console.log('Redis Client Error', err))    
  module.exports = redisClient
