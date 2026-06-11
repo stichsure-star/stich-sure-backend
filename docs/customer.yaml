@@ -461,57 +461,11 @@ paths:
                   message:
                     type: string
                     example: "Customer not found"
-  /api/v1/auth/google:
-    get:
-      summary: Start Google OAuth login
-      tags: [auth]
-      responses:
-        '302':
-          description: Redirect to Google for authentication
-  /api/v1/auth/google/callback:
-    get:
-      summary: Google OAuth callback endpoint
-      tags: [auth]
-      responses:
-        '200':
-          description: Logged in successfully with Google
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                    example: true
-                  message:
-                    type: string
-                    example: "Logged in successfully with Google."
-                  data:
-                    type: object
-                    properties:
-                      id:
-                        type: string
-                        format: uuid
-                        example: "550e8400-e29b-41d4-a716-446655440000"
-                      email:
-                        type: string
-                        example: "johndoe@gmail.com"
-                      role:
-                        type: string
-                        example: "customer"
-                      fullName:
-                        type: string
-                        example: "John Doe"
-                  token:
-                    type: string
-                    example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-        '401':
-          description: Google authentication failed
   /api/v1/customer/logout:
     post:
       summary: Log out a customer
       description: Logs out the authenticated customer by deleting their session from Redis.
-      tags: [auth]
+      tags: [customer]
       security:
         - bearerAuth: []
       responses:
