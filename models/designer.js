@@ -23,6 +23,10 @@ module.exports = (sequelize, DataTypes) => {
         foreignKey: 'designerId',
         as: 'wallet'
       });
+      Designer.hasMany(models.DesignerWalletTransaction, {
+        foreignKey: 'designerId',
+        as: 'walletTransactions'
+      });
       Designer.hasMany(models.Collaboration, {
         foreignKey: 'senderDesignerId',
         as: 'sentCollaborations'
