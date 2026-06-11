@@ -208,7 +208,7 @@ exports.forgetPassword = async (req, res) => {
     console.log(otp);
 
     existingEmail.otp = otp;
-    existingEmail.otpExpire = new Date(Date.now() + 24 * 60 * 60 * 1000);
+    existingEmail.otpExpire = new Date(Date.now() + 10 * 60 * 1000);
 
     await existingEmail.save();
 
