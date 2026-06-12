@@ -269,7 +269,7 @@ paths:
     post:
       summary: Log out a designer
       description: Logs out the authenticated designer by deleting their session from Redis.
-      tags: [auth]
+      tags: [designer]
       security:
         - bearerAuth: []
       responses:
