@@ -1,9 +1,6 @@
 const { createClient } = require('redis')
 
-console.log(process.env.REDIS_USERNAME)
-console.log(process.env.REDIS_PASSWORD)
-console.log(process.env.REDIS_HOST)
-console.log(process.env.REDIS_PORT)
+
 const redisClient = createClient({
     username: process.env.REDIS_USERNAME,
     password: process.env.REDIS_PASSWORD, 
