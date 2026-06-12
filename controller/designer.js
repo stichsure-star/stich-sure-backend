@@ -11,19 +11,21 @@ exports.createDesingner = async (req, res) => {
   try {
     const { firstName, lastName, email, password } = req.body;
 
-    
-
     const existingEmail = await Designer.findOne({where:{email: email.toLowerCase(), }});
     if (existingEmail) {
-      return res.status(404).json({
+      return res.status(409).json({
         message: "Designer with this email already exists",
       });
     }
-    const existMail = await Customer.findOne({where: {email: email.toLowerCase()}})
-    if(existMail){
-      return res.status(404).json({
-        message: 'Email already exists'
-      })
+    const existingCustomer = await Customer.findOne({
+      where: { email },
+    });
+
+    if (existingCustomer) {
+      return res.status(400).json({
+        success: false,
+        message: "This email is already registered as a customer",
+      });
     }
     const otpExpire = Date.now() + 3 * 60 * 1000;
 const otp = otpGenerator.generate(6, {
