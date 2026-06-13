@@ -17,6 +17,10 @@ module.exports = (sequelize, DataTypes) => {
         foreignKey: "customerId",
         as: "orders"
       });
+      Customer.hasMany(models.Payment, {
+        foreignKey: "customerId",
+        as: "payments"
+      });
     }
   }
   Customer.init(
@@ -58,7 +62,7 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.BOOLEAN,
         defaultValue: false
       },
-      profilePhoto: DataTypes.TEXT
+      profilePhoto: DataTypes.JSON
     },
     {
       sequelize,

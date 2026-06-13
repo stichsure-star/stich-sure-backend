@@ -1,5 +1,6 @@
 const { Op } = require("sequelize");
 const { request, DesignerProfile } = require("../models");
+const { AppError } = require('../utils/errorHandler');
 
 const progressByStatus = {
   pending: 0,
@@ -67,7 +68,7 @@ const updateDesignerStats = async (designerId) => {
   });
 };
 
-exports.createRequest = async (req, res) => {
+exports.createRequest = async (req, res, next) => {
   try {
     const customerId = req.user.id;
     const { designerId, fullName, deadLine, measurement, description } = req.body;
@@ -88,14 +89,11 @@ exports.createRequest = async (req, res) => {
       data: newRequest,
     });
   } catch (error) {
-    console.log(error.message);
-    res.status(500).json({
-      message: "Something went wrong",
-    });
+    next(error)
   }
 };
 
-exports.sendOffer = async (req, res) => {
+exports.sendOffer = async (req, res, next) => {
   try {
     const { id } = req.params;
 
@@ -128,14 +126,11 @@ exports.sendOffer = async (req, res) => {
       data: foundRequest,
     });
   } catch (error) {
-    console.log(error.message);
-    res.status(500).json({
-      message: "Something went wrong",
-    });
+    next(error)
   }
 };
 
-exports.acceptRequest = async (req, res) => {
+exports.acceptRequest = async (req, res, next) => {
   try {
     const { id } = req.params;
 
@@ -164,14 +159,11 @@ exports.acceptRequest = async (req, res) => {
       data: foundRequest,
     });
   } catch (error) {
-    console.log(error.message);
-    res.status(500).json({
-      message: "Something went wrong"
-    })
+    next(error)
   }
 }
 
-exports.rejectRequest = async (req, res) => {
+exports.rejectRequest = async (req, res, next) => {
   try {
     const { id } = req.params;
 
@@ -199,14 +191,11 @@ exports.rejectRequest = async (req, res) => {
       data: foundRequest,
     });
   } catch (error) {
-    console.log(error.message);
-    res.status(500).json({
-       message: "Something went wrong"
-    });
+    next(error)
   }
 };
 
-exports.completeRequest = async (req, res) => {
+exports.completeRequest = async (req, res, next) => {
   try {
     const { id } = req.params;
 
@@ -241,14 +230,11 @@ exports.completeRequest = async (req, res) => {
       },
     });
   } catch (error) {
-    console.log(error.message);
-    res.status(500).json({
-      message: "Something went wrong",
-    });
+    next(error)
   }
 };
 
-exports.updateRequestProgress = async (req, res) => {
+exports.updateRequestProgress = async (req, res, next) => {
   try {
     const { id } = req.params;
     const requestedStatus = req.body.status;
@@ -321,14 +307,11 @@ exports.updateRequestProgress = async (req, res) => {
       },
     });
   } catch (error) {
-    console.log(error.message);
-    res.status(500).json({
-      message: "Something went wrong",
-    });
+    next(error)
   }
 };
 
-exports.getRequestTracking = async (req, res) => {
+exports.getRequestTracking = async (req, res, next) => {
   try {
     const { id } = req.params;
 
@@ -349,14 +332,11 @@ exports.getRequestTracking = async (req, res) => {
       },
     });
   } catch (error) {
-    console.log(error.message);
-    res.status(500).json({
-      message: "Something went wrong",
-    });
+    next(error)
   }
 };
 
-exports.rateDesigner = async (req, res) => {
+exports.rateDesigner = async (req, res, next) => {
   try {
     const { id } = req.params;
     const { rating } = req.body;
@@ -408,9 +388,6 @@ exports.rateDesigner = async (req, res) => {
       data: profile,
     });
   } catch (error) {
-    console.log(error.message);
-    res.status(500).json({
-      message: "Something went wrong",
-    });
+    next(error)
   }
 };

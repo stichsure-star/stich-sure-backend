@@ -262,8 +262,6 @@ paths:
     post:
       summary: Customer reset password (requires bearer token from forget-password OTP verification)
       tags: [customer]
-      security:
-        - bearerAuth: []
       requestBody:
         required: true
         content:
@@ -491,4 +489,4 @@ paths:
               properties:
                 message:
                   type: string
-                  example: Something went wrong  
+                  example: Something went wrong                    

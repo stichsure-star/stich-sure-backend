@@ -1,6 +1,7 @@
 const { Designer, DesignerProfile, DesignerWallet, Designs, request } = require("../models");
 const cloudinary = require("../utils/cloudinary");
 const fs = require("fs");
+const { AppError } = require('../utils/errorHandler');
 
 const reliabilityTiers = [
   { name: "Bronze", min: 0 },
@@ -89,7 +90,7 @@ const average = (numbers) => {
   return numbers.reduce((total, number) => total + number, 0) / numbers.length;
 };
 
-exports.createOrUpdateDesignerProfile = async (req, res) => {
+exports.createOrUpdateDesignerProfile = async (req, res, next) => {
   try {
     const designerId = req.user.id;
 
@@ -152,14 +153,11 @@ exports.createOrUpdateDesignerProfile = async (req, res) => {
       data: profile,
     });
   } catch (error) {
-    console.log(error.message);
-    res.status(500).json({
-       message: "Something went wrong"
-    });
+    next(error);
   }
 };
 
-exports.getAllDesignerProfiles = async (req, res) => {
+exports.getAllDesignerProfiles = async (req, res, next) => {
   try {
     const designers = await Designer.findAll({
       attributes: ["id", "firstName", "lastName", "email"],
@@ -196,14 +194,11 @@ exports.getAllDesignerProfiles = async (req, res) => {
       data,
     });
   } catch (error) {
-    console.log(error.message);
-    res.status(500).json({
-      message: "Something went wrong",
-    });
+    next(error)
   }
 };
 
-exports.getDesignerProfile = async (req, res) => {
+exports.getDesignerProfile = async (req, res, next) => {
   try {
     const { designerId } = req.params;
 
@@ -245,14 +240,11 @@ exports.getDesignerProfile = async (req, res) => {
       data,
     });
   } catch (error) {
-    console.log(error.message);
-    res.status(500).json({
-      message: "Something went wrong",
-    });
+    next(error)
   }
 };
 
-exports.getDesignerDashboardStats = async (req, res) => {
+exports.getDesignerDashboardStats = async (req, res, next) => {
   try {
     const designerId = req.user.id;
 
@@ -329,14 +321,11 @@ exports.getDesignerDashboardStats = async (req, res) => {
       },
     });
   } catch (error) {
-    console.log(error.message);
-    res.status(500).json({
-      message: "Something went wrong",
-    });
+    next(error)
   }
 };
 
-exports.updateDesignerProfile = async (req, res) => {
+exports.updateDesignerProfile = async (req, res, next) => {
   try {
     const designerId = req.user.id;
     const {
@@ -400,14 +389,11 @@ exports.updateDesignerProfile = async (req, res) => {
       data: profile,
     });
   } catch (error) {
-    console.log(error.message);
-    res.status(500).json({
-      message: "Something went wrong",
-    });
+    next(error)
   }
 };
 
-exports.deleteDesignerProfile = async (req, res) => {
+exports.deleteDesignerProfile = async (req, res, next) => {
   try {
     const designerId = req.user.id;
 
@@ -428,9 +414,6 @@ exports.deleteDesignerProfile = async (req, res) => {
       message: "Designer profile deleted successfully.",
     });
   } catch (error) {
-    console.log(error.message);
-    res.status(500).json({
-      message: "Something went wrong",
-    });
+    next(error)
   }
 };

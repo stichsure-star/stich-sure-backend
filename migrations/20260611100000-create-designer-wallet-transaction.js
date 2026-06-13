@@ -49,7 +49,7 @@ module.exports = {
       status: {
         type: Sequelize.ENUM('pending', 'completed', 'failed'),
         allowNull: false,
-        defaultValue: 'completed',
+        defaultValue: 'pending',
       },
       transactionDate: {
         type: Sequelize.DATE,

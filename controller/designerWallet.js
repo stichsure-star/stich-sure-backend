@@ -4,6 +4,7 @@ const {
   Designer,
   Order,
 } = require("../models");
+const { AppError } = require('../utils/errorHandler');
 
 const getPagination = (query) => {
   const page = Math.max(Number(query.page) || 1, 1);
@@ -13,7 +14,7 @@ const getPagination = (query) => {
   return { page, limit, offset };
 };
 
-exports.createDesignerWallet = async (req, res) => {
+exports.createDesignerWallet = async (req, res, next) => {
   try {
     const designerId = req.user.id;
     const { bankName, accountNumber, accountName } = req.body;
@@ -45,14 +46,11 @@ exports.createDesignerWallet = async (req, res) => {
       data: wallet,
     });
   } catch (error) {
-    console.log(error.message);
-    res.status(500).json({
-      message: "Something went wrong",
-    });
+    next(error);
   }
 };
 
-exports.updateDesignerWallet = async (req, res) => {
+exports.updateDesignerWallet = async (req, res, next) => {
   try {
     const designerId = req.user.id;
     const { bankName, accountNumber, accountName } = req.body;
@@ -80,14 +78,11 @@ exports.updateDesignerWallet = async (req, res) => {
       data: wallet,
     });
   } catch (error) {
-    console.log(error.message);
-    res.status(500).json({
-      message: "Something went wrong",
-    });
+    next(error);
   }
 };
 
-exports.getDesignerWallet = async (req, res) => {
+exports.getDesignerWallet = async (req, res, next) => {
   try {
     const designerId = req.user.id;
 
@@ -108,14 +103,11 @@ exports.getDesignerWallet = async (req, res) => {
       data: wallet,
     });
   } catch (error) {
-    console.log(error.message);
-    res.status(500).json({
-      message: "Something went wrong",
-    });
+    next(error);
   }
 };
 
-exports.getTransactionHistory = async (req, res) => {
+exports.getTransactionHistory = async (req, res, next) => {
   try {
     const designerId = req.user.id;
     const { page, limit, offset } = getPagination(req.query);
@@ -172,9 +164,6 @@ exports.getTransactionHistory = async (req, res) => {
       },
     });
   } catch (error) {
-    console.log(error.message);
-    res.status(500).json({
-      message: "Something went wrong",
-    });
+    next(error);
   }
 };

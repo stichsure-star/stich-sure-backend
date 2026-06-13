@@ -23,6 +23,7 @@ const shipbubble = require('./routes/shipbubble')
 const order = require('./routes/order')
 const designerWallet = require('./routes/designerWallet')
 
+const { globalErrorHandler } = require('./utils/errorHandler');
 
 app.use(express.json());
 app.use(cors({
@@ -58,34 +59,13 @@ app.use('/api/v1/designerWallet', designerWallet);
 
 app.use((req, res) => {
     res.status(404).json({
+        success: false,
         message: 'Route not found'
     })
 })
 
-app.use((err, req, res, next) => {
-    console.log(err)
-    return res.status(500).json({
-        message: err.message
-    })
-})
 
-app.use((err, req, res, next) => {
-    if (err.name === 'MulterError'){
-        return res.status(400).json({
-            message: 'File upload failed'
-        })
-    }
-    console.log('rice', err);
-    
-    if (err.name === 'JsonWebTokenError') {
-        return res.status(401).json({
-            message: 'Session expired, please login again'
-        })
-    }
-    res.status(500).json({
-        message: err.message
-    })
-})
+app.use(globalErrorHandler);
 
 const startServer = async () => {
   try {

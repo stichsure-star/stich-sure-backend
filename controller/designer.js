@@ -6,14 +6,16 @@ const jwt = require("jsonwebtoken");
 const redisClient = require('../Redis/redisConnection')
 const { emailTemplate, resetPasswordTemplate, resetPasswordSuccessfulTemplate } = require('../utils/emailTemplates')
 const { sendSingleEmail } = require('../utils/brevo');
+const { AppError } = require('../utils/errorHandler');
 
-exports.createDesingner = async (req, res) => {
+exports.createDesingner = async (req, res, next) => {
   try {
     const { firstName, lastName, email, password } = req.body;
 
     const existingEmail = await Designer.findOne({where:{email: email.toLowerCase(), }});
     if (existingEmail) {
       return res.status(409).json({
+        success: false,
         message: "Designer with this email already exists",
       });
     }
@@ -27,7 +29,7 @@ exports.createDesingner = async (req, res) => {
         message: "This email is already registered as a customer",
       });
     }
-    const otpExpire = Date.now() + 3 * 60 * 1000;
+    const otpExpire = Date.now() + 5 * 60 * 1000;
 const otp = otpGenerator.generate(6, {
   upperCaseAlphabets: false,
   lowerCaseAlphabets: false,
@@ -60,15 +62,11 @@ const otp = otpGenerator.generate(6, {
   message: "Account created successfully. Please check your email for the verification OTP.",
 });
   } catch (error) {
-    console.log(error.message)
-    res.status(500).json({
-      success: false,
-      error: error.message
-    })
+    next(error);
   }
 };
 
-exports.loginDesigner = async (req, res) => {
+exports.loginDesigner = async (req, res, next) => {
   try {
     const { email, password } = req.body;
     const existingDesigner = await Designer.findOne({
@@ -76,11 +74,13 @@ exports.loginDesigner = async (req, res) => {
     });
     if (!existingDesigner) {
       return res.status(404).json({
+        success: false,
         message: "Invaid email or password",
       });
     }
      if (existingDesigner.isEmailVerified == false) {
            return res.status(403).json({
+            success: false,
             message: 'Please verify your email to continue'
            })
         }
@@ -90,6 +90,7 @@ exports.loginDesigner = async (req, res) => {
     );
     if (!checkPassword) {
       return res.status(404).json({
+        success: false,
         message: "Invalid credentials",
       });
     }
@@ -113,7 +114,8 @@ exports.loginDesigner = async (req, res) => {
       id: existingDesigner.id,
       email: existingDesigner.email,
       role: existingDesigner.role,
-      fullName: existingDesigner.firstName + " " + existingDesigner.lastName,
+      firstName: existingDesigner.firstName,
+      lastName:  existingDesigner.lastName
     }
 
     res.status(200).json({
@@ -123,14 +125,11 @@ exports.loginDesigner = async (req, res) => {
       data,
     })
   } catch (error) {
-    console.log(error.message)
-    res.status(500).json({
-      error: error.message,
-    })
+    next(error);
   }
 };
 
-exports.verifyEmail = async (req, res) => {
+exports.verifyEmail = async (req, res, next) => {
   try {
     const { otp, email } = req.body;
 
@@ -138,24 +137,28 @@ exports.verifyEmail = async (req, res) => {
 
     if (!designer) {
       return res.status(404).json({
+        success: false,
         message: "Designer account not found",
       });
     }
 
     if (designer.isEmailVerified) {
       return res.status(400).json({
+        success: false,
         message: "Designer email is already verified",
       });
     }
 
     if (designer.otpExpire < Date.now()) {
       return res.status(400).json({
+        success: false,
         message: "OTP has expired",
       });
     }
 
     if (designer.otp !== otp) {
       return res.status(400).json({
+        success: false,
         message: "OTP is invalid",
       });
     }
@@ -172,15 +175,11 @@ exports.verifyEmail = async (req, res) => {
       message: "Designer email verified successfully.",
     });
   } catch (error) {
-    console.log(error.message);
-    res.status(500).json({
-      success: false,
-      message: "Something went wrong",
-    });
+    next(error);
   }
 };
 
-exports.forgetPassword = async (req, res) => {
+exports.forgetPassword = async (req, res, next) => {
   try {
     const { email } = req.body;
 
@@ -189,6 +188,7 @@ exports.forgetPassword = async (req, res) => {
     });
     if (!existingEmail) {
       return res.status(404).json({
+        success: false,
         message: `Designer with ${email} doesn't exist`,
       });
     }
@@ -205,37 +205,28 @@ exports.forgetPassword = async (req, res) => {
 
     await existingEmail.save();
 
+    await sendSingleEmail({
+      email: existingEmail.email,
+      subject: "Reset Your Password",
+      html: resetPasswordTemplate(existingEmail.firstName, otp),
+    });
+
     res.status(200).json({
       success: true,
       message: "OTP has been sent to your email address. Use it to reset your password.",
     });
-
-    (async () => {
-      try {
-        await sendSingleEmail({
-          email: existingEmail.email,
-          subject: "Reset Your Password",
-          html: resetPasswordTemplate(existingEmail.firstName, otp),
-        });
-      } catch (error) {
-        console.log(error.message);
-      }
-    })();
   } catch (error) {
-    console.log(error.message)
-    res.status(500).json({
-      success: false,
-      message: 'Something went wrong'
-    })
+    next(error);
   }
 };
 
-exports.resetPassword = async (req, res) => {
+exports.resetPassword = async (req, res, next) => {
   try {
     const { password } = req.body;
 
     if (!req.user || !req.user.id) {
       return res.status(401).json({
+         success: false,
          message: 'Unauthorized' 
         });
     }
@@ -244,6 +235,7 @@ exports.resetPassword = async (req, res) => {
 
     if (!designer) {
       return res.status(404).json({
+         success: false,
          message: 'Designer not found' 
         });
     }
@@ -257,33 +249,24 @@ exports.resetPassword = async (req, res) => {
       message: "Designer password reset successfully.",
     });
 
-    (async () => {
-      try {
-        await sendSingleEmail({
-          email: designer.email,
-          subject: "Password Reset Successful",
-          html: resetPasswordSuccessfulTemplate(designer.firstName),
-        });
-      } catch (error) {
-        console.log(error.message);
-      }
-    })();
+    await sendSingleEmail({
+      email: designer.email,
+      subject: "Password Reset Successful",
+      html: resetPasswordSuccessfulTemplate(designer.firstName),
+    });
   } catch (error) {
-    console.log(error.message)
-    res.status(500).json({
-      success: false,
-      message: "Something went wrong"
-    })
+    next(error);
   }
 }
 
-exports.resendOTP = async (req, res) => {
+exports.resendOTP = async (req, res, next) => {
     try {
         const { email } = req.body;
 
         const user = await Designer.findOne({where: {email: email.toLowerCase()}})
         if (!user) {
           return res.status(404).json({
+            success: false,
             message: 'User not found'
           })
         }
@@ -310,14 +293,11 @@ exports.resendOTP = async (req, res) => {
           message: 'OTP sent successfully'
         })
     } catch (error) {
-      console.log(error.message)
-     return res.status(500).json({
-        message: 'Something went wrong'
-     })
+      next(error);
     }
 };
 
-exports.logOut = async (req, res) => {
+exports.logOut = async (req, res, next) => {
   try {
     const {id, role} = req.user
 
@@ -335,9 +315,6 @@ exports.logOut = async (req, res) => {
       message: 'Logged out successfully'
     })
   } catch (error) {
-    console.log(error.message);
-    return res.status(500).json({
-      message: 'Something went wrong'
-    })
+    next(error);
   }
 }

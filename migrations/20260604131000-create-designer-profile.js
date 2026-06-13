@@ -35,7 +35,7 @@ module.exports = {
         allowNull: true
       },
       specialization: {
-        type: Sequelize.STRING,
+        type: Sequelize.TEXT,
         allowNull: true
       },
       yearsOfExperience: {
@@ -43,7 +43,7 @@ module.exports = {
         allowNull: true
       },
       shortBio: {
-        type: Sequelize.STRING,
+        type: Sequelize.TEXT,
         allowNull: true
       },
       completedOrders: {

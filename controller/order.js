@@ -8,6 +8,7 @@ const {
   DesignerWallet,
   DesignerWalletTransaction,
 } = require("../models");
+const { AppError } = require('../utils/errorHandler');
 
 const allowedStatuses = ["new", "preparing", "ready", "completed", "cancelled"];
 
@@ -42,6 +43,9 @@ const buildOrderWhere = (req) => {
 };
 
 const creditCompletedOrderToWallet = async (order) => {
+  // TODO: Implement escrow release logic if applicable
+  // const releasedEscrow = await releaseEscrowForOrder(order);
+
   const amount = Number(order.amount || 0);
 
   if (amount <= 0) {
@@ -84,7 +88,7 @@ const creditCompletedOrderToWallet = async (order) => {
   });
 };
 
-exports.createOrder = async (req, res) => {
+exports.createOrder = async (req, res, next) => {
   try {
     const customerId = req.user.id;
     const { requestId, designerId, designId, itemName, amount } = req.body;
@@ -95,12 +99,14 @@ exports.createOrder = async (req, res) => {
 
       if (!foundRequest) {
         return res.status(404).json({
+          success: false,
           message: "Request not found",
         });
       }
 
       if (foundRequest.customerId !== customerId) {
         return res.status(403).json({
+          success: false,
           message: "You can only create an order from your own request",
         });
       }
@@ -109,6 +115,7 @@ exports.createOrder = async (req, res) => {
     const resolvedDesignerId = designerId || foundRequest?.designerId;
     if (!resolvedDesignerId) {
       return res.status(400).json({
+        success: false,
         message: "designerId is required when requestId is not provided",
       });
     }
@@ -131,14 +138,11 @@ exports.createOrder = async (req, res) => {
       data: order,
     });
   } catch (error) {
-    console.log(error.message);
-    res.status(500).json({
-      message: "Something went wrong",
-    });
+    next(error);
   }
 };
 
-exports.getDesignerOrders = async (req, res) => {
+exports.getDesignerOrders = async (req, res, next) => {
   try {
     const designerId = req.user.id;
     const { page, limit, offset } = getPagination(req.query);
@@ -180,14 +184,11 @@ exports.getDesignerOrders = async (req, res) => {
       },
     });
   } catch (error) {
-    console.log(error.message);
-    res.status(500).json({
-      message: "Something went wrong",
-    });
+    next(error);
   }
 };
 
-exports.getCustomerOrders = async (req, res) => {
+exports.getCustomerOrders = async (req, res, next) => {
   try {
     const customerId = req.user.id;
     const { page, limit, offset } = getPagination(req.query);
@@ -229,14 +230,11 @@ exports.getCustomerOrders = async (req, res) => {
       },
     });
   } catch (error) {
-    console.log(error.message);
-    res.status(500).json({
-      message: "Something went wrong",
-    });
+    next(error);
   }
 };
 
-exports.getOrderById = async (req, res) => {
+exports.getOrderById = async (req, res, next) => {
   try {
     const { id } = req.params;
 
@@ -261,6 +259,7 @@ exports.getOrderById = async (req, res) => {
 
     if (!order) {
       return res.status(404).json({
+        success: false,
         message: "Order not found",
       });
     }
@@ -271,20 +270,18 @@ exports.getOrderById = async (req, res) => {
       data: order,
     });
   } catch (error) {
-    console.log(error.message);
-    res.status(500).json({
-      message: "Something went wrong",
-    });
+    next(error);
   }
 };
 
-exports.updateOrderStatus = async (req, res) => {
+exports.updateOrderStatus = async (req, res, next) => {
   try {
     const { id } = req.params;
     const { status } = req.body;
 
     if (!allowedStatuses.includes(status)) {
       return res.status(400).json({
+        success: false,
         message: "Status must be new, preparing, ready, completed, or cancelled",
       });
     }
@@ -293,12 +290,14 @@ exports.updateOrderStatus = async (req, res) => {
 
     if (!order) {
       return res.status(404).json({
+        success: false,
         message: "Order not found",
       });
     }
 
     if (order.designerId !== req.user.id) {
       return res.status(403).json({
+        success: false,
         message: "Only the assigned designer can update this order",
       });
     }
@@ -330,9 +329,6 @@ exports.updateOrderStatus = async (req, res) => {
       data: order,
     });
   } catch (error) {
-    console.log(error.message);
-    res.status(500).json({
-      message: "Something went wrong",
-    });
+    next(error);
   }
 };
