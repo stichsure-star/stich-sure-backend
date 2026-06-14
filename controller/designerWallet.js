@@ -1,6 +1,7 @@
 const {
   DesignerWallet,
   DesignerWalletTransaction,
+  DesignerProfile,
   Designer,
   Order,
 } = require("../models");
@@ -18,6 +19,13 @@ exports.createDesignerWallet = async (req, res, next) => {
   try {
     const designerId = req.user.id;
     const { bankName, accountNumber, accountName } = req.body;
+
+    if (!bankName || !accountNumber || !accountName) {
+      return res.status(400).json({
+        success: false,
+        message: "Bank name, account number, and account name are required.",
+      });
+    }
 
     const existingWallet = await DesignerWallet.findOne({
       where: { designerId },
@@ -39,6 +47,18 @@ exports.createDesignerWallet = async (req, res, next) => {
       availableBalance: 0,
       withdrawn: 0,
     });
+
+    const profile = await DesignerProfile.findOne({
+      where: { designerId },
+    });
+
+    if (profile) {
+      await profile.update({
+        bankName,
+        accountNumber,
+        accountName,
+      });
+    }
 
     return res.status(201).json({
       success: true,
@@ -71,6 +91,18 @@ exports.updateDesignerWallet = async (req, res, next) => {
       accountNumber: accountNumber || wallet.accountNumber,
       accountName: accountName || wallet.accountName,
     });
+
+    const profile = await DesignerProfile.findOne({
+      where: { designerId },
+    });
+
+    if (profile) {
+      await profile.update({
+        bankName: bankName || profile.bankName,
+        accountNumber: accountNumber || profile.accountNumber,
+        accountName: accountName || profile.accountName,
+      });
+    }
 
     return res.status(200).json({
       success: true,

@@ -1,5 +1,5 @@
-const { Customer } = require("../models");
-const { Designer } = require("../models");
+const { Op } = require("sequelize");
+const { Customer, Designer, DesignerProfile, Order, SavedDesigner } = require("../models");
 const bcrypt = require("bcrypt");
 const otpGenerator = require("otp-generator");
 const fs = require("fs");
@@ -20,16 +20,6 @@ exports.createCustomer = async (req, res, next) => {
       return res.status(409).json({
         success: false,
         message: "Customer with this email already exists",
-      });
-    }
-    const existingDesigner = await Designer.findOne({
-      where: { email },
-    });
-
-    if (existingDesigner) {
-      return res.status(400).json({
-        success: false,
-        message: "This email is already registered as a designer",
       });
     }
     const otpExpire = Date.now() + 5 * 60 * 1000;
@@ -437,3 +427,155 @@ exports.logOut = async (req, res, next) => {
     next(error);
   }
 }
+
+exports.getCustomerDashboardStats = async (req, res, next) => {
+  try {
+    const customerId = req.user.id;
+
+    if (req.user.role !== "customer") {
+      return res.status(403).json({
+        success: false,
+        message: "Unauthorized. Only customers can perform this action",
+      });
+    }
+
+    const [activeOrders, completedOrders, savedDesigners] = await Promise.all([
+      Order.count({
+        where: {
+          customerId,
+          status: {
+            [Op.in]: ["new", "preparing", "ready"],
+          },
+        },
+      }),
+      Order.count({
+        where: {
+          customerId,
+          status: "completed",
+        },
+      }),
+      SavedDesigner.count({
+        where: { customerId },
+      }),
+    ]);
+
+    return res.status(200).json({
+      success: true,
+      message: "Customer dashboard stats loaded successfully.",
+      data: {
+        activeOrders,
+        savedDesigners,
+        completedOrders,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+exports.saveDesigner = async (req, res, next) => {
+  try {
+    const customerId = req.user.id;
+    const { designerId } = req.params;
+
+    if (req.user.role !== "customer") {
+      return res.status(403).json({
+        success: false,
+        message: "Unauthorized. Only customers can perform this action",
+      });
+    }
+
+    const designer = await Designer.findByPk(designerId);
+    if (!designer) {
+      return res.status(404).json({
+        success: false,
+        message: "Designer not found",
+      });
+    }
+
+    const [savedDesigner, created] = await SavedDesigner.findOrCreate({
+      where: { customerId, designerId },
+    });
+
+    return res.status(created ? 201 : 200).json({
+      success: true,
+      message: created
+        ? "Designer saved successfully."
+        : "Designer is already saved.",
+      data: savedDesigner,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+exports.getSavedDesigners = async (req, res, next) => {
+  try {
+    const customerId = req.user.id;
+
+    if (req.user.role !== "customer") {
+      return res.status(403).json({
+        success: false,
+        message: "Unauthorized. Only customers can perform this action",
+      });
+    }
+
+    const savedDesigners = await SavedDesigner.findAll({
+      where: { customerId },
+      include: [
+        {
+          model: Designer,
+          as: "designer",
+          attributes: ["id", "firstName", "lastName", "email"],
+          include: [
+            {
+              model: DesignerProfile,
+              as: "profile",
+            },
+          ],
+        },
+      ],
+      order: [["createdAt", "DESC"]],
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "Saved designers loaded successfully.",
+      data: savedDesigners,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+exports.removeSavedDesigner = async (req, res, next) => {
+  try {
+    const customerId = req.user.id;
+    const { designerId } = req.params;
+
+    if (req.user.role !== "customer") {
+      return res.status(403).json({
+        success: false,
+        message: "Unauthorized. Only customers can perform this action",
+      });
+    }
+
+    const deletedCount = await SavedDesigner.destroy({
+      where: { customerId, designerId },
+    });
+
+    if (!deletedCount) {
+      return res.status(404).json({
+        success: false,
+        message: "Saved designer not found",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Designer removed from saved designers successfully.",
+    });
+  } catch (error) {
+    next(error);
+  }
+};

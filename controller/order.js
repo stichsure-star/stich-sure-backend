@@ -5,12 +5,18 @@ const {
   Designer,
   Designs,
   request,
-  DesignerWallet,
-  DesignerWalletTransaction,
 } = require("../models");
 const { AppError } = require('../utils/errorHandler');
+const { releaseOrderEscrowToDesigner } = require("../utils/escrow");
 
 const allowedStatuses = ["new", "preparing", "ready", "completed", "cancelled"];
+const statusAliases = {
+  picked_up: "preparing",
+  pickedUp: "preparing",
+  "picked-up": "preparing",
+  in_production: "preparing",
+  delivered: "completed",
+};
 
 const generateOrderNumber = () => {
   const randomNumber = Math.floor(100000 + Math.random() * 900000);
@@ -42,56 +48,17 @@ const buildOrderWhere = (req) => {
   return where;
 };
 
-const creditCompletedOrderToWallet = async (order) => {
-  // TODO: Implement escrow release logic if applicable
-  // const releasedEscrow = await releaseEscrowForOrder(order);
-
-  const amount = Number(order.amount || 0);
-
-  if (amount <= 0) {
-    return;
-  }
-
-  const existingTransaction = await DesignerWalletTransaction.findOne({
-    where: { orderId: order.id },
-  });
-
-  if (existingTransaction) {
-    return;
-  }
-
-  let wallet = await DesignerWallet.findOne({
-    where: { designerId: order.designerId },
-  });
-
-  if (!wallet) {
-    wallet = await DesignerWallet.create({
-      designerId: order.designerId,
-      totalEarnings: 0,
-      availableBalance: 0,
-      withdrawn: 0,
-    });
-  }
-
-  await wallet.update({
-    totalEarnings: Number(wallet.totalEarnings) + amount,
-    availableBalance: Number(wallet.availableBalance) + amount,
-  });
-
-  await DesignerWalletTransaction.create({
-    designerWalletId: wallet.id,
-    designerId: order.designerId,
-    orderId: order.id,
-    amount,
-    status: "completed",
-    transactionDate: order.completedAt || new Date(),
-  });
-};
-
 exports.createOrder = async (req, res, next) => {
   try {
     const customerId = req.user.id;
-    const { requestId, designerId, designId, itemName, amount } = req.body;
+    const { requestId, designerId, designId, itemName, amount, address } = req.body;
+
+    if (!itemName || !amount || !address) {
+      return res.status(400).json({
+        success: false,
+        message: "itemName, amount, and address are required",
+      });
+    }
 
     let foundRequest = null;
     if (requestId) {
@@ -128,6 +95,7 @@ exports.createOrder = async (req, res, next) => {
       designId: designId || null,
       itemName,
       amount,
+      address,
       status: "new",
       placedAt: new Date(),
     });
@@ -277,12 +245,13 @@ exports.getOrderById = async (req, res, next) => {
 exports.updateOrderStatus = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { status } = req.body;
+    const requestedStatus = req.body.status;
+    const status = statusAliases[requestedStatus] || requestedStatus;
 
     if (!allowedStatuses.includes(status)) {
       return res.status(400).json({
         success: false,
-        message: "Status must be new, preparing, ready, completed, or cancelled",
+        message: "Status must be new, preparing, ready, completed, cancelled, picked_up, or delivered",
       });
     }
 
@@ -318,8 +287,9 @@ exports.updateOrderStatus = async (req, res, next) => {
 
     await order.update(updateData);
 
+    let escrow = null;
     if (status === "completed") {
-      await creditCompletedOrderToWallet(order);
+      escrow = await releaseOrderEscrowToDesigner(order.id);
       await order.reload();
     }
 
@@ -327,6 +297,7 @@ exports.updateOrderStatus = async (req, res, next) => {
       success: true,
       message: "Order status updated successfully.",
       data: order,
+      escrow,
     });
   } catch (error) {
     next(error);

@@ -1,4 +1,4 @@
-const { Designer, DesignerProfile, DesignerWallet, Designs, request } = require("../models");
+const { sequelize, Designer, DesignerProfile, DesignerWallet, Designs, request } = require("../models");
 const cloudinary = require("../utils/cloudinary");
 const fs = require("fs");
 const { AppError } = require('../utils/errorHandler');
@@ -97,11 +97,22 @@ exports.createOrUpdateDesignerProfile = async (req, res, next) => {
     const {
       businessName,
       currentHouseAddress,
+      phoneNumber,
+      bankName,
+      accountNumber,
+      accountName,
       specialization,
       yearsOfExperience,
       shortBio,
     } = req.body;
     const parsedSpecialization = parseSpecialization(specialization);
+
+    if (!businessName || !currentHouseAddress || !phoneNumber) {
+      return res.status(400).json({
+        success: false,
+        message: "Business name, current house address, and phone number are required.",
+      });
+    }
 
     let profile = await DesignerProfile.findOne({
       where: { designerId },
@@ -119,6 +130,7 @@ exports.createOrUpdateDesignerProfile = async (req, res, next) => {
     const isProfileCompleted =
       businessName &&
       currentHouseAddress &&
+      phoneNumber &&
       parsedSpecialization &&
       yearsOfExperience &&
       shortBio &&
@@ -128,6 +140,10 @@ exports.createOrUpdateDesignerProfile = async (req, res, next) => {
       await profile.update({
         businessName,
         currentHouseAddress,
+        phoneNumber,
+        bankName,
+        accountNumber,
+        accountName,
         specialization: parsedSpecialization,
         yearsOfExperience,
         shortBio,
@@ -139,6 +155,10 @@ exports.createOrUpdateDesignerProfile = async (req, res, next) => {
         designerId,
         businessName,
         currentHouseAddress,
+        phoneNumber,
+        bankName,
+        accountNumber,
+        accountName,
         specialization: parsedSpecialization,
         yearsOfExperience,
         shortBio,
@@ -153,6 +173,118 @@ exports.createOrUpdateDesignerProfile = async (req, res, next) => {
       data: profile,
     });
   } catch (error) {
+    next(error);
+  }
+};
+
+exports.createOrUpdateDesignerOnboarding = async (req, res, next) => {
+  const transaction = await sequelize.transaction();
+
+  try {
+    const designerId = req.user.id;
+    const {
+      businessName,
+      currentHouseAddress,
+      phoneNumber,
+      specialization,
+      yearsOfExperience,
+      shortBio,
+      bankName,
+      accountNumber,
+      accountName,
+    } = req.body;
+
+    if (!businessName || !currentHouseAddress || !phoneNumber) {
+      await transaction.rollback();
+      return res.status(400).json({
+        success: false,
+        message: "Business name, current house address, and phone number are required.",
+      });
+    }
+
+    if (!bankName || !accountNumber || !accountName) {
+      await transaction.rollback();
+      return res.status(400).json({
+        success: false,
+        message: "Bank name, account number, and account name are required.",
+      });
+    }
+
+    const parsedSpecialization = parseSpecialization(specialization);
+
+    let profile = await DesignerProfile.findOne({
+      where: { designerId },
+      transaction,
+    });
+    let profilePhoto = profile ? profile.profilePhoto : null;
+
+    if (req.file) {
+      const filePath = req.file.path;
+      const uploadToCloudinary = await cloudinary.uploader.upload(filePath);
+      profilePhoto = uploadToCloudinary.secure_url;
+      fs.unlinkSync(filePath);
+    }
+
+    const isProfileCompleted =
+      businessName &&
+      currentHouseAddress &&
+      phoneNumber &&
+      parsedSpecialization &&
+      yearsOfExperience &&
+      shortBio &&
+      profilePhoto;
+
+    const profilePayload = {
+      designerId,
+      businessName,
+      currentHouseAddress,
+      phoneNumber,
+      bankName,
+      accountNumber,
+      accountName,
+      specialization: parsedSpecialization,
+      yearsOfExperience,
+      shortBio,
+      profilePhoto,
+      isProfileCompleted: !!isProfileCompleted,
+    };
+
+    if (profile) {
+      await profile.update(profilePayload, { transaction });
+    } else {
+      profile = await DesignerProfile.create(profilePayload, { transaction });
+    }
+
+    let wallet = await DesignerWallet.findOne({
+      where: { designerId },
+      transaction,
+    });
+
+    const walletPayload = {
+      designerId,
+      bankName,
+      accountNumber,
+      accountName,
+    };
+
+    if (wallet) {
+      await wallet.update(walletPayload, { transaction });
+    } else {
+      wallet = await DesignerWallet.create(walletPayload, { transaction });
+    }
+
+    await transaction.commit();
+
+    return res.status(200).json({
+      success: true,
+      message: "Designer onboarding saved successfully.",
+      data: {
+        profile,
+        wallet,
+      },
+    });
+  } catch (error) {
+    await transaction.rollback();
     next(error);
   }
 };
@@ -264,7 +396,7 @@ exports.getDesignerDashboardStats = async (req, res, next) => {
 
     const reliabilityScore =
       acceptedRequests.length === 0
-        ? 100
+        ? 0
         : Math.round((completedRequests.length / acceptedRequests.length) * 100);
 
     const onTimeRequests = completedRequests.filter((item) => {
@@ -331,6 +463,10 @@ exports.updateDesignerProfile = async (req, res, next) => {
     const {
       businessName,
       currentHouseAddress,
+      phoneNumber,
+      bankName,
+      accountNumber,
+      accountName,
       specialization,
       yearsOfExperience,
       shortBio,
@@ -358,6 +494,10 @@ exports.updateDesignerProfile = async (req, res, next) => {
     const updatedBusinessName = businessName || profile.businessName;
     const updatedCurrentHouseAddress =
       currentHouseAddress || profile.currentHouseAddress;
+    const updatedPhoneNumber = phoneNumber || profile.phoneNumber;
+    const updatedBankName = bankName || profile.bankName;
+    const updatedAccountNumber = accountNumber || profile.accountNumber;
+    const updatedAccountName = accountName || profile.accountName;
     const updatedSpecialization = specialization
       ? parseSpecialization(specialization)
       : profile.specialization;
@@ -368,6 +508,7 @@ exports.updateDesignerProfile = async (req, res, next) => {
     const isProfileCompleted =
       updatedBusinessName &&
       updatedCurrentHouseAddress &&
+      updatedPhoneNumber &&
       updatedSpecialization &&
       updatedYearsOfExperience &&
       updatedShortBio &&
@@ -376,6 +517,10 @@ exports.updateDesignerProfile = async (req, res, next) => {
     await profile.update({
       businessName: updatedBusinessName,
       currentHouseAddress: updatedCurrentHouseAddress,
+      phoneNumber: updatedPhoneNumber,
+      bankName: updatedBankName,
+      accountNumber: updatedAccountNumber,
+      accountName: updatedAccountName,
       specialization: updatedSpecialization,
       yearsOfExperience: updatedYearsOfExperience,
       shortBio: updatedShortBio,

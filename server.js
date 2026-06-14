@@ -21,7 +21,7 @@ const collaboration = require('./routes/collaboration')
 const shipbubble = require('./routes/shipbubble')
 
 const order = require('./routes/order')
-const designerWallet = require('./routes/designerWallet')
+const payment = require('./routes/payment')
 
 const { globalErrorHandler } = require('./utils/errorHandler');
 
@@ -54,7 +54,7 @@ app.use('/api/v1/collaboration', collaboration);
 app.use('/api/v1/shipment', shipbubble)
 
 app.use('/api/v1/orders', order);
-app.use('/api/v1/designerWallet', designerWallet);
+app.use('/api/v1/payment', payment);
 
 
 app.use((req, res) => {

@@ -2,6 +2,7 @@ const router = require('express').Router();
 const { upload } = require('../middlewares/multer');
 const {
   createOrUpdateDesignerProfile,
+  createOrUpdateDesignerOnboarding,
   getAllDesignerProfiles,
   getDesignerProfile,
   getDesignerDashboardStats,
@@ -10,6 +11,7 @@ const {
 } = require('../controller/designerProfile')
 const { authentication } = require('../middlewares/authentication')
 
+router.post('/onboarding', authentication, upload.single('profilePhoto'), createOrUpdateDesignerOnboarding);
 router.post('/create', authentication, upload.single('profilePhoto'), createOrUpdateDesignerProfile);
 router.get('/getAll', getAllDesignerProfiles);
 router.get('/dashboard-stats', authentication, getDesignerDashboardStats);

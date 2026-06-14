@@ -38,6 +38,10 @@ module.exports = {
         type: Sequelize.TEXT,
         allowNull: true
       },
+      phoneNumber: {
+        type: Sequelize.STRING,
+        allowNull: true
+      },
       yearsOfExperience: {
         type: Sequelize.INTEGER,
         allowNull: true
@@ -64,7 +68,7 @@ module.exports = {
       reliabilityScore: {
         type: Sequelize.INTEGER,
         allowNull: false,
-        defaultValue: 100
+        defaultValue: 0
       },
       isProfileCompleted: {
         type: Sequelize.BOOLEAN,
