@@ -5,11 +5,18 @@ const {
   Designer,
   Designs,
   request,
-  DesignerWallet,
-  DesignerWalletTransaction,
 } = require("../models");
+const { AppError } = require('../utils/errorHandler');
+const { releaseOrderEscrowToDesigner } = require("../utils/escrow");
 
 const allowedStatuses = ["new", "preparing", "ready", "completed", "cancelled"];
+const statusAliases = {
+  picked_up: "preparing",
+  pickedUp: "preparing",
+  "picked-up": "preparing",
+  in_production: "preparing",
+  delivered: "completed",
+};
 
 const generateOrderNumber = () => {
   const randomNumber = Math.floor(100000 + Math.random() * 900000);
@@ -41,53 +48,17 @@ const buildOrderWhere = (req) => {
   return where;
 };
 
-const creditCompletedOrderToWallet = async (order) => {
-  const amount = Number(order.amount || 0);
-
-  if (amount <= 0) {
-    return;
-  }
-
-  const existingTransaction = await DesignerWalletTransaction.findOne({
-    where: { orderId: order.id },
-  });
-
-  if (existingTransaction) {
-    return;
-  }
-
-  let wallet = await DesignerWallet.findOne({
-    where: { designerId: order.designerId },
-  });
-
-  if (!wallet) {
-    wallet = await DesignerWallet.create({
-      designerId: order.designerId,
-      totalEarnings: 0,
-      availableBalance: 0,
-      withdrawn: 0,
-    });
-  }
-
-  await wallet.update({
-    totalEarnings: Number(wallet.totalEarnings) + amount,
-    availableBalance: Number(wallet.availableBalance) + amount,
-  });
-
-  await DesignerWalletTransaction.create({
-    designerWalletId: wallet.id,
-    designerId: order.designerId,
-    orderId: order.id,
-    amount,
-    status: "completed",
-    transactionDate: order.completedAt || new Date(),
-  });
-};
-
-exports.createOrder = async (req, res) => {
+exports.createOrder = async (req, res, next) => {
   try {
     const customerId = req.user.id;
-    const { requestId, designerId, designId, itemName, amount } = req.body;
+    const { requestId, designerId, designId, itemName, amount, address } = req.body;
+
+    if (!itemName || !amount || !address) {
+      return res.status(400).json({
+        success: false,
+        message: "itemName, amount, and address are required",
+      });
+    }
 
     let foundRequest = null;
     if (requestId) {
@@ -95,12 +66,14 @@ exports.createOrder = async (req, res) => {
 
       if (!foundRequest) {
         return res.status(404).json({
+          success: false,
           message: "Request not found",
         });
       }
 
       if (foundRequest.customerId !== customerId) {
         return res.status(403).json({
+          success: false,
           message: "You can only create an order from your own request",
         });
       }
@@ -109,6 +82,7 @@ exports.createOrder = async (req, res) => {
     const resolvedDesignerId = designerId || foundRequest?.designerId;
     if (!resolvedDesignerId) {
       return res.status(400).json({
+        success: false,
         message: "designerId is required when requestId is not provided",
       });
     }
@@ -121,6 +95,7 @@ exports.createOrder = async (req, res) => {
       designId: designId || null,
       itemName,
       amount,
+      address,
       status: "new",
       placedAt: new Date(),
     });
@@ -131,14 +106,11 @@ exports.createOrder = async (req, res) => {
       data: order,
     });
   } catch (error) {
-    console.log(error.message);
-    res.status(500).json({
-      message: "Something went wrong",
-    });
+    next(error);
   }
 };
 
-exports.getDesignerOrders = async (req, res) => {
+exports.getDesignerOrders = async (req, res, next) => {
   try {
     const designerId = req.user.id;
     const { page, limit, offset } = getPagination(req.query);
@@ -180,14 +152,11 @@ exports.getDesignerOrders = async (req, res) => {
       },
     });
   } catch (error) {
-    console.log(error.message);
-    res.status(500).json({
-      message: "Something went wrong",
-    });
+    next(error);
   }
 };
 
-exports.getCustomerOrders = async (req, res) => {
+exports.getCustomerOrders = async (req, res, next) => {
   try {
     const customerId = req.user.id;
     const { page, limit, offset } = getPagination(req.query);
@@ -229,14 +198,11 @@ exports.getCustomerOrders = async (req, res) => {
       },
     });
   } catch (error) {
-    console.log(error.message);
-    res.status(500).json({
-      message: "Something went wrong",
-    });
+    next(error);
   }
 };
 
-exports.getOrderById = async (req, res) => {
+exports.getOrderById = async (req, res, next) => {
   try {
     const { id } = req.params;
 
@@ -261,6 +227,7 @@ exports.getOrderById = async (req, res) => {
 
     if (!order) {
       return res.status(404).json({
+        success: false,
         message: "Order not found",
       });
     }
@@ -271,21 +238,20 @@ exports.getOrderById = async (req, res) => {
       data: order,
     });
   } catch (error) {
-    console.log(error.message);
-    res.status(500).json({
-      message: "Something went wrong",
-    });
+    next(error);
   }
 };
 
-exports.updateOrderStatus = async (req, res) => {
+exports.updateOrderStatus = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { status } = req.body;
+    const requestedStatus = req.body.status;
+    const status = statusAliases[requestedStatus] || requestedStatus;
 
     if (!allowedStatuses.includes(status)) {
       return res.status(400).json({
-        message: "Status must be new, preparing, ready, completed, or cancelled",
+        success: false,
+        message: "Status must be new, preparing, ready, completed, cancelled, picked_up, or delivered",
       });
     }
 
@@ -293,12 +259,14 @@ exports.updateOrderStatus = async (req, res) => {
 
     if (!order) {
       return res.status(404).json({
+        success: false,
         message: "Order not found",
       });
     }
 
     if (order.designerId !== req.user.id) {
       return res.status(403).json({
+        success: false,
         message: "Only the assigned designer can update this order",
       });
     }
@@ -319,8 +287,9 @@ exports.updateOrderStatus = async (req, res) => {
 
     await order.update(updateData);
 
+    let escrow = null;
     if (status === "completed") {
-      await creditCompletedOrderToWallet(order);
+      escrow = await releaseOrderEscrowToDesigner(order.id);
       await order.reload();
     }
 
@@ -328,11 +297,9 @@ exports.updateOrderStatus = async (req, res) => {
       success: true,
       message: "Order status updated successfully.",
       data: order,
+      escrow,
     });
   } catch (error) {
-    console.log(error.message);
-    res.status(500).json({
-      message: "Something went wrong",
-    });
+    next(error);
   }
 };

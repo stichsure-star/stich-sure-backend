@@ -19,6 +19,7 @@ paths:
               required:
                 - businessName
                 - currentHouseAddress
+                - phoneNumber
                 - specialization
                 - yearsOfExperience
                 - shortBio
@@ -31,6 +32,22 @@ paths:
                   type: string
                   example: "123 Fashion Avenue"
                   description: "The designer's current work address"
+                phoneNumber:
+                  type: string
+                  example: "+2348012345678"
+                  description: "The designer's phone number"
+                bankName:
+                  type: string
+                  example: "Access Bank"
+                  description: "Designer payout bank name, stored on the profile"
+                accountNumber:
+                  type: string
+                  example: "0123456789"
+                  description: "Designer payout account number, stored on the profile"
+                accountName:
+                  type: string
+                  example: "Stitch Masters"
+                  description: "Designer payout account name, stored on the profile"
                 specialization:
                   type: string
                   example: "Bridal, Formal Wear"
@@ -50,6 +67,59 @@ paths:
       responses:
         '200':
           description: Designer profile saved successfully
+  /api/v1/designerProfile/onboarding:
+    post:
+      summary: Create or update designer profile with wallet setup
+      tags: [designerProfile]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - businessName
+                - currentHouseAddress
+                - phoneNumber
+                - bankName
+                - accountNumber
+                - accountName
+              properties:
+                businessName:
+                  type: string
+                  example: "Stitch Masters"
+                currentHouseAddress:
+                  type: string
+                  example: "123 Fashion Avenue"
+                phoneNumber:
+                  type: string
+                  example: "+2348012345678"
+                bankName:
+                  type: string
+                  example: "Access Bank"
+                accountNumber:
+                  type: string
+                  example: "0123456789"
+                accountName:
+                  type: string
+                  example: "Stitch Masters"
+                specialization:
+                  type: string
+                  example: "[\"Bridal\", \"Formal Wear\"]"
+                yearsOfExperience:
+                  type: integer
+                  example: 5
+                shortBio:
+                  type: string
+                  example: "Experienced bridal and couture designer."
+                profilePhoto:
+                  type: string
+                  format: binary
+      responses:
+        '200':
+          description: Designer onboarding saved successfully. Returns the joined profile fields and wallet data.
   /api/v1/designerProfile/getAll:
     get:
       summary: Get all designer profiles
@@ -65,7 +135,7 @@ paths:
         - bearerAuth: []
       responses:
         '200':
-          description: Dashboard stats loaded successfully. Includes reliability score, on-time rate, average delivery time, customer satisfaction, and response time.
+          description: Dashboard stats loaded successfully. Reliability starts at Bronze with score 0, then increases from completed accepted orders. Tiers are Bronze 0+, Silver 50+, Gold 90+, and Diamond 98+.
   /api/v1/designerProfile/getByDesigner/{designerId}:
     get:
       summary: Get a designer profile by designer id
@@ -102,6 +172,18 @@ paths:
                 currentHouseAddress:
                   type: string
                   example: "123 Fashion Avenue"
+                phoneNumber:
+                  type: string
+                  example: "+2348012345678"
+                bankName:
+                  type: string
+                  example: "Access Bank"
+                accountNumber:
+                  type: string
+                  example: "0123456789"
+                accountName:
+                  type: string
+                  example: "Stitch Masters"
                 specialization:
                   type: string
                   example: "Bridal, Formal Wear"

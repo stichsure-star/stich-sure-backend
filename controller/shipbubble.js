@@ -1,16 +1,17 @@
 const { getShippingRates, createShipment, trackShipment, validateAddress, getPackageCategories } = require('../services/shipbubble.service');
 const { Shipment } = require('../models');
+const { AppError } = require('../utils/errorHandler');
 
-exports.fetchRates = async (req, res) => {
+exports.fetchRates = async (req, res, next) => {
   try {
     const rates = await getShippingRates(req.body);
     res.json(rates);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    next(err);
   }
 };
 
-exports.createOrder = async (req, res) => {
+exports.createOrder = async (req, res, next) => {
   try {
     const result = await createShipment(req.body);
     const courier = result.data?.courier;
@@ -27,38 +28,34 @@ exports.createOrder = async (req, res) => {
 
     res.json(shipment);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    next(err);
   }
 };
 
-exports.trackOrder = async (req, res) => {
+exports.trackOrder = async (req, res, next) => {
     try{
         const { orderId } = req.params;
         const trackingInfo = await trackShipment(orderId);
         res.json(trackingInfo);
     }catch(error) {
-        return res.status(500).json({
-            error: error.message
-        })
+        next(error);
     }
 }
 
-exports.validateAddress = async (req, res) => {
+exports.validateAddress = async (req, res, next) => {
   try {
     const result = await validateAddress(req.body);
     res.json(result);
   } catch (err) {
-   return res.status(500).json({ 
-    error: err.message 
-  });
+    next(err);
   }
 };
 
-exports.getCategories = async (req, res) => {
+exports.getCategories = async (req, res, next) => {
   try {
     const result = await getPackageCategories();
     res.json(result);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    next(err);
   }
 };

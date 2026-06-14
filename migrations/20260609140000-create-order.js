@@ -90,6 +90,10 @@ module.exports = {
         type: Sequelize.DATE,
         allowNull: true,
       },
+      address: {
+        type: Sequelize.STRING,
+        allowNull: false
+      },
       createdAt: {
         allowNull: false,
         type: Sequelize.DATE,

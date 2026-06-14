@@ -41,6 +41,22 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.JSON,
       allowNull: true
     },
+    phoneNumber: {
+      type: DataTypes.STRING,
+      allowNull: true
+    },
+    bankName: {
+      type: DataTypes.STRING,
+      allowNull: true
+    },
+    accountNumber: {
+      type: DataTypes.STRING,
+      allowNull: true
+    },
+    accountName: {
+      type: DataTypes.STRING,
+      allowNull: true
+    },
     yearsOfExperience: {
       type: DataTypes.INTEGER,
       allowNull: true
@@ -67,7 +83,7 @@ module.exports = (sequelize, DataTypes) => {
     reliabilityScore: {
       type: DataTypes.INTEGER,
       allowNull: false,
-      defaultValue: 100
+      defaultValue: 0
     },
     isProfileCompleted: {
       type: DataTypes.BOOLEAN,

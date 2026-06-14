@@ -1,6 +1,21 @@
 const router = require('express').Router()
 
-const { createCustomer, loginCustomer, forgetPassword, resetPassword, verifyEmail, loginWithGoogle, updateCustomerProfile, updatePassword, resendOTP, logOut } = require('../controller/customer')
+const {
+  createCustomer,
+  loginCustomer,
+  forgetPassword,
+  resetPassword,
+  verifyEmail,
+  loginWithGoogle,
+  updateCustomerProfile,
+  updatePassword,
+  resendOTP,
+  logOut,
+  getCustomerDashboardStats,
+  saveDesigner,
+  getSavedDesigners,
+  removeSavedDesigner,
+} = require('../controller/customer')
 const { upload } = require('../middlewares/multer')
 const { authentication } = require('../middlewares/authentication')
 const { customerValidator, loginValidator, forgetPasswordValidator, resetPaswordValidator, updateCustomerProfileValidator, updatePasswordValidator } = require('../middlewares/customerValidation')
@@ -12,6 +27,10 @@ router.post('/forget-password', forgetPasswordValidator, forgetPassword)
 router.post('/reset-password', authentication, resetPaswordValidator, resetPassword)
 router.post('/resend-otp', resendOTP)
 router.post('/logout', authentication, logOut )
+router.get('/dashboard-stats', authentication, getCustomerDashboardStats);
+router.post('/saved-designers/:designerId', authentication, saveDesigner);
+router.get('/saved-designers', authentication, getSavedDesigners);
+router.delete('/saved-designers/:designerId', authentication, removeSavedDesigner);
 router.put('/update-profile/:id', authentication, updateCustomerProfileValidator, upload.single('profilePhoto'), updateCustomerProfile);
 router.put('/update-password', authentication, updatePasswordValidator, updatePassword)
 
