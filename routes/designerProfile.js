@@ -11,13 +11,18 @@ const {
   deleteDesignerProfile,
 } = require('../controller/designerProfile')
 const { authentication } = require('../middlewares/authentication')
+const {
+  designerOnboardingValidator,
+  designerProfileCreateValidator,
+  designerProfileUpdateValidator,
+} = require('../middlewares/bodyValidation')
 
-router.post('/onboarding', authentication, upload.single('profilePhoto'), createOrUpdateDesignerOnboarding);
-router.post('/create', authentication, upload.single('profilePhoto'), createOrUpdateDesignerProfile);
+router.post('/onboarding', authentication, upload.single('profilePhoto'), designerOnboardingValidator, createOrUpdateDesignerOnboarding);
+router.post('/create', authentication, upload.single('profilePhoto'), designerProfileCreateValidator, createOrUpdateDesignerProfile);
 router.get('/getAll', getAllDesignerProfiles);
 router.get('/dashboard-stats', authentication, getDesignerDashboardStats);
 router.get('/getByDesigner/:designerId', getDesignerProfile);
-router.put('/update', authentication, upload.single('profilePhoto'), updateDesignerProfile);
+router.put('/update', authentication, upload.single('profilePhoto'), designerProfileUpdateValidator, updateDesignerProfile);
 router.delete('/delete', authentication, deleteDesignerProfile);
 
 module.exports = router;

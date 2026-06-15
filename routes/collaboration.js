@@ -4,9 +4,10 @@ const {createCollaboration,getSentCollaborations,getReceivedCollaborations,getOn
 
 const { authentication } = require('../middlewares/authentication');
 const { authorizeRoles } = require('../middlewares/authorization');
+const { createCollaborationValidator } = require('../middlewares/bodyValidation');
 
 router.get('/', authentication, getAllCollaborations);
-router.post('/create', authentication, authorizeRoles('designer'), createCollaboration);
+router.post('/create', authentication, authorizeRoles('designer'), createCollaborationValidator, createCollaboration);
 router.get('/sent', authentication, authorizeRoles('designer'), getSentCollaborations);
 router.get('/received', authentication, authorizeRoles('designer'), getReceivedCollaborations);
 router.get('/stats', authentication, authorizeRoles('designer'), getCollaborationStats);

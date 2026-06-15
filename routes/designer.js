@@ -25,6 +25,7 @@ const {
   resetPasswordValidator,
   updatePasswordValidator
 } = require('../middlewares/designerValidator');
+const { profileContactValidator } = require('../middlewares/bodyValidation');
 
 
 router.post('/create', createDesignerValidator, createDesigner);
@@ -37,7 +38,7 @@ router.post('/reset-password', authentication, resetPasswordValidator, resetPass
 router.post('/logout', authentication, logOut);
 router.get('/all-designer', getAllDesigners);
 router.get('/one/:id', getOneDesigner);
-router.put('/update',authentication, updateProfile)
+router.put('/update', authentication, profileContactValidator, updateProfile)
 
 
 module.exports = router;

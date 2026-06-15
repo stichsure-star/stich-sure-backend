@@ -31,6 +31,7 @@ const {
   updateCustomerProfileValidator,
   updatePasswordValidator
 } = require('../middlewares/customerValidation')
+const { profileContactValidator } = require('../middlewares/bodyValidation')
 
 router.post('/register', customerValidator, createCustomer);
 router.post('/verify', verifyEmailValidator, verifyEmail)
@@ -43,8 +44,8 @@ router.get('/dashboard-stats', authentication, getCustomerDashboardStats);
 router.post('/saved-designers/:designerId', authentication, saveDesigner);
 router.get('/saved-designers', authentication, getSavedDesigners);
 router.delete('/saved-designers/:designerId', authentication, removeSavedDesigner);
-router.put('/update-profile/:id', authentication, updateCustomerProfileValidator, upload.single('profilePhoto'), updateCustomerProfile);
-router.put('/update', authentication, updateProfile)
+router.put('/update-profile/:id', authentication, upload.single('profilePhoto'), updateCustomerProfileValidator, updateCustomerProfile);
+router.put('/update', authentication, profileContactValidator, updateProfile)
 router.put('/update-password', authentication, updatePasswordValidator, updatePassword)
 router.get('/',  getAllCustomers);
 router.get('/:id', getOneCustomer);
