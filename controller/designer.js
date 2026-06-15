@@ -54,8 +54,9 @@ const getReliabilityTierInfo = (score) => {
 exports.createDesigner = async (req, res, next) => {
   try {
     const { firstName, lastName, email, password } = req.body;
+    const normalizedEmail = email.toLowerCase();
 
-    const existingEmail = await Designer.findOne({where:{email: email.toLowerCase(), }});
+    const existingEmail = await Designer.findOne({ where: { email: normalizedEmail } });
     if (existingEmail) {
       return res.status(409).json({
         success: false,
@@ -74,7 +75,7 @@ const otp = otpGenerator.generate(6, {
     const newDesigner = await Designer.create({
       firstName,
       lastName,
-      email,
+      email: normalizedEmail,
       password: hashPassword,
       otp,
       otpExpire,
