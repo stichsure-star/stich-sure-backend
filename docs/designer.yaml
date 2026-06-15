@@ -265,6 +265,37 @@ paths:
       responses:
         '200':
           description: OTP sent successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "A new verification code has been sent."
+                  retryAfter:
+                    type: integer
+                    example: 60
+                    description: Seconds the frontend should disable the resend button before trying again.
+        '429':
+          description: Resend cooldown is still active
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: "Please wait 45 seconds before requesting another code."
+                  retryAfter:
+                    type: integer
+                    example: 45
   /api/v1/designer/logout:
     post:
       summary: Log out a designer

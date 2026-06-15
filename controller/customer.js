@@ -1,14 +1,28 @@
 const { Op } = require("sequelize");
 const { Customer, Designer, DesignerProfile, Order, SavedDesigner } = require("../models");
 const bcrypt = require("bcrypt");
-const otpGenerator = require("otp-generator");
 const fs = require("fs");
 const jwt = require("jsonwebtoken");
 const cloudinary = require("../utils/cloudinary");
-const { emailTemplate, resetPasswordTemplate, resetPasswordSuccessfulTemplate } = require('../utils/emailTemplates')
+const {
+  emailTemplate,
+  resetPasswordTemplate,
+  resetPasswordSuccessfulTemplate,
+  verificationTextTemplate,
+  resetPasswordTextTemplate,
+} = require('../utils/emailTemplates')
 const { sendSingleEmail } = require('../utils/brevo');
 const redisClient = require('../Redis/redisConnection')
 const { AppError } = require('../utils/errorHandler');
+const {
+  VERIFICATION_OTP_TTL_MINUTES,
+  RESET_PASSWORD_OTP_TTL_MINUTES,
+  RESEND_OTP_COOLDOWN_SECONDS,
+  generateNumericOtp,
+  getOtpExpiryDate,
+  getResendCooldownSeconds,
+  setResendCooldown,
+} = require('../utils/otp');
 
 
 exports.createCustomer = async (req, res, next) => {
@@ -23,13 +37,8 @@ exports.createCustomer = async (req, res, next) => {
         message: "Customer with this email already exists",
       });
     }
-    const otpExpire = Date.now() + 5 * 60 * 1000;
-
-const otp = otpGenerator.generate(6, {
-  upperCaseAlphabets: false,
-  lowerCaseAlphabets: false,
-  specialChars: false,
-});
+    const otpExpire = getOtpExpiryDate();
+    const otp = generateNumericOtp();
     const salt = await bcrypt.genSalt(10);
     const hashPassword = await bcrypt.hash(password, salt);
 
@@ -46,9 +55,11 @@ const otp = otpGenerator.generate(6, {
 
     await sendSingleEmail({
       email: newCustomer.email,
-      subject: "Email Verification",
-      html: emailTemplate(newCustomer.firstName, otp),
+      subject: "Verify your Stitch Sure email",
+      html: emailTemplate(newCustomer.firstName, otp, VERIFICATION_OTP_TTL_MINUTES),
+      text: verificationTextTemplate(newCustomer.firstName, otp, VERIFICATION_OTP_TTL_MINUTES),
     });
+    await setResendCooldown(redisClient, "customer", newCustomer.email);
 
     return res.status(201).json({
   success: true,
@@ -178,21 +189,18 @@ exports.forgetPassword = async (req, res, next) => {
       });
     }
 
-    const otp = otpGenerator.generate(6, {
-      upperCaseAlphabets: false,
-      lowerCaseAlphabets: false,
-      specialChars: false,
-    });
+    const otp = generateNumericOtp();
 
     existingEmail.otp = otp;
-    existingEmail.otpExpire = new Date(Date.now() + 5 * 60 * 1000);
+    existingEmail.otpExpire = getOtpExpiryDate(RESET_PASSWORD_OTP_TTL_MINUTES);
 
     await existingEmail.save();
 
     await sendSingleEmail({
       email: existingEmail.email,
       subject: "Reset Your Password",
-      html: resetPasswordTemplate(existingEmail.firstName, otp),
+      html: resetPasswordTemplate(existingEmail.firstName, otp, RESET_PASSWORD_OTP_TTL_MINUTES),
+      text: resetPasswordTextTemplate(existingEmail.firstName, otp, RESET_PASSWORD_OTP_TTL_MINUTES),
     });
 
     return res.status(200).json({
@@ -363,20 +371,32 @@ exports.resendOTP = async (req, res, next) => {
     try {
         const { email } = req.body;
 
-        const user = await Customer.findOne({where: {email: email.toLowerCase()}})
+        const normalizedEmail = email.toLowerCase();
+        const user = await Customer.findOne({where: {email: normalizedEmail}})
         if (!user) {
           return res.status(404).json({
             success: false,
             message: 'User not found'
           })
         }
+        if (user.isEmailVerified) {
+          return res.status(400).json({
+            success: false,
+            message: 'Email is already verified'
+          })
+        }
 
-        const otp = otpGenerator.generate(6, {
-          upperCaseAlphabets: false,
-          lowerCaseAlphabets: false,
-          specialChars: false,
-        });
-        const otpExpire = new Date(Date.now() + 5 * 60 * 1000);
+        const retryAfter = await getResendCooldownSeconds(redisClient, "customer", normalizedEmail);
+        if (retryAfter) {
+          return res.status(429).json({
+            success: false,
+            message: `Please wait ${retryAfter} seconds before requesting another code.`,
+            retryAfter
+          })
+        }
+
+        const otp = generateNumericOtp();
+        const otpExpire = getOtpExpiryDate();
 
         user.otp = otp;
         user.otpExpire = otpExpire;
@@ -384,13 +404,16 @@ exports.resendOTP = async (req, res, next) => {
 
         await sendSingleEmail({
           email: user.email,
-          subject: "Email Verification",
-          html: emailTemplate(user.firstName, otp),
+          subject: "Your new Stitch Sure verification code",
+          html: emailTemplate(user.firstName, otp, VERIFICATION_OTP_TTL_MINUTES),
+          text: verificationTextTemplate(user.firstName, otp, VERIFICATION_OTP_TTL_MINUTES),
         });
+        await setResendCooldown(redisClient, "customer", user.email);
 
         return res.status(200).json({
           success: true,
-          message: 'A new verification code has been sent.'
+          message: 'A new verification code has been sent.',
+          retryAfter: RESEND_OTP_COOLDOWN_SECONDS
         })
     } catch (error) {
       next(error);

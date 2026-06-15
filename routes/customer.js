@@ -21,14 +21,23 @@ const {
 } = require('../controller/customer')
 const { upload } = require('../middlewares/multer')
 const { authentication } = require('../middlewares/authentication')
-const { customerValidator, loginValidator, forgetPasswordValidator, resetPaswordValidator, updateCustomerProfileValidator, updatePasswordValidator } = require('../middlewares/customerValidation')
+const {
+  customerValidator,
+  loginValidator,
+  forgetPasswordValidator,
+  resetPaswordValidator,
+  verifyEmailValidator,
+  resendOtpValidator,
+  updateCustomerProfileValidator,
+  updatePasswordValidator
+} = require('../middlewares/customerValidation')
 
 router.post('/register', customerValidator, createCustomer);
-router.post('/verify', verifyEmail)
+router.post('/verify', verifyEmailValidator, verifyEmail)
 router.post('/login', loginValidator, loginCustomer);
 router.post('/forget-password', forgetPasswordValidator, forgetPassword)
 router.post('/reset-password', authentication, resetPaswordValidator, resetPassword)
-router.post('/resend-otp', resendOTP)
+router.post('/resend-otp', resendOtpValidator, resendOTP)
 router.post('/logout', authentication, logOut )
 router.get('/dashboard-stats', authentication, getCustomerDashboardStats);
 router.post('/saved-designers/:designerId', authentication, saveDesigner);
