@@ -56,13 +56,14 @@ exports.createDesigner = async (req, res, next) => {
     const { firstName, lastName, email, password } = req.body;
     const normalizedEmail = email.toLowerCase();
 
-    const existingEmail = await Designer.findOne({ where: { email: normalizedEmail } });
+    const existingEmail = await Designer.findOne({ where: { email: normalizedEmail } })
     if (existingEmail) {
       return res.status(409).json({
         success: false,
-        message: "Designer with this email already exists",
+        message: "Customer with this email already exists",
       });
     }
+
     const otpExpire = Date.now() + 5 * 60 * 1000;
 const otp = otpGenerator.generate(6, {
   upperCaseAlphabets: false,
