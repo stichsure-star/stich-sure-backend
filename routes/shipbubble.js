@@ -10,6 +10,7 @@ const {
   trackOrder,
   initializePayment,
   verifyPayment,
+  fundWallet
 } = require('../controller/shipbubble');
 const {
   validateAddressValidator,
@@ -25,5 +26,6 @@ router.post('/shipment', createShipmentValidator, createOrder);
 router.get('/track/:orderId', trackOrder);
 router.post('/payment/initialize', initializeShipmentPaymentValidator, initializePayment);
 router.get('/payment/verify/:reference', verifyPayment);
+router.post('/wallet/fund', fundWallet);
 
 module.exports = router;

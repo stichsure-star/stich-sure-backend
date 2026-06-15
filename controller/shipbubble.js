@@ -1,6 +1,6 @@
 const axios = require("axios");
 const { Payment, Order, Designer, Shipment, Customer } = require("../models");
-const { getShippingRates, validateAddress, getPackageCategories, trackShipment,createShipment} = require("../services/shipbubble.service");
+const { getShippingRates, validateAddress, getPackageCategories, trackShipment,createShipment, fundWallet} = require("../services/shipbubble.service");
 
 exports.validateAddress = async (req, res) => {
   try {
@@ -42,19 +42,23 @@ exports.fetchRates = async (req, res) => {
 exports.createOrder = async (req, res) => {
   try {
     const result = await createShipment(req.body);
-    const courier = result.data?.courier;
+    console.log('createShipment result:', JSON.stringify(result, null, 2));
 
-    const shipment = await Shipment.create({
-      orderId: result.data?.order_id,
-      trackingCode: courier?.tracking_code,
-      trackingUrl: result.data?.tracking_url,
-      courier: courier?.name,
-      status: result.data?.status,
-      shippingFee: result.data?.payment?.shipping_fee,
-      currency: result.data?.payment?.currency,
-    });
+const courier = result.data?.courier;
 
-    res.json(shipment);
+const shipmentData = {
+  orderId: result.data?.order_id,
+  trackingCode: result.data?.order_id,
+  trackingUrl: result.data?.tracking_url,
+  courier: courier?.name,
+  status: result.data?.status,
+  shippingFee: result.data?.payment?.shipping_fee,
+  currency: result.data?.payment?.currency,
+};
+
+console.log('Shipment data to save:', JSON.stringify(shipmentData, null, 2));
+
+const shipment = await Shipment.create(shipmentData);
   } catch (error) {
     console.log(error.message);
     return res.status(500).json({
@@ -285,8 +289,21 @@ exports.verifyPayment = async (req, res, next) => {
     });
   } catch (error) {
     console.log(error.message);
-    return res.status(500).json({ // ✅ fixed typo: ress → res
+    return res.status(500).json({ 
       message: 'Verification failed'
+    });
+  }
+};
+
+exports.fundWallet = async (req, res) => {
+  try {
+    const { amount } = req.body;
+    const result = await fundWallet(amount);
+    res.json(result);
+  } catch (error) {
+    console.log(error.message);
+    return res.status(500).json({
+      message: 'Failed to fund wallet'
     });
   }
 };
