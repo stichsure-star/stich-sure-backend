@@ -1,9 +1,11 @@
 const {
   DesignerWallet,
   DesignerWalletTransaction,
+  DesignerProfile,
   Designer,
   Order,
 } = require("../models");
+const { AppError } = require('../utils/errorHandler');
 
 const getPagination = (query) => {
   const page = Math.max(Number(query.page) || 1, 1);
@@ -13,10 +15,17 @@ const getPagination = (query) => {
   return { page, limit, offset };
 };
 
-exports.createDesignerWallet = async (req, res) => {
+exports.createDesignerWallet = async (req, res, next) => {
   try {
     const designerId = req.user.id;
     const { bankName, accountNumber, accountName } = req.body;
+
+    if (!bankName || !accountNumber || !accountName) {
+      return res.status(400).json({
+        success: false,
+        message: "Bank name, account number, and account name are required.",
+      });
+    }
 
     const existingWallet = await DesignerWallet.findOne({
       where: { designerId },
@@ -39,20 +48,29 @@ exports.createDesignerWallet = async (req, res) => {
       withdrawn: 0,
     });
 
+    const profile = await DesignerProfile.findOne({
+      where: { designerId },
+    });
+
+    if (profile) {
+      await profile.update({
+        bankName,
+        accountNumber,
+        accountName,
+      });
+    }
+
     return res.status(201).json({
       success: true,
-      message: "Wallet created successfully.",
+      message: "Your wallet has been set up successfully.",
       data: wallet,
     });
   } catch (error) {
-    console.log(error.message);
-    res.status(500).json({
-      message: "Something went wrong",
-    });
+    next(error);
   }
 };
 
-exports.updateDesignerWallet = async (req, res) => {
+exports.updateDesignerWallet = async (req, res, next) => {
   try {
     const designerId = req.user.id;
     const { bankName, accountNumber, accountName } = req.body;
@@ -74,20 +92,29 @@ exports.updateDesignerWallet = async (req, res) => {
       accountName: accountName || wallet.accountName,
     });
 
+    const profile = await DesignerProfile.findOne({
+      where: { designerId },
+    });
+
+    if (profile) {
+      await profile.update({
+        bankName: bankName || profile.bankName,
+        accountNumber: accountNumber || profile.accountNumber,
+        accountName: accountName || profile.accountName,
+      });
+    }
+
     return res.status(200).json({
       success: true,
-      message: "Wallet updated successfully.",
+      message: "Wallet details updated.",
       data: wallet,
     });
   } catch (error) {
-    console.log(error.message);
-    res.status(500).json({
-      message: "Something went wrong",
-    });
+    next(error);
   }
 };
 
-exports.getDesignerWallet = async (req, res) => {
+exports.getDesignerWallet = async (req, res, next) => {
   try {
     const designerId = req.user.id;
 
@@ -104,18 +131,15 @@ exports.getDesignerWallet = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      message: "Designer wallet loaded successfully.",
+      message: "Wallet details retrieved.",
       data: wallet,
     });
   } catch (error) {
-    console.log(error.message);
-    res.status(500).json({
-      message: "Something went wrong",
-    });
+    next(error);
   }
 };
 
-exports.getTransactionHistory = async (req, res) => {
+exports.getTransactionHistory = async (req, res, next) => {
   try {
     const designerId = req.user.id;
     const { page, limit, offset } = getPagination(req.query);
@@ -160,7 +184,7 @@ exports.getTransactionHistory = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      message: "Transaction history loaded successfully.",
+      message: "Your transaction history is ready.",
       data,
       pagination: {
         totalItems: count,
@@ -172,9 +196,33 @@ exports.getTransactionHistory = async (req, res) => {
       },
     });
   } catch (error) {
-    console.log(error.message);
-    res.status(500).json({
-      message: "Something went wrong",
+    next(error);
+  }
+};
+
+exports.getAllWallets = async (req, res, next) => {
+  try {
+    const { page, limit, offset } = getPagination(req.query);
+    const { count, rows } = await DesignerWallet.findAndCountAll({
+      include: [
+        {
+          model: Designer,
+          as: "designer",
+          attributes: ["id", "firstName", "lastName", "email"],
+        },
+      ],
+      order: [["createdAt", "DESC"]],
+      limit,
+      offset,
     });
+
+    return res.status(200).json({
+      success: true,
+      message: "List of wallets retrieved.",
+      data: rows,
+      pagination: { totalItems: count, totalPages: Math.ceil(count / limit), currentPage: page, pageSize: limit },
+    });
+  } catch (error) {
+    next(error);
   }
 };

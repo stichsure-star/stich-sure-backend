@@ -1,21 +1,42 @@
 const router = require('express').Router();
+const { upload } = require('../middlewares/multer');
+const { authentication } = require('../middlewares/authentication');
 
-const { createDesingner, loginDesigner, verifyEmail, forgetPassword, resetPassword, resendOTP, logOut, updateProfile } = require('../controller/designer');
+
+const {
+  createDesigner,
+  loginDesigner,
+  verifyEmail,
+  forgetPassword,
+  resetPassword,
+  updatePassword,
+  resendOTP,
+  logOut,
+  getAllDesigners,
+  getOneDesigner,
+  updateProfile
+} = require('../controller/designer');
 const {
   createDesignerValidator,
   loginValidator,
   verifyEmailValidator,
   forgetPasswordValidator,
   resetPasswordValidator,
+  updatePasswordValidator
 } = require('../middlewares/designerValidator');
-const { authentication } = require('../middlewares/authentication');
 
-router.post('/create', createDesignerValidator, createDesingner);
+
+router.post('/create', createDesignerValidator, createDesigner);
 router.post('/login', loginValidator, loginDesigner);
 router.post('/verify', verifyEmailValidator, verifyEmail);
-router.post('/resend-otp', resendOTP)
+router.post('/resend-otp', resendOTP);
 router.post('/forget-password', forgetPasswordValidator, forgetPassword);
+router.put('/update-password-setting', authentication, updatePasswordValidator, updatePassword)
 router.post('/reset-password', authentication, resetPasswordValidator, resetPassword);
-router.post('/logout', authentication, logOut )
+router.post('/logout', authentication, logOut);
+router.get('/all-designer', getAllDesigners);
+router.get('/one/:id', getOneDesigner);
 router.put('/update',authentication, updateProfile)
+
+
 module.exports = router;

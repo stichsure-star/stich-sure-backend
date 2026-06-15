@@ -1,5 +1,6 @@
 const { Op } = require("sequelize");
 const { Collaboration, Designer } = require("../models");
+const { AppError } = require('../utils/errorHandler');
 
 const designerAttributes = ["id", "firstName", "lastName", "email"];
 const uuidPattern =
@@ -18,7 +19,7 @@ const collaborationInclude = [
   },
 ];
 
-exports.createCollaboration = async (req, res) => {
+exports.createCollaboration = async (req, res, next) => {
   try {
     const senderDesignerId = req.user.id;
     const {
@@ -32,6 +33,7 @@ exports.createCollaboration = async (req, res) => {
 
     if (senderDesignerId === receiverDesignerId) {
       return res.status(400).json({
+        success: false,
         message: "You cannot send a collaboration request to yourself",
       });
     }
@@ -40,6 +42,7 @@ exports.createCollaboration = async (req, res) => {
 
     if (!receiver) {
       return res.status(404).json({
+        success: false,
         message: "Receiver designer not found",
       });
     }
@@ -57,18 +60,15 @@ exports.createCollaboration = async (req, res) => {
 
     return res.status(201).json({
       success: true,
-      message: "Collaboration request sent successfully.",
+      message: "Your collaboration invitation has been sent.",
       data: collaboration,
     });
   } catch (error) {
-    console.log(error.message);
-    res.status(500).json({
-      message: "Something went wrong",
-    });
+    next(error);
   }
 };
 
-exports.getSentCollaborations = async (req, res) => {
+exports.getSentCollaborations = async (req, res, next) => {
   try {
     const collaborations = await Collaboration.findAll({
       where: { senderDesignerId: req.user.id },
@@ -78,18 +78,15 @@ exports.getSentCollaborations = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      message: "Sent collaborations loaded successfully.",
+      message: "Sent collaborations retrieved.",
       data: collaborations,
     });
   } catch (error) {
-    console.log(error.message);
-    res.status(500).json({
-      message: "Something went wrong",
-    });
+    next(error);
   }
 };
 
-exports.getReceivedCollaborations = async (req, res) => {
+exports.getReceivedCollaborations = async (req, res, next) => {
   try {
     const collaborations = await Collaboration.findAll({
       where: { receiverDesignerId: req.user.id },
@@ -99,18 +96,15 @@ exports.getReceivedCollaborations = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      message: "Received collaborations loaded successfully.",
+      message: "Received collaborations retrieved.",
       data: collaborations,
     });
   } catch (error) {
-    console.log(error.message);
-    res.status(500).json({
-      message: "Something went wrong",
-    });
+    next(error);
   }
 };
 
-exports.getOneCollaboration = async (req, res) => {
+exports.getOneCollaboration = async (req, res, next) => {
   try {
     const { id } = req.params;
 
@@ -127,29 +121,28 @@ exports.getOneCollaboration = async (req, res) => {
 
     if (!collaboration) {
       return res.status(404).json({
+        success: false,
         message: "Collaboration not found",
       });
     }
 
     return res.status(200).json({
       success: true,
-      message: "Collaboration loaded successfully.",
+      message: "Collaboration details retrieved.",
       data: collaboration,
     });
   } catch (error) {
-    console.log(error.message);
-    res.status(500).json({
-      message: "Something went wrong",
-    });
+    next(error);
   }
 };
 
-exports.acceptCollaboration = async (req, res) => {
+exports.acceptCollaboration = async (req, res, next) => {
   try {
     const { id } = req.params;
 
     if (!uuidPattern.test(id)) {
       return res.status(400).json({
+        success: false,
         message: "Invalid collaboration id",
       });
     }
@@ -158,6 +151,7 @@ exports.acceptCollaboration = async (req, res) => {
 
     if (!collaboration) {
       return res.status(404).json({
+        success: false,
         message:
           "Collaboration not found. Use the collaboration id from /api/v1/collaboration/received, not the designer id.",
       });
@@ -165,12 +159,14 @@ exports.acceptCollaboration = async (req, res) => {
 
     if (collaboration.receiverDesignerId !== req.user.id) {
       return res.status(403).json({
+        success: false,
         message: "Only the receiving designer can accept this request",
       });
     }
 
     if (collaboration.status !== "pending") {
       return res.status(400).json({
+        success: false,
         message: "Only pending collaborations can be accepted",
       });
     }
@@ -179,23 +175,21 @@ exports.acceptCollaboration = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      message: "Collaboration accepted successfully.",
+      message: "You have accepted the collaboration invitation.",
       data: collaboration,
     });
   } catch (error) {
-    console.log(error.message);
-    res.status(500).json({
-      message: "Something went wrong",
-    });
+    next(error);
   }
 };
 
-exports.rejectCollaboration = async (req, res) => {
+exports.rejectCollaboration = async (req, res, next) => {
   try {
     const { id } = req.params;
 
     if (!uuidPattern.test(id)) {
       return res.status(400).json({
+        success: false,
         message: "Invalid collaboration id",
       });
     }
@@ -204,6 +198,7 @@ exports.rejectCollaboration = async (req, res) => {
 
     if (!collaboration) {
       return res.status(404).json({
+        success: false,
         message:
           "Collaboration not found. Use the collaboration id from /api/v1/collaboration/received, not the designer id.",
       });
@@ -211,12 +206,14 @@ exports.rejectCollaboration = async (req, res) => {
 
     if (collaboration.receiverDesignerId !== req.user.id) {
       return res.status(403).json({
+        success: false,
         message: "Only the receiving designer can reject this request",
       });
     }
 
     if (collaboration.status !== "pending") {
       return res.status(400).json({
+        success: false,
         message: "Only pending collaborations can be rejected",
       });
     }
@@ -225,23 +222,21 @@ exports.rejectCollaboration = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      message: "Collaboration rejected successfully.",
+      message: "Collaboration request declined.",
       data: collaboration,
     });
   } catch (error) {
-    console.log(error.message);
-    res.status(500).json({
-      message: "Something went wrong",
-    });
+    next(error);
   }
 };
 
-exports.completeCollaboration = async (req, res) => {
+exports.completeCollaboration = async (req, res, next) => {
   try {
     const { id } = req.params;
 
     if (!uuidPattern.test(id)) {
       return res.status(400).json({
+        success: false,
         message: "Invalid collaboration id",
       });
     }
@@ -250,6 +245,7 @@ exports.completeCollaboration = async (req, res) => {
 
     if (!collaboration) {
       return res.status(404).json({
+        success: false,
         message:
           "Collaboration not found. Use the collaboration id from /api/v1/collaboration/sent or /api/v1/collaboration/received.",
       });
@@ -260,12 +256,14 @@ exports.completeCollaboration = async (req, res) => {
       collaboration.receiverDesignerId !== req.user.id
     ) {
       return res.status(403).json({
+        success: false,
         message: "You are not part of this collaboration",
       });
     }
 
     if (collaboration.status !== "accepted") {
       return res.status(400).json({
+        success: false,
         message: "Only accepted collaborations can be completed",
       });
     }
@@ -274,23 +272,21 @@ exports.completeCollaboration = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      message: "Collaboration completed successfully.",
+      message: "Collaboration marked as complete.",
       data: collaboration,
     });
   } catch (error) {
-    console.log(error.message);
-    res.status(500).json({
-      message: "Something went wrong",
-    });
+    next(error);
   }
 };
 
-exports.cancelCollaboration = async (req, res) => {
+exports.cancelCollaboration = async (req, res, next) => {
   try {
     const { id } = req.params;
 
     if (!uuidPattern.test(id)) {
       return res.status(400).json({
+        success: false,
         message: "Invalid collaboration id",
       });
     }
@@ -299,6 +295,7 @@ exports.cancelCollaboration = async (req, res) => {
 
     if (!collaboration) {
       return res.status(404).json({
+        success: false,
         message:
           "Collaboration not found. Use the collaboration id from /api/v1/collaboration/sent, not the designer id.",
       });
@@ -306,12 +303,14 @@ exports.cancelCollaboration = async (req, res) => {
 
     if (collaboration.senderDesignerId !== req.user.id) {
       return res.status(403).json({
+        success: false,
         message: "Only the sending designer can cancel this request",
       });
     }
 
     if (!["pending", "accepted"].includes(collaboration.status)) {
       return res.status(400).json({
+        success: false,
         message: "This collaboration cannot be cancelled",
       });
     }
@@ -320,18 +319,15 @@ exports.cancelCollaboration = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      message: "Collaboration cancelled successfully.",
+      message: "The collaboration has been cancelled.",
       data: collaboration,
     });
   } catch (error) {
-    console.log(error.message);
-    res.status(500).json({
-      message: "Something went wrong",
-    });
+    next(error);
   }
 };
 
-exports.getCollaborationStats = async (req, res) => {
+exports.getCollaborationStats = async (req, res, next) => {
   try {
     const designerId = req.user.id;
     const designerWhere = {
@@ -386,7 +382,7 @@ exports.getCollaborationStats = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      message: "Collaboration stats loaded successfully.",
+      message: "Your collaboration statistics are ready.",
       data: {
         activeCollaborations,
         trustedPartners: partnerIds.size,
@@ -395,9 +391,23 @@ exports.getCollaborationStats = async (req, res) => {
       },
     });
   } catch (error) {
-    console.log(error.message);
-    res.status(500).json({
-      message: "Something went wrong",
+    next(error);
+  }
+};
+
+exports.getAllCollaborations = async (req, res, next) => {
+  try {
+    const collaborations = await Collaboration.findAll({
+      include: collaborationInclude,
+      order: [["createdAt", "DESC"]],
     });
+
+    return res.status(200).json({
+      success: true,
+      message: "Collaborations list retrieved.",
+      data: collaborations,
+    });
+  } catch (error) {
+    next(error);
   }
 };

@@ -3,18 +3,18 @@
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.createTable('DesignerWalletTransactions', {
+    await queryInterface.createTable('SavedDesigners', {
       id: {
         allowNull: false,
         primaryKey: true,
         type: Sequelize.UUID,
         defaultValue: Sequelize.UUIDV4,
       },
-      designerWalletId: {
+      customerId: {
         type: Sequelize.UUID,
         allowNull: false,
         references: {
-          model: 'DesignerWallets',
+          model: 'Customers',
           key: 'id',
         },
         onUpdate: 'CASCADE',
@@ -30,32 +30,6 @@ module.exports = {
         onUpdate: 'CASCADE',
         onDelete: 'CASCADE',
       },
-      orderId: {
-        type: Sequelize.UUID,
-        allowNull: false,
-        unique: true,
-        references: {
-          model: 'Orders',
-          key: 'id',
-        },
-        onUpdate: 'CASCADE',
-        onDelete: 'CASCADE',
-      },
-      amount: {
-        type: Sequelize.INTEGER,
-        allowNull: false,
-        defaultValue: 0,
-      },
-      status: {
-        type: Sequelize.ENUM('pending', 'completed', 'failed'),
-        allowNull: false,
-        defaultValue: 'pending',
-      },
-      transactionDate: {
-        type: Sequelize.DATE,
-        allowNull: false,
-        defaultValue: Sequelize.NOW,
-      },
       createdAt: {
         allowNull: false,
         type: Sequelize.DATE,
@@ -65,9 +39,15 @@ module.exports = {
         type: Sequelize.DATE,
       },
     });
+
+    await queryInterface.addConstraint('SavedDesigners', {
+      fields: ['customerId', 'designerId'],
+      type: 'unique',
+      name: 'unique_saved_designer_per_customer',
+    });
   },
 
   async down(queryInterface) {
-    await queryInterface.dropTable('DesignerWalletTransactions');
+    await queryInterface.dropTable('SavedDesigners');
   },
 };

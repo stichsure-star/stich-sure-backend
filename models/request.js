@@ -59,7 +59,10 @@ module.exports = (sequelize, DataTypes) => {
     pickedUpAt: DataTypes.DATE,
     readyAt: DataTypes.DATE,
     completedAt: DataTypes.DATE,
-    designerMessage: DataTypes.TEXT
+    designerMessage: DataTypes.TEXT,
+    rating: DataTypes.INTEGER,
+    reviewComment: DataTypes.TEXT,
+    reviewedAt: DataTypes.DATE
   }, {
     sequelize,
     modelName: 'request',

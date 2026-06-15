@@ -35,6 +35,10 @@ module.exports = {
         allowNull: true
       },
       specialization: {
+        type: Sequelize.TEXT,
+        allowNull: true
+      },
+      phoneNumber: {
         type: Sequelize.STRING,
         allowNull: true
       },
@@ -43,7 +47,7 @@ module.exports = {
         allowNull: true
       },
       shortBio: {
-        type: Sequelize.STRING,
+        type: Sequelize.TEXT,
         allowNull: true
       },
       completedOrders: {
@@ -64,7 +68,7 @@ module.exports = {
       reliabilityScore: {
         type: Sequelize.INTEGER,
         allowNull: false,
-        defaultValue: 100
+        defaultValue: 0
       },
       isProfileCompleted: {
         type: Sequelize.BOOLEAN,

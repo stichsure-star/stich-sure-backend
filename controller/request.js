@@ -1,5 +1,6 @@
 const { Op } = require("sequelize");
-const { request, DesignerProfile } = require("../models");
+const { request, DesignerProfile, Customer, Designer } = require("../models");
+const { AppError } = require('../utils/errorHandler');
 
 const progressByStatus = {
   pending: 0,
@@ -67,7 +68,7 @@ const updateDesignerStats = async (designerId) => {
   });
 };
 
-exports.createRequest = async (req, res) => {
+exports.createRequest = async (req, res, next) => {
   try {
     const customerId = req.user.id;
     const { designerId, fullName, deadLine, measurement, description } = req.body;
@@ -84,18 +85,67 @@ exports.createRequest = async (req, res) => {
 
     res.status(201).json({
       success: true,
-      message: "Your request has been created successfully.",
+      message: "Your request has been sent to the designer!",
       data: newRequest,
     });
   } catch (error) {
-    console.log(error.message);
-    res.status(500).json({
-      message: "Something went wrong",
-    });
+    next(error)
   }
 };
 
-exports.sendOffer = async (req, res) => {
+exports.getAllRequests = async (req, res, next) => {
+  try {
+    const requests = await request.findAll({
+      include: [
+        {
+          model: Customer,
+          as: "customer",
+          attributes: ["id", "firstName", "lastName", "email"],
+        },
+        {
+          model: Designer,
+          as: "designer",
+          attributes: ["id", "firstName", "lastName", "email"],
+        },
+      ],
+      order: [["createdAt", "DESC"]],
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "List of requests retrieved.",
+      data: requests,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+exports.getOneRequest = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const foundRequest = await request.findByPk(id, {
+      include: [
+        { model: Customer, as: "customer", attributes: ["id", "firstName", "lastName", "email"] },
+        { model: Designer, as: "designer", attributes: ["id", "firstName", "lastName", "email"] },
+      ],
+    });
+
+    if (!foundRequest) {
+      return res.status(404).json({ success: false, message: "Request not found" });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Request details retrieved.",
+      data: foundRequest,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+exports.sendOffer = async (req, res, next) => {
   try {
     const { id } = req.params;
 
@@ -124,18 +174,15 @@ exports.sendOffer = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      message: "The offer has been sent successfully.",
+      message: "Your offer has been sent to the customer.",
       data: foundRequest,
     });
   } catch (error) {
-    console.log(error.message);
-    res.status(500).json({
-      message: "Something went wrong",
-    });
+    next(error)
   }
 };
 
-exports.acceptRequest = async (req, res) => {
+exports.acceptRequest = async (req, res, next) => {
   try {
     const { id } = req.params;
 
@@ -160,18 +207,15 @@ exports.acceptRequest = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      message: "The request has been accepted successfully.",
+      message: "Request accepted!",
       data: foundRequest,
     });
   } catch (error) {
-    console.log(error.message);
-    res.status(500).json({
-      message: "Something went wrong"
-    })
+    next(error)
   }
 }
 
-exports.rejectRequest = async (req, res) => {
+exports.rejectRequest = async (req, res, next) => {
   try {
     const { id } = req.params;
 
@@ -195,18 +239,15 @@ exports.rejectRequest = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      message: "The request has been rejected successfully.",
+      message: "The request has been declined.",
       data: foundRequest,
     });
   } catch (error) {
-    console.log(error.message);
-    res.status(500).json({
-       message: "Something went wrong"
-    });
+    next(error)
   }
 };
 
-exports.completeRequest = async (req, res) => {
+exports.completeRequest = async (req, res, next) => {
   try {
     const { id } = req.params;
 
@@ -234,21 +275,18 @@ exports.completeRequest = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      message: "The request has been delivered and completed successfully.",
+      message: "Project marked as delivered and complete.",
       data: {
         ...foundRequest.toJSON(),
         trackingSteps: buildTrackingSteps(foundRequest),
       },
     });
   } catch (error) {
-    console.log(error.message);
-    res.status(500).json({
-      message: "Something went wrong",
-    });
+    next(error)
   }
 };
 
-exports.updateRequestProgress = async (req, res) => {
+exports.updateRequestProgress = async (req, res, next) => {
   try {
     const { id } = req.params;
     const requestedStatus = req.body.status;
@@ -314,21 +352,18 @@ exports.updateRequestProgress = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      message: "Request progress updated successfully.",
+      message: "Order progress updated.",
       data: {
         ...foundRequest.toJSON(),
         trackingSteps: buildTrackingSteps(foundRequest),
       },
     });
   } catch (error) {
-    console.log(error.message);
-    res.status(500).json({
-      message: "Something went wrong",
-    });
+    next(error)
   }
 };
 
-exports.getRequestTracking = async (req, res) => {
+exports.getRequestTracking = async (req, res, next) => {
   try {
     const { id } = req.params;
 
@@ -342,21 +377,18 @@ exports.getRequestTracking = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      message: "Request tracking loaded successfully.",
+      message: "Tracking information retrieved.",
       data: {
         ...foundRequest.toJSON(),
         trackingSteps: buildTrackingSteps(foundRequest),
       },
     });
   } catch (error) {
-    console.log(error.message);
-    res.status(500).json({
-      message: "Something went wrong",
-    });
+    next(error)
   }
 };
 
-exports.rateDesigner = async (req, res) => {
+exports.rateDesigner = async (req, res, next) => {
   try {
     const { id } = req.params;
     const { rating } = req.body;
@@ -404,13 +436,10 @@ exports.rateDesigner = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      message: "The designer has been rated successfully.",
+      message: "Thank you for your feedback! The designer has been rated.",
       data: profile,
     });
   } catch (error) {
-    console.log(error.message);
-    res.status(500).json({
-      message: "Something went wrong",
-    });
+    next(error)
   }
 };

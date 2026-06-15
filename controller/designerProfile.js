@@ -1,6 +1,7 @@
-const { Designer, DesignerProfile, DesignerWallet, Designs, request } = require("../models");
+const { sequelize, Designer, DesignerProfile, DesignerWallet, Designs, request } = require("../models");
 const cloudinary = require("../utils/cloudinary");
 const fs = require("fs");
+const { AppError } = require('../utils/errorHandler');
 
 const reliabilityTiers = [
   { name: "Bronze", min: 0 },
@@ -89,18 +90,29 @@ const average = (numbers) => {
   return numbers.reduce((total, number) => total + number, 0) / numbers.length;
 };
 
-exports.createOrUpdateDesignerProfile = async (req, res) => {
+exports.createOrUpdateDesignerProfile = async (req, res, next) => {
   try {
     const designerId = req.user.id;
 
     const {
       businessName,
       currentHouseAddress,
+      phoneNumber,
+      bankName,
+      accountNumber,
+      accountName,
       specialization,
       yearsOfExperience,
       shortBio,
     } = req.body;
     const parsedSpecialization = parseSpecialization(specialization);
+
+    if (!businessName || !currentHouseAddress || !phoneNumber) {
+      return res.status(400).json({
+        success: false,
+        message: "Business name, current house address, and phone number are required.",
+      });
+    }
 
     let profile = await DesignerProfile.findOne({
       where: { designerId },
@@ -118,6 +130,7 @@ exports.createOrUpdateDesignerProfile = async (req, res) => {
     const isProfileCompleted =
       businessName &&
       currentHouseAddress &&
+      phoneNumber &&
       parsedSpecialization &&
       yearsOfExperience &&
       shortBio &&
@@ -127,6 +140,10 @@ exports.createOrUpdateDesignerProfile = async (req, res) => {
       await profile.update({
         businessName,
         currentHouseAddress,
+        phoneNumber,
+        bankName,
+        accountNumber,
+        accountName,
         specialization: parsedSpecialization,
         yearsOfExperience,
         shortBio,
@@ -138,6 +155,10 @@ exports.createOrUpdateDesignerProfile = async (req, res) => {
         designerId,
         businessName,
         currentHouseAddress,
+        phoneNumber,
+        bankName,
+        accountNumber,
+        accountName,
         specialization: parsedSpecialization,
         yearsOfExperience,
         shortBio,
@@ -146,20 +167,142 @@ exports.createOrUpdateDesignerProfile = async (req, res) => {
       });
     }
 
+
+    let wallet = await DesignerWallet.findOne({
+      where: { designerId },
+    });
+
+    if (wallet) {
+      await wallet.update({
+        bankName: bankName || wallet.bankName,
+        accountNumber: accountNumber || wallet.accountNumber,
+        accountName: accountName || wallet.accountName,
+      });
+    }
+
     res.status(200).json({
       success: true,
-      message: "Designer profile saved successfully.",
+      message: "Your profile has been saved.",
       data: profile,
     });
   } catch (error) {
-    console.log(error.message);
-    res.status(500).json({
-       message: "Something went wrong"
-    });
+    next(error);
   }
 };
 
-exports.getAllDesignerProfiles = async (req, res) => {
+exports.createOrUpdateDesignerOnboarding = async (req, res, next) => {
+  const transaction = await sequelize.transaction();
+
+  try {
+    const designerId = req.user.id;
+    const {
+      businessName,
+      currentHouseAddress,
+      phoneNumber,
+      specialization,
+      yearsOfExperience,
+      shortBio,
+      bankName,
+      accountNumber,
+      accountName,
+    } = req.body;
+
+    if (!businessName || !currentHouseAddress || !phoneNumber) {
+      await transaction.rollback();
+      return res.status(400).json({
+        success: false,
+        message: "Business name, current house address, and phone number are required.",
+      });
+    }
+
+    if (!bankName || !accountNumber || !accountName) {
+      await transaction.rollback();
+      return res.status(400).json({
+        success: false,
+        message: "Bank name, account number, and account name are required.",
+      });
+    }
+
+    const parsedSpecialization = parseSpecialization(specialization);
+
+    let profile = await DesignerProfile.findOne({
+      where: { designerId },
+      transaction,
+    });
+    let profilePhoto = profile ? profile.profilePhoto : null;
+
+    if (req.file) {
+      const filePath = req.file.path;
+      const uploadToCloudinary = await cloudinary.uploader.upload(filePath);
+      profilePhoto = uploadToCloudinary.secure_url;
+      fs.unlinkSync(filePath);
+    }
+
+    const isProfileCompleted =
+      businessName &&
+      currentHouseAddress &&
+      phoneNumber &&
+      parsedSpecialization &&
+      yearsOfExperience &&
+      shortBio &&
+      profilePhoto;
+
+    const profilePayload = {
+      designerId,
+      businessName,
+      currentHouseAddress,
+      phoneNumber,
+      bankName,
+      accountNumber,
+      accountName,
+      specialization: parsedSpecialization,
+      yearsOfExperience,
+      shortBio,
+      profilePhoto,
+      isProfileCompleted: !!isProfileCompleted,
+    };
+
+    if (profile) {
+      await profile.update(profilePayload, { transaction });
+    } else {
+      profile = await DesignerProfile.create(profilePayload, { transaction });
+    }
+
+    let wallet = await DesignerWallet.findOne({
+      where: { designerId },
+      transaction,
+    });
+
+    const walletPayload = {
+      designerId,
+      bankName,
+      accountNumber,
+      accountName,
+    };
+
+    if (wallet) {
+      await wallet.update(walletPayload, { transaction });
+    } else {
+      wallet = await DesignerWallet.create(walletPayload, { transaction });
+    }
+
+    await transaction.commit();
+
+    return res.status(200).json({
+      success: true,
+      message: "Welcome aboard! Your profile and wallet are set up.",
+      data: {
+        profile,
+        wallet,
+      },
+    });
+  } catch (error) {
+    await transaction.rollback();
+    next(error);
+  }
+};
+
+exports.getAllDesignerProfiles = async (req, res, next) => {
   try {
     const designers = await Designer.findAll({
       attributes: ["id", "firstName", "lastName", "email"],
@@ -185,6 +328,9 @@ exports.getAllDesignerProfiles = async (req, res) => {
         designerData.profile = {
           ...designerData.profile,
           ...getReliabilityTierInfo(designerData.profile.reliabilityScore),
+          totalEarnings: designerData.wallet?.totalEarnings || 0,
+          availableBalance: designerData.wallet?.availableBalance || 0,
+          withdrawn: designerData.wallet?.withdrawn || 0,
         };
       }
       return designerData;
@@ -192,18 +338,15 @@ exports.getAllDesignerProfiles = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      message: "All designer profiles have been loaded successfully.",
+      message: "Designer profiles retrieved.",
       data,
     });
   } catch (error) {
-    console.log(error.message);
-    res.status(500).json({
-      message: "Something went wrong",
-    });
+    next(error)
   }
 };
 
-exports.getDesignerProfile = async (req, res) => {
+exports.getDesignerProfile = async (req, res, next) => {
   try {
     const { designerId } = req.params;
 
@@ -236,27 +379,31 @@ exports.getDesignerProfile = async (req, res) => {
       data.profile = {
         ...data.profile,
         ...getReliabilityTierInfo(data.profile.reliabilityScore),
+        totalEarnings: data.wallet?.totalEarnings || 0,
+        availableBalance: data.wallet?.availableBalance || 0,
+        withdrawn: data.wallet?.withdrawn || 0,
       };
     }
 
     res.status(200).json({
       success: true,
-      message: "Designer profile has been loaded successfully.",
+      message: "Designer profile retrieved.",
       data,
     });
   } catch (error) {
-    console.log(error.message);
-    res.status(500).json({
-      message: "Something went wrong",
-    });
+    next(error)
   }
 };
 
-exports.getDesignerDashboardStats = async (req, res) => {
+exports.getDesignerDashboardStats = async (req, res, next) => {
   try {
     const designerId = req.user.id;
 
     const profile = await DesignerProfile.findOne({
+      where: { designerId },
+    });
+
+    const wallet = await DesignerWallet.findOne({
       where: { designerId },
     });
 
@@ -272,7 +419,7 @@ exports.getDesignerDashboardStats = async (req, res) => {
 
     const reliabilityScore =
       acceptedRequests.length === 0
-        ? 100
+        ? 0
         : Math.round((completedRequests.length / acceptedRequests.length) * 100);
 
     const onTimeRequests = completedRequests.filter((item) => {
@@ -300,17 +447,11 @@ exports.getDesignerDashboardStats = async (req, res) => {
     const ratingAverage = Number(profile?.ratingAverage || 0);
     const ratingCount = Number(profile?.ratingCount || 0);
 
-    if (profile) {
-      await profile.update({
-        completedOrders: completedRequests.length,
-        reliabilityScore,
-      });
-    }
-
     return res.status(200).json({
       success: true,
-      message: "Designer dashboard stats loaded successfully.",
+      message: "Your performance stats are ready.",
       data: {
+        source: "requests",
         reliabilityScore,
         reliabilityLabel: `${reliabilityScore}/100`,
         ...getReliabilityTierInfo(reliabilityScore),
@@ -326,22 +467,87 @@ exports.getDesignerDashboardStats = async (req, res) => {
         customerSatisfactionLabel: `${ratingAverage.toFixed(1)}/5`,
         ratingCount,
         responseTime: formatDuration(average(responseHours)),
+        totalEarnings: wallet?.totalEarnings || 0,
+        availableBalance: wallet?.availableBalance || 0,
+        withdrawn: wallet?.withdrawn || 0,
       },
     });
   } catch (error) {
-    console.log(error.message);
-    res.status(500).json({
-      message: "Something went wrong",
-    });
+    next(error)
   }
 };
 
-exports.updateDesignerProfile = async (req, res) => {
+exports.getDesignerOrderDashboardStats = async (req, res, next) => {
+  try {
+    const designerId = req.user.id;
+
+    const { Order, DesignerProfile, DesignerWallet } = require("../models");
+
+    const profile = await DesignerProfile.findOne({
+      where: { designerId },
+    });
+
+    const wallet = await DesignerWallet.findOne({
+      where: { designerId },
+    });
+
+    const allOrders = await Order.findAll({
+      where: { designerId },
+      order: [["placedAt", "DESC"]],
+    });
+
+    const activeOrders = allOrders.filter((item) =>
+      ["active", "delivered"].includes(item.status)
+    ).length;
+
+    const completedOrders = allOrders.filter(
+      (item) => item.status === "completed"
+    ).length;
+
+    const totalEarnings = Number(wallet?.totalEarnings || 0);
+
+    const ratingAverage = Number(profile?.ratingAverage || 0);
+    const ratingCount = Number(profile?.ratingCount || 0);
+
+    const reliabilityScore =
+      allOrders.length === 0
+        ? 100
+        : Math.round((completedOrders / allOrders.length) * 100);
+
+    return res.status(200).json({
+      success: true,
+      message: "Your order dashboard stats are ready.",
+      data: {
+        source: "orders",
+        activeOrders,
+        totalEarnings,
+        avgRating: Number(ratingAverage.toFixed(1)),
+        avgRatingLabel: `${ratingAverage.toFixed(1)}/5`,
+        ratingCount,
+        completedOrders,
+        totalOrders: allOrders.length,
+        cancelledOrders: allOrders.filter((item) => item.status === "cancelled").length,
+        pendingOrders: allOrders.filter((item) => item.status === "pending").length,
+        reliabilityScore,
+        reliabilityLabel: `${reliabilityScore}/100`,
+        ...getReliabilityTierInfo(reliabilityScore),
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+exports.updateDesignerProfile = async (req, res, next) => {
   try {
     const designerId = req.user.id;
     const {
       businessName,
       currentHouseAddress,
+      phoneNumber,
+      bankName,
+      accountNumber,
+      accountName,
       specialization,
       yearsOfExperience,
       shortBio,
@@ -369,6 +575,10 @@ exports.updateDesignerProfile = async (req, res) => {
     const updatedBusinessName = businessName || profile.businessName;
     const updatedCurrentHouseAddress =
       currentHouseAddress || profile.currentHouseAddress;
+    const updatedPhoneNumber = phoneNumber || profile.phoneNumber;
+    const updatedBankName = bankName || profile.bankName;
+    const updatedAccountNumber = accountNumber || profile.accountNumber;
+    const updatedAccountName = accountName || profile.accountName;
     const updatedSpecialization = specialization
       ? parseSpecialization(specialization)
       : profile.specialization;
@@ -379,6 +589,7 @@ exports.updateDesignerProfile = async (req, res) => {
     const isProfileCompleted =
       updatedBusinessName &&
       updatedCurrentHouseAddress &&
+      updatedPhoneNumber &&
       updatedSpecialization &&
       updatedYearsOfExperience &&
       updatedShortBio &&
@@ -387,6 +598,10 @@ exports.updateDesignerProfile = async (req, res) => {
     await profile.update({
       businessName: updatedBusinessName,
       currentHouseAddress: updatedCurrentHouseAddress,
+      phoneNumber: updatedPhoneNumber,
+      bankName: updatedBankName,
+      accountNumber: updatedAccountNumber,
+      accountName: updatedAccountName,
       specialization: updatedSpecialization,
       yearsOfExperience: updatedYearsOfExperience,
       shortBio: updatedShortBio,
@@ -394,20 +609,30 @@ exports.updateDesignerProfile = async (req, res) => {
       isProfileCompleted: !!isProfileCompleted,
     });
 
+    // Sync bank details to the designer's wallet
+    let wallet = await DesignerWallet.findOne({
+      where: { designerId },
+    });
+
+    if (wallet) {
+      await wallet.update({
+        bankName: updatedBankName,
+        accountNumber: updatedAccountNumber,
+        accountName: updatedAccountName,
+      });
+    }
+
     res.status(200).json({
       success: true,
-      message: "Designer profile updated successfully.",
+      message: "Your profile has been updated.",
       data: profile,
     });
   } catch (error) {
-    console.log(error.message);
-    res.status(500).json({
-      message: "Something went wrong",
-    });
+    next(error)
   }
 };
 
-exports.deleteDesignerProfile = async (req, res) => {
+exports.deleteDesignerProfile = async (req, res, next) => {
   try {
     const designerId = req.user.id;
 
@@ -425,12 +650,9 @@ exports.deleteDesignerProfile = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      message: "Designer profile deleted successfully.",
+      message: "Profile deleted successfully.",
     });
   } catch (error) {
-    console.log(error.message);
-    res.status(500).json({
-      message: "Something went wrong",
-    });
+    next(error)
   }
 };

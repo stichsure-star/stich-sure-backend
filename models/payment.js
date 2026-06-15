@@ -10,19 +10,43 @@ module.exports = (sequelize, DataTypes) => {
      * The `models/index` file will call this method automatically.
      */
     static associate(models) {
+      // define association here
       Payment.belongsTo(models.Order, {
-     foreignKey: "orderId",
-     as: "order"
-});
+        foreignKey: 'orderId',
+        as: 'order',
+      });
+      Payment.belongsTo(models.Customer, {
+        foreignKey: 'customerId',
+        as: 'customer',
+      });
+      Payment.belongsTo(models.Designer, {
+        foreignKey: 'designerId',
+        as: 'designer',
+      });
     }
   }
   Payment.init({
+    id: {
+      allowNull: false,
+      primaryKey: true,
+      type: DataTypes.UUID,
+      defaultValue: DataTypes.UUIDV4
+    },
+    customerId: DataTypes.UUID,
+    designerId: DataTypes.UUID,
     orderId: DataTypes.UUID,
-    amount: DataTypes.DECIMAL,
+    reference: DataTypes.STRING,
+    status: {
+      type: DataTypes.ENUM('pending', 'processing', 'success', 'failed'),
+      defaultValue: 'pending'
+    },
+    amount: {
+      type: DataTypes.INTEGER,
+      allowNull: false
+    },
     currency: DataTypes.STRING,
     paymentProvider: DataTypes.STRING,
     transactionReference: DataTypes.STRING,
-    status: DataTypes.STRING,
     paidAt: DataTypes.DATE
   }, {
     sequelize,

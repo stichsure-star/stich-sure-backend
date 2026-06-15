@@ -35,6 +35,14 @@ module.exports = (sequelize, DataTypes) => {
         foreignKey: 'receiverDesignerId',
         as: 'receivedCollaborations'
       });
+      Designer.hasMany(models.Payment, {
+        foreignKey: 'designerId',
+        as: 'payments'
+      });
+      Designer.hasMany(models.SavedDesigner, {
+        foreignKey: 'designerId',
+        as: 'savedByCustomers'
+      });
     }
   } 
 Designer.init({ 

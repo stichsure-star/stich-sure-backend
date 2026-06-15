@@ -1,31 +1,69 @@
-const { Designer } = require("../models");
-const { Customer } = require("../models");
+const { Designer, DesignerProfile, DesignerWallet, Designs } = require("../models");
 const bcrypt = require("bcrypt");
 const otpGenerator = require("otp-generator");
 const jwt = require("jsonwebtoken");
 const redisClient = require('../Redis/redisConnection')
 const { emailTemplate, resetPasswordTemplate, resetPasswordSuccessfulTemplate } = require('../utils/emailTemplates')
 const { sendSingleEmail } = require('../utils/brevo');
+const { AppError } = require('../utils/errorHandler');
 
-exports.createDesingner = async (req, res) => {
+const reliabilityTiers = [
+  { name: "Bronze", min: 0 },
+  { name: "Silver", min: 50 },
+  { name: "Gold", min: 90 },
+  { name: "Diamond", min: 98 },
+];
+
+const getReliabilityTierInfo = (score) => {
+  const normalizedScore = Number(score) || 0;
+  let currentIndex = 0;
+
+  reliabilityTiers.forEach((tier, index) => {
+    if (normalizedScore >= tier.min) {
+      currentIndex = index;
+    }
+  });
+
+  const currentTier = reliabilityTiers[currentIndex];
+  const nextTier = reliabilityTiers[currentIndex + 1] || null;
+
+  if (!nextTier) {
+    return {
+      currentReliabilityTier: currentTier.name,
+      nextReliabilityTier: null,
+      nextReliabilityTierThreshold: currentTier.min,
+      nextReliabilityTierProgress: 100,
+      nextReliabilityTierLabel: `${currentTier.name} (${currentTier.min})`,
+    };
+  }
+
+  const progress = Math.round(
+    ((normalizedScore - currentTier.min) / (nextTier.min - currentTier.min)) * 100
+  );
+
+  return {
+    currentReliabilityTier: currentTier.name,
+    nextReliabilityTier: nextTier.name,
+    nextReliabilityTierThreshold: nextTier.min,
+    nextReliabilityTierProgress: Math.max(0, Math.min(100, progress)),
+    nextReliabilityTierLabel: `${nextTier.name} (${nextTier.min})`,
+  };
+};
+
+
+exports.createDesigner = async (req, res, next) => {
   try {
     const { firstName, lastName, email, password } = req.body;
+    const normalizedEmail = email.toLowerCase();
 
-    
-
-    const existingEmail = await Designer.findOne({where:{email: email.toLowerCase(), }});
+    const existingEmail = await Designer.findOne({ where: { email: normalizedEmail } });
     if (existingEmail) {
-      return res.status(404).json({
+      return res.status(409).json({
+        success: false,
         message: "Designer with this email already exists",
       });
     }
-    const existMail = await Customer.findOne({where: {email: email.toLowerCase()}})
-    if(existMail){
-      return res.status(404).json({
-        message: 'Email already exists'
-      })
-    }
-    const otpExpire = Date.now() + 3 * 60 * 1000;
+    const otpExpire = Date.now() + 5 * 60 * 1000;
 const otp = otpGenerator.generate(6, {
   upperCaseAlphabets: false,
   lowerCaseAlphabets: false,
@@ -37,15 +75,13 @@ const otp = otpGenerator.generate(6, {
     const newDesigner = await Designer.create({
       firstName,
       lastName,
-      email,
+      email: normalizedEmail,
       password: hashPassword,
       otp,
       otpExpire,
       role: "designer",
       isEmailVerified: false,
     });
-
-    await newDesigner.save();
 
      await sendSingleEmail({
           email: newDesigner.email,
@@ -55,18 +91,14 @@ const otp = otpGenerator.generate(6, {
         
   return res.status(201).json({
   success: true,
-  message: "Account created successfully. Please check your email for the verification OTP.",
+  message: "Welcome! Your account was created successfully. Please check your email for the verification code.",
 });
   } catch (error) {
-    console.log(error.message)
-    res.status(500).json({
-      success: false,
-      error: error.message
-    })
+    next(error);
   }
 };
 
-exports.loginDesigner = async (req, res) => {
+exports.loginDesigner = async (req, res, next) => {
   try {
     const { email, password } = req.body;
     const existingDesigner = await Designer.findOne({
@@ -74,11 +106,13 @@ exports.loginDesigner = async (req, res) => {
     });
     if (!existingDesigner) {
       return res.status(404).json({
+        success: false,
         message: "Invaid email or password",
       });
     }
      if (existingDesigner.isEmailVerified == false) {
            return res.status(403).json({
+            success: false,
             message: 'Please verify your email to continue'
            })
         }
@@ -88,11 +122,10 @@ exports.loginDesigner = async (req, res) => {
     );
     if (!checkPassword) {
       return res.status(404).json({
+        success: false,
         message: "Invalid credentials",
       });
     }
-
-    await existingDesigner.save();
 
     const token = jwt.sign(
       {
@@ -105,30 +138,28 @@ exports.loginDesigner = async (req, res) => {
     );
     
         redisClient.del(`Designer_${existingDesigner.id}`);
-        redisClient.set(`Designer_${ existingDesigner.id}`, token, {EX: 86400})
+        redisClient.set(`Designer_${existingDesigner.id}`, token, {EX: 86400})
 
     const data = {
       id: existingDesigner.id,
       email: existingDesigner.email,
       role: existingDesigner.role,
-      fullName: existingDesigner.firstName + " " + existingDesigner.lastName,
+      firstName: existingDesigner.firstName,
+      lastName:  existingDesigner.lastName
     }
 
     res.status(200).json({
       success: true,
-      message: "Logged in successfully.",
+      message: "Welcome back! You're now logged in.",
       token,
       data,
     })
   } catch (error) {
-    console.log(error.message)
-    res.status(500).json({
-      error: error.message,
-    })
+    next(error);
   }
 };
 
-exports.verifyEmail = async (req, res) => {
+exports.verifyEmail = async (req, res, next) => {
   try {
     const { otp, email } = req.body;
 
@@ -136,38 +167,41 @@ exports.verifyEmail = async (req, res) => {
 
     if (!designer) {
       return res.status(404).json({
+        success: false,
         message: "Designer account not found",
       });
     }
 
     if (designer.isEmailVerified) {
       return res.status(400).json({
+        success: false,
         message: "Designer email is already verified",
       });
     }
 
     if (designer.otpExpire < Date.now()) {
       return res.status(400).json({
+        success: false,
         message: "OTP has expired",
       });
     }
 
     if (designer.otp !== otp) {
       return res.status(400).json({
+        success: false,
         message: "OTP is invalid",
       });
     }
 
-    Object.assign(designer, {
+    await designer.update({
       isEmailVerified: true,
       otp: null,
       otpExpire: null,
     });
-    await designer.save();
 
     return res.status(200).json({
       success: true,
-      message: "Designer email verified successfully.",
+      message: "Email verified! You can now access your account.",
     });
   } catch (error) {
     console.log(error.message);
@@ -178,7 +212,48 @@ exports.verifyEmail = async (req, res) => {
   }
 };
 
-exports.forgetPassword = async (req, res) => {
+exports.updatePassword = async (req, res, next) => {
+  try {
+    const { id } = req.user;
+    const { currentPassword, newPassword } = req.body;
+
+    const designer = await Designer.findByPk(id);
+
+    if (!designer) {
+      return res.status(404).json({
+        success: false,
+        message: "designer not found",
+      });
+    }
+
+    const checkPassword = await bcrypt.compare(
+      currentPassword,
+      designer.password,
+    );
+
+    if (!checkPassword) {
+      return res.status(404).json({
+        success: false,
+        message: "Current password is invalid",
+      });
+    }
+
+    const salt = await bcrypt.genSalt(10);
+    const hashPassword = await bcrypt.hash(newPassword, salt);
+
+    designer.password = hashPassword;
+    await designer.save();
+    res.status(200).json({
+      success: true,
+      message: "Password changed successfully.",
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+
+exports.forgetPassword = async (req, res, next) => {
   try {
     const { email } = req.body;
 
@@ -187,6 +262,7 @@ exports.forgetPassword = async (req, res) => {
     });
     if (!existingEmail) {
       return res.status(404).json({
+        success: false,
         message: `Designer with ${email} doesn't exist`,
       });
     }
@@ -203,37 +279,28 @@ exports.forgetPassword = async (req, res) => {
 
     await existingEmail.save();
 
-    res.status(200).json({
-      success: true,
-      message: "OTP has been sent to your email address. Use it to reset your password.",
+    await sendSingleEmail({
+      email: existingEmail.email,
+      subject: "Reset Your Password",
+      html: resetPasswordTemplate(existingEmail.firstName, otp),
     });
 
-    (async () => {
-      try {
-        await sendSingleEmail({
-          email: existingEmail.email,
-          subject: "Reset Your Password",
-          html: resetPasswordTemplate(existingEmail.firstName, otp),
-        });
-      } catch (error) {
-        console.log(error.message);
-      }
-    })();
+    res.status(200).json({
+      success: true,
+      message: "A reset code has been sent to your email address.",
+    });
   } catch (error) {
-    console.log(error.message)
-    res.status(500).json({
-      success: false,
-      message: 'Something went wrong'
-    })
+    next(error);
   }
 };
 
-exports.resetPassword = async (req, res) => {
+exports.resetPassword = async (req, res, next) => {
   try {
     const { password } = req.body;
 
     if (!req.user || !req.user.id) {
       return res.status(401).json({
+         success: false,
          message: 'Unauthorized' 
         });
     }
@@ -242,6 +309,7 @@ exports.resetPassword = async (req, res) => {
 
     if (!designer) {
       return res.status(404).json({
+         success: false,
          message: 'Designer not found' 
         });
     }
@@ -250,38 +318,31 @@ exports.resetPassword = async (req, res) => {
     const hashPassword = await bcrypt.hash(password, salt);
     designer.password = hashPassword;
     await designer.save();
-    res.status(200).json({
-      success: true,
-      message: "Designer password reset successfully.",
+
+    await sendSingleEmail({
+      email: designer.email,
+      subject: "Password Reset Successful",
+      html: resetPasswordSuccessfulTemplate(designer.firstName),
     });
 
-    (async () => {
-      try {
-        await sendSingleEmail({
-          email: designer.email,
-          subject: "Password Reset Successful",
-          html: resetPasswordSuccessfulTemplate(designer.firstName),
-        });
-      } catch (error) {
-        console.log(error.message);
-      }
-    })();
+    res.status(200).json({
+      success: true,
+      message: "Password reset successful! You can now log in with your new password.",
+    });
   } catch (error) {
-    console.log(error.message)
-    res.status(500).json({
-      success: false,
-      message: "Something went wrong"
-    })
+    next(error);
   }
 }
 
-exports.resendOTP = async (req, res) => {
+
+exports.resendOTP = async (req, res, next) => {
     try {
         const { email } = req.body;
 
         const user = await Designer.findOne({where: {email: email.toLowerCase()}})
         if (!user) {
           return res.status(404).json({
+            success: false,
             message: 'User not found'
           })
         }
@@ -305,17 +366,14 @@ exports.resendOTP = async (req, res) => {
 
         return res.status(200).json({
           success: true,
-          message: 'OTP sent successfully'
+          message: 'A new verification code has been sent.'
         })
     } catch (error) {
-      console.log(error.message)
-     return res.status(500).json({
-        message: 'Something went wrong'
-     })
+      next(error);
     }
 };
 
-exports.logOut = async (req, res) => {
+exports.logOut = async (req, res, next) => {
   try {
     const {id, role} = req.user
 
@@ -325,18 +383,14 @@ exports.logOut = async (req, res) => {
         message: 'Unauthorized. Only designers can perform this action'
       });
     }
-    await Designer.update({ isEmailVerified: false }, { where: { id } });
     redisClient.del(`Designer_${id}`);
 
     return res.status(200).json({
       success: true,
-      message: 'Logged out successfully'
+      message: 'You have been logged out.'
     })
   } catch (error) {
-    console.log(error.message);
-    return res.status(500).json({
-      message: 'Something went wrong'
-    })
+    next(error);
   }
 }
 exports.updateProfile = async (req, res) => {
@@ -365,5 +419,100 @@ exports.updateProfile = async (req, res) => {
     return res.status(500).json({
       message: "Failed to update profile",
     });
+  }
+};
+
+exports.getAllDesigners = async (req, res, next) => {
+  try {
+    const designers = await Designer.findAll({
+      attributes: { exclude: ["password", "otp", "otpExpire"] },
+      include: [
+        {
+          model: DesignerProfile,
+          as: "profile",
+        },
+        {
+          model: DesignerWallet,
+          as: "wallet",
+        },
+        {
+          model: Designs,
+          as: "designs",
+        },
+      ],
+      order: [["createdAt", "DESC"]],
+    });
+
+    const data = designers.map((designer) => {
+      const designerData = designer.toJSON();
+      if (designerData.profile) {
+        designerData.profile = {
+          ...designerData.profile,
+          ...getReliabilityTierInfo(designerData.profile.reliabilityScore),
+          totalEarnings: designerData.wallet?.totalEarnings || 0,
+          availableBalance: designerData.wallet?.availableBalance || 0,
+          withdrawn: designerData.wallet?.withdrawn || 0,
+        };
+      }
+      return designerData;
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "Designers list retrieved.",
+      data,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+exports.getOneDesigner = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+
+    const designer = await Designer.findByPk(id, {
+      attributes: { exclude: ["password", "otp", "otpExpire"] },
+      include: [
+        {
+          model: DesignerProfile,
+          as: "profile",
+        },
+        {
+          model: DesignerWallet,
+          as: "wallet",
+        },
+        {
+          model: Designs,
+          as: "designs",
+        },
+      ],
+    });
+
+    if (!designer) {
+      return res.status(404).json({
+        success: false,
+        message: "Designer not found",
+      });
+    }
+
+    const data = designer.toJSON();
+    if (data.profile) {
+      data.profile = {
+        ...data.profile,
+        ...getReliabilityTierInfo(data.profile.reliabilityScore),
+        totalEarnings: data.wallet?.totalEarnings || 0,
+        availableBalance: data.wallet?.availableBalance || 0,
+        withdrawn: data.wallet?.withdrawn || 0,
+      };
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Designer profile retrieved.",
+      data,
+    });
+  } catch (error) {
+    next(error);
   }
 };

@@ -41,6 +41,22 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.JSON,
       allowNull: true
     },
+    phoneNumber: {
+      type: DataTypes.STRING,
+      allowNull: true
+    },
+    bankName: {
+      type: DataTypes.STRING,
+      allowNull: true
+    },
+    accountNumber: {
+      type: DataTypes.STRING,
+      allowNull: true
+    },
+    accountName: {
+      type: DataTypes.STRING,
+      allowNull: true
+    },
     yearsOfExperience: {
       type: DataTypes.INTEGER,
       allowNull: true
@@ -48,6 +64,35 @@ module.exports = (sequelize, DataTypes) => {
     shortBio: {
       type: DataTypes.TEXT,
       allowNull: true
+    },
+    kycStatus: {
+      type: DataTypes.STRING,
+      allowNull: false,
+      defaultValue: 'pending'
+    },
+    kycDocument: {
+      type: DataTypes.TEXT,
+      allowNull: true
+    },
+    isKycVerified: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: false
+    },
+    minimumPrice: {
+      type: DataTypes.DECIMAL(10, 2),
+      allowNull: false,
+      defaultValue: 0
+    },
+    maxActiveOrders: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      defaultValue: 5
+    },
+    isAvailable: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: true
     },
     completedOrders: {
       type: DataTypes.INTEGER,
@@ -67,7 +112,7 @@ module.exports = (sequelize, DataTypes) => {
     reliabilityScore: {
       type: DataTypes.INTEGER,
       allowNull: false,
-      defaultValue: 100
+      defaultValue: 0
     },
     isProfileCompleted: {
       type: DataTypes.BOOLEAN,

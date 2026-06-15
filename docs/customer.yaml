@@ -491,4 +491,286 @@ paths:
               properties:
                 message:
                   type: string
-                  example: Something went wrong  
+                  example: Something went wrong                    
+
+  /api/v1/customer/dashboard-stats:
+    get:
+      summary: Get customer dashboard statistics
+      description: Returns the authenticated customer's active order count, saved designer count, and completed order count.
+      tags: [customer]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Dashboard statistics retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Your dashboard statistics are ready.
+                  data:
+                    type: object
+                    properties:
+                      activeOrders:
+                        type: integer
+                        example: 3
+                      savedDesigners:
+                        type: integer
+                        example: 5
+                      completedOrders:
+                        type: integer
+                        example: 12
+        '403':
+          description: Only customers can access this endpoint
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: Unauthorized. Only customers can perform this action
+
+  /api/v1/customer/saved-designers:
+    get:
+      summary: Get saved designers
+      description: Returns the authenticated customer's favorite designers, including designer profile data.
+      tags: [customer]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Saved designers retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Your favorite designers list retrieved.
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                        customerId:
+                          type: string
+                          format: uuid
+                        designerId:
+                          type: string
+                          format: uuid
+                        designer:
+                          type: object
+                          properties:
+                            id:
+                              type: string
+                              format: uuid
+                            firstName:
+                              type: string
+                              example: Ada
+                            lastName:
+                              type: string
+                              example: Tailor
+                            email:
+                              type: string
+                              format: email
+                            profile:
+                              type: object
+        '403':
+          description: Only customers can access this endpoint
+
+  /api/v1/customer/saved-designers/{designerId}:
+    post:
+      summary: Save a designer
+      description: Adds a designer to the authenticated customer's favorites.
+      tags: [customer]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: designerId
+          in: path
+          required: true
+          description: ID of the designer to save
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '201':
+          description: Designer saved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Designer added to your favorites.
+                  data:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        format: uuid
+                      customerId:
+                        type: string
+                        format: uuid
+                      designerId:
+                        type: string
+                        format: uuid
+        '200':
+          description: Designer was already saved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Designer is already saved.
+        '403':
+          description: Only customers can access this endpoint
+        '404':
+          description: Designer not found
+    delete:
+      summary: Remove a saved designer
+      description: Removes a designer from the authenticated customer's favorites.
+      tags: [customer]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: designerId
+          in: path
+          required: true
+          description: ID of the saved designer to remove
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Designer removed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Designer removed from your favorites.
+        '403':
+          description: Only customers can access this endpoint
+        '404':
+          description: Saved designer not found
+
+  /api/v1/customer:
+    get:
+      summary: Get all customers
+      description: Returns all customers without password and OTP fields.
+      tags: [customer]
+      responses:
+        '200':
+          description: Customers retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Customers list retrieved.
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                        firstName:
+                          type: string
+                        lastName:
+                          type: string
+                        email:
+                          type: string
+                          format: email
+                        role:
+                          type: string
+                          example: customer
+                        isEmailVerified:
+                          type: boolean
+                        profilePhoto:
+                          type: object
+
+  /api/v1/customer/{id}:
+    get:
+      summary: Get one customer
+      description: Returns one customer by ID, including their orders.
+      tags: [customer]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Customer ID
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Customer retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Customer details retrieved.
+                  data:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        format: uuid
+                      firstName:
+                        type: string
+                      lastName:
+                        type: string
+                      email:
+                        type: string
+                        format: email
+                      orders:
+                        type: array
+                        items:
+                          type: object
+        '404':
+          description: Customer not found

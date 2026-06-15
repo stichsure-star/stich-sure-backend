@@ -89,3 +89,28 @@ exports.verifyEmailValidator = (req, res, next) => {
   });
   validateBody(schema, req, res, next);
 };
+
+exports.updatePasswordValidator = async (req, res, next) => {
+  const schema = Joi.object({
+    currentPassword: Joi.string().required().messages({
+      "any.required": "Current password is required",
+      "string.empty": "Current password cannot be empty",
+    }),
+    newPassword: passwordRule.messages({
+      "any.required": "New password is required",
+      "string.empty": "New password cannot be empty",
+      "string.pattern.base":
+        "New password must be 8-20 characters and contain uppercase, lowercase, number, and special character",
+    }),
+    confirmPassword: Joi.string()
+      .valid(Joi.ref("newPassword"))
+      .required()
+      .messages({
+        "any.only": "Confirm password must match new password",
+        "any.required": "Confirm password is required",
+        "string.empty": "Confirm password cannot be empty",
+      }),
+  });
+  validateBody(schema, req, res, next);
+};
+

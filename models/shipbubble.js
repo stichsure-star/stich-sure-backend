@@ -25,7 +25,6 @@ module.exports = (sequelize, DataTypes) => {
   const Shipment = sequelize.define('Shipment', {
     orderId: {
       type: DataTypes.STRING,
-      allowNull: false,
     },
     trackingCode: {
       type: DataTypes.STRING,

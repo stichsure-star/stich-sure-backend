@@ -5,11 +5,18 @@ const {
   Designer,
   Designs,
   request,
-  DesignerWallet,
-  DesignerWalletTransaction,
 } = require("../models");
+const { AppError } = require('../utils/errorHandler');
+const { releaseOrderEscrowToDesigner } = require("../utils/escrow");
 
 const allowedStatuses = ["new", "preparing", "ready", "completed", "cancelled"];
+const statusAliases = {
+  picked_up: "preparing",
+  pickedUp: "preparing",
+  "picked-up": "preparing",
+  in_production: "preparing",
+  delivered: "completed",
+};
 
 const generateOrderNumber = () => {
   const randomNumber = Math.floor(100000 + Math.random() * 900000);
@@ -41,53 +48,17 @@ const buildOrderWhere = (req) => {
   return where;
 };
 
-const creditCompletedOrderToWallet = async (order) => {
-  const amount = Number(order.amount || 0);
-
-  if (amount <= 0) {
-    return;
-  }
-
-  const existingTransaction = await DesignerWalletTransaction.findOne({
-    where: { orderId: order.id },
-  });
-
-  if (existingTransaction) {
-    return;
-  }
-
-  let wallet = await DesignerWallet.findOne({
-    where: { designerId: order.designerId },
-  });
-
-  if (!wallet) {
-    wallet = await DesignerWallet.create({
-      designerId: order.designerId,
-      totalEarnings: 0,
-      availableBalance: 0,
-      withdrawn: 0,
-    });
-  }
-
-  await wallet.update({
-    totalEarnings: Number(wallet.totalEarnings) + amount,
-    availableBalance: Number(wallet.availableBalance) + amount,
-  });
-
-  await DesignerWalletTransaction.create({
-    designerWalletId: wallet.id,
-    designerId: order.designerId,
-    orderId: order.id,
-    amount,
-    status: "completed",
-    transactionDate: order.completedAt || new Date(),
-  });
-};
-
-exports.createOrder = async (req, res) => {
+exports.createOrder = async (req, res, next) => {
   try {
     const customerId = req.user.id;
-    const { requestId, designerId, designId, itemName, amount } = req.body;
+    const { requestId, designerId, designId, itemName, amount, address } = req.body;
+
+    if (!itemName || !amount || !address) {
+      return res.status(400).json({
+        success: false,
+        message: "itemName, amount, and address are required",
+      });
+    }
 
     let foundRequest = null;
     if (requestId) {
@@ -95,12 +66,14 @@ exports.createOrder = async (req, res) => {
 
       if (!foundRequest) {
         return res.status(404).json({
+          success: false,
           message: "Request not found",
         });
       }
 
       if (foundRequest.customerId !== customerId) {
         return res.status(403).json({
+          success: false,
           message: "You can only create an order from your own request",
         });
       }
@@ -109,6 +82,7 @@ exports.createOrder = async (req, res) => {
     const resolvedDesignerId = designerId || foundRequest?.designerId;
     if (!resolvedDesignerId) {
       return res.status(400).json({
+        success: false,
         message: "designerId is required when requestId is not provided",
       });
     }
@@ -121,24 +95,22 @@ exports.createOrder = async (req, res) => {
       designId: designId || null,
       itemName,
       amount,
+      address,
       status: "new",
       placedAt: new Date(),
     });
 
     return res.status(201).json({
       success: true,
-      message: "Order created successfully.",
+      message: "Your order has been placed successfully!",
       data: order,
     });
   } catch (error) {
-    console.log(error.message);
-    res.status(500).json({
-      message: "Something went wrong",
-    });
+    next(error);
   }
 };
 
-exports.getDesignerOrders = async (req, res) => {
+exports.getDesignerOrders = async (req, res, next) => {
   try {
     const designerId = req.user.id;
     const { page, limit, offset } = getPagination(req.query);
@@ -168,7 +140,7 @@ exports.getDesignerOrders = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      message: "Designer orders loaded successfully.",
+      message: "Your designer orders have been retrieved.",
       data: rows,
       pagination: {
         totalItems: count,
@@ -180,14 +152,11 @@ exports.getDesignerOrders = async (req, res) => {
       },
     });
   } catch (error) {
-    console.log(error.message);
-    res.status(500).json({
-      message: "Something went wrong",
-    });
+    next(error);
   }
 };
 
-exports.getCustomerOrders = async (req, res) => {
+exports.getCustomerOrders = async (req, res, next) => {
   try {
     const customerId = req.user.id;
     const { page, limit, offset } = getPagination(req.query);
@@ -217,7 +186,7 @@ exports.getCustomerOrders = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      message: "Customer orders loaded successfully.",
+      message: "Your order history has been retrieved.",
       data: rows,
       pagination: {
         totalItems: count,
@@ -229,14 +198,11 @@ exports.getCustomerOrders = async (req, res) => {
       },
     });
   } catch (error) {
-    console.log(error.message);
-    res.status(500).json({
-      message: "Something went wrong",
-    });
+    next(error);
   }
 };
 
-exports.getOrderById = async (req, res) => {
+exports.getOrderById = async (req, res, next) => {
   try {
     const { id } = req.params;
 
@@ -261,31 +227,31 @@ exports.getOrderById = async (req, res) => {
 
     if (!order) {
       return res.status(404).json({
+        success: false,
         message: "Order not found",
       });
     }
 
     return res.status(200).json({
       success: true,
-      message: "Order loaded successfully.",
+      message: "Order details retrieved.",
       data: order,
     });
   } catch (error) {
-    console.log(error.message);
-    res.status(500).json({
-      message: "Something went wrong",
-    });
+    next(error);
   }
 };
 
-exports.updateOrderStatus = async (req, res) => {
+exports.updateOrderStatus = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { status } = req.body;
+    const requestedStatus = req.body.status;
+    const status = statusAliases[requestedStatus] || requestedStatus;
 
     if (!allowedStatuses.includes(status)) {
       return res.status(400).json({
-        message: "Status must be new, preparing, ready, completed, or cancelled",
+        success: false,
+        message: "Status must be new, preparing, ready, completed, cancelled, picked_up, or delivered",
       });
     }
 
@@ -293,12 +259,14 @@ exports.updateOrderStatus = async (req, res) => {
 
     if (!order) {
       return res.status(404).json({
+        success: false,
         message: "Order not found",
       });
     }
 
     if (order.designerId !== req.user.id) {
       return res.status(403).json({
+        success: false,
         message: "Only the assigned designer can update this order",
       });
     }
@@ -319,20 +287,100 @@ exports.updateOrderStatus = async (req, res) => {
 
     await order.update(updateData);
 
+    let escrow = null;
     if (status === "completed") {
-      await creditCompletedOrderToWallet(order);
+      escrow = await releaseOrderEscrowToDesigner(order.id);
       await order.reload();
+      await updateDesignerStatsFromOrders(order.designerId);
     }
 
     return res.status(200).json({
       success: true,
-      message: "Order status updated successfully.",
+      message: "The order status has been updated.",
       data: order,
+      escrow,
     });
   } catch (error) {
-    console.log(error.message);
-    res.status(500).json({
-      message: "Something went wrong",
+    next(error);
+  }
+};
+
+const updateDesignerStatsFromOrders = async (designerId) => {
+  const { DesignerProfile, Order, Op } = require("../models");
+
+  const profile = await DesignerProfile.findOne({
+    where: { designerId },
+  });
+
+  if (!profile) {
+    return;
+  }
+
+  const totalOrders = await Order.count({
+    where: { designerId },
+  });
+
+  const completedOrders = await Order.count({
+    where: {
+      designerId,
+      status: "completed",
+    },
+  });
+
+  const reliabilityScore =
+    totalOrders === 0
+      ? 100
+      : Math.round((completedOrders / totalOrders) * 100);
+
+  await profile.update({
+    completedOrders,
+    reliabilityScore,
+  });
+};
+
+exports.getAllOrders = async (req, res, next) => {
+  try {
+    const { page, limit, offset } = getPagination(req.query);
+    const where = buildOrderWhere(req);
+
+    const { count, rows } = await Order.findAndCountAll({
+      where,
+      include: [
+        {
+          model: Customer,
+          as: "customer",
+          attributes: ["id", "firstName", "lastName", "email"],
+        },
+        {
+          model: Designer,
+          as: "designer",
+          attributes: ["id", "firstName", "lastName", "email"],
+        },
+        {
+          model: Designs,
+          as: "design",
+          attributes: ["id", "designTitle", "category", "designImage"],
+        },
+      ],
+      order: [["placedAt", "DESC"]],
+      limit,
+      offset,
     });
+
+    return res.status(200).json({
+      success: true,
+      message: "List of all orders retrieved.",
+      data: rows,
+      pagination: {
+        totalItems: count,
+        totalPages: Math.ceil(count / limit),
+        currentPage: page,
+        pageSize: limit,
+        hasNextPage: page < Math.ceil(count / limit),
+        hasPreviousPage: page > 1,
+      },
+    });
+  } catch (error) {
+    next(error);
   }
 };
