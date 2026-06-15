@@ -1,0 +1,324 @@
+const Joi = require("joi");
+
+const uuidRule = Joi.string().guid({ version: ["uuidv4", "uuidv5"] });
+const textRule = (label, max = 1000) =>
+  Joi.string().trim().min(1).max(max).messages({
+    "string.empty": `${label} cannot be empty`,
+    "string.min": `${label} cannot be empty`,
+    "string.max": `${label} cannot be more than ${max} characters`,
+  });
+
+const amountRule = Joi.number().positive().precision(2);
+const phoneRule = Joi.string().trim().min(7).max(20);
+const dateRule = Joi.date().iso();
+
+const validateBody = (schema, options = {}) => (req, res, next) => {
+  const hasUploadedFile = !!req.file;
+  const hasBodyFields = Object.keys(req.body || {}).length > 0;
+
+  if (options.allowFileOnly && hasUploadedFile && !hasBodyFields) {
+    return next();
+  }
+
+  const { error, value } = schema.validate(req.body, {
+    abortEarly: true,
+    convert: true,
+    stripUnknown: true,
+  });
+
+  if (error) {
+    return res.status(400).json({
+      success: false,
+      message: error.details[0].message,
+    });
+  }
+
+  req.body = value;
+  next();
+};
+
+const optionalString = (label, max = 1000) => textRule(label, max).optional();
+const requiredString = (label, max = 1000) => textRule(label, max).required();
+
+const walletSchema = Joi.object({
+  bankName: requiredString("Bank name", 100),
+  accountNumber: Joi.string().trim().pattern(/^\d{10}$/).required().messages({
+    "any.required": "Account number is required",
+    "string.empty": "Account number cannot be empty",
+    "string.pattern.base": "Account number must be 10 digits",
+  }),
+  accountName: requiredString("Account name", 100),
+});
+
+const walletUpdateSchema = Joi.object({
+  bankName: optionalString("Bank name", 100),
+  accountNumber: Joi.string().trim().pattern(/^\d{10}$/).optional().messages({
+    "string.empty": "Account number cannot be empty",
+    "string.pattern.base": "Account number must be 10 digits",
+  }),
+  accountName: optionalString("Account name", 100),
+}).or("bankName", "accountNumber", "accountName");
+
+const profileFields = {
+  businessName: optionalString("Business name", 100),
+  currentHouseAddress: optionalString("Current house address", 255),
+  phoneNumber: phoneRule.optional().messages({
+    "string.empty": "Phone number cannot be empty",
+    "string.min": "Phone number must be at least 7 characters",
+    "string.max": "Phone number cannot be more than 20 characters",
+  }),
+  bankName: optionalString("Bank name", 100),
+  accountNumber: Joi.string().trim().pattern(/^\d{10}$/).optional().messages({
+    "string.pattern.base": "Account number must be 10 digits",
+  }),
+  accountName: optionalString("Account name", 100),
+  specialization: Joi.alternatives()
+    .try(Joi.array().items(textRule("Specialization", 80)).min(1), textRule("Specialization", 500))
+    .optional(),
+  yearsOfExperience: Joi.number().integer().min(0).max(80).optional(),
+  shortBio: optionalString("Short bio", 1000),
+};
+
+const addressSchema = Joi.object({
+  name: requiredString("Name", 100),
+  email: Joi.string().email().required().messages({
+    "any.required": "Email is required",
+    "string.empty": "Email cannot be empty",
+    "string.email": "Invalid Email format",
+  }),
+  phone: phoneRule.required().messages({
+    "any.required": "Phone is required",
+    "string.empty": "Phone cannot be empty",
+  }),
+  address: requiredString("Address", 255),
+});
+
+const packageItemSchema = Joi.object({
+  name: requiredString("Package item name", 100),
+  description: requiredString("Package item description", 255),
+  unit_weight: Joi.alternatives().try(Joi.number().positive(), Joi.string().trim().min(1)).required(),
+  unit_amount: Joi.alternatives().try(Joi.number().positive(), Joi.string().trim().min(1)).required(),
+  quantity: Joi.alternatives().try(Joi.number().integer().positive(), Joi.string().trim().min(1)).required(),
+});
+
+exports.createRequestValidator = validateBody(
+  Joi.object({
+    designerId: uuidRule.required().messages({
+      "any.required": "Designer ID is required",
+      "string.guid": "Designer ID must be a valid UUID",
+    }),
+    fullName: requiredString("Full name", 100),
+    deadLine: dateRule.required().messages({
+      "any.required": "Deadline is required",
+      "date.format": "Deadline must be a valid ISO date",
+    }),
+    measurement: requiredString("Measurement", 1000),
+    description: requiredString("Description", 2000),
+  })
+);
+
+exports.sendOfferValidator = validateBody(
+  Joi.object({
+    designerMessage: requiredString("Designer message", 2000),
+  })
+);
+
+exports.requestProgressValidator = validateBody(
+  Joi.object({
+    status: Joi.string().valid("picked_up", "ready", "delivered", "completed").required().messages({
+      "any.only": "Status must be picked_up, ready, delivered, or completed",
+      "any.required": "Status is required",
+    }),
+  })
+);
+
+exports.rateDesignerValidator = validateBody(
+  Joi.object({
+    rating: Joi.number().integer().min(1).max(5).required().messages({
+      "any.required": "Rating is required",
+      "number.base": "Rating must be a number",
+      "number.min": "Rating must be between 1 and 5",
+      "number.max": "Rating must be between 1 and 5",
+    }),
+  })
+);
+
+exports.createOrderValidator = validateBody(
+  Joi.object({
+    requestId: uuidRule.optional(),
+    designerId: uuidRule.optional(),
+    designId: uuidRule.optional(),
+    itemName: requiredString("Item name", 100),
+    amount: Joi.number().integer().positive().required().messages({
+      "any.required": "Amount is required",
+      "number.base": "Amount must be a number",
+      "number.positive": "Amount must be greater than 0",
+    }),
+    address: requiredString("Address", 255),
+  }).or("requestId", "designerId")
+);
+
+exports.updateOrderStatusValidator = validateBody(
+  Joi.object({
+    status: Joi.string()
+      .valid("new", "preparing", "ready", "completed", "cancelled", "picked_up", "pickedUp", "picked-up", "in_production", "delivered")
+      .required()
+      .messages({
+        "any.only": "Status must be new, preparing, ready, completed, cancelled, picked_up, or delivered",
+        "any.required": "Status is required",
+      }),
+  })
+);
+
+exports.createDesignValidator = validateBody(
+  Joi.object({
+    designerId: uuidRule.required().messages({
+      "any.required": "Designer ID is required",
+      "string.guid": "Designer ID must be a valid UUID",
+    }),
+    designTitle: requiredString("Design title", 100),
+    category: requiredString("Category", 100),
+    price: amountRule.required().messages({
+      "any.required": "Price is required",
+      "number.base": "Price must be a number",
+      "number.positive": "Price must be greater than 0",
+    }),
+    description: requiredString("Description", 2000),
+    measurement: optionalString("Measurement", 1000),
+  })
+);
+
+exports.updateDesignValidator = validateBody(
+  Joi.object({
+    designTitle: optionalString("Design title", 100),
+    category: optionalString("Category", 100),
+    price: amountRule.optional().messages({
+      "number.base": "Price must be a number",
+      "number.positive": "Price must be greater than 0",
+    }),
+    description: optionalString("Description", 2000),
+    measurement: optionalString("Measurement", 1000),
+  }).or("designTitle", "category", "price", "description", "measurement"),
+  { allowFileOnly: true }
+);
+
+exports.createWalletValidator = validateBody(walletSchema);
+exports.updateWalletValidator = validateBody(walletUpdateSchema);
+
+exports.designerProfileCreateValidator = validateBody(
+  Joi.object({
+    ...profileFields,
+    businessName: requiredString("Business name", 100),
+    currentHouseAddress: requiredString("Current house address", 255),
+    phoneNumber: phoneRule.required().messages({
+      "any.required": "Phone number is required",
+      "string.empty": "Phone number cannot be empty",
+    }),
+  })
+);
+
+exports.designerOnboardingValidator = validateBody(
+  Joi.object({
+    ...profileFields,
+    businessName: requiredString("Business name", 100),
+    currentHouseAddress: requiredString("Current house address", 255),
+    phoneNumber: phoneRule.required().messages({
+      "any.required": "Phone number is required",
+      "string.empty": "Phone number cannot be empty",
+    }),
+    bankName: requiredString("Bank name", 100),
+    accountNumber: Joi.string().trim().pattern(/^\d{10}$/).required().messages({
+      "any.required": "Account number is required",
+      "string.pattern.base": "Account number must be 10 digits",
+    }),
+    accountName: requiredString("Account name", 100),
+  })
+);
+
+exports.designerProfileUpdateValidator = validateBody(
+  Joi.object(profileFields).or(
+    "businessName",
+    "currentHouseAddress",
+    "phoneNumber",
+    "bankName",
+    "accountNumber",
+    "accountName",
+    "specialization",
+    "yearsOfExperience",
+    "shortBio"
+  ),
+  { allowFileOnly: true }
+);
+
+exports.profileContactValidator = validateBody(
+  Joi.object({
+    phone: phoneRule.required().messages({
+      "any.required": "Phone is required",
+      "string.empty": "Phone cannot be empty",
+    }),
+    address: requiredString("Address", 255),
+  })
+);
+
+exports.createCollaborationValidator = validateBody(
+  Joi.object({
+    receiverDesignerId: uuidRule.required().messages({
+      "any.required": "Receiver designer ID is required",
+      "string.guid": "Receiver designer ID must be a valid UUID",
+    }),
+    taskType: requiredString("Task type", 100),
+    taskDetails: requiredString("Task details", 1000),
+    deadline: dateRule.required().messages({
+      "any.required": "Deadline is required",
+      "date.format": "Deadline must be a valid ISO date",
+    }),
+    currentAddress: requiredString("Current address", 255),
+    offeredPayment: amountRule.required().messages({
+      "any.required": "Offered payment is required",
+      "number.base": "Offered payment must be a number",
+      "number.positive": "Offered payment must be greater than 0",
+    }),
+  })
+);
+
+exports.validateAddressValidator = validateBody(addressSchema);
+
+exports.shippingRatesValidator = validateBody(
+  Joi.object({
+    sender_address_code: Joi.alternatives().try(Joi.number().integer().positive(), Joi.string().trim().min(1)).required(),
+    reciever_address_code: Joi.alternatives().try(Joi.number().integer().positive(), Joi.string().trim().min(1)).required(),
+    pickup_date: Joi.date().iso().required(),
+    category_id: Joi.alternatives().try(Joi.number().integer().positive(), Joi.string().trim().min(1)).required(),
+    package_items: Joi.array().items(packageItemSchema).min(1).required(),
+    package_dimension: Joi.object({
+      length: Joi.number().positive().required(),
+      width: Joi.number().positive().required(),
+      height: Joi.number().positive().required(),
+    }).required(),
+  })
+);
+
+exports.createShipmentValidator = validateBody(
+  Joi.object({
+    request_token: requiredString("Request token", 500),
+    courier_id: Joi.alternatives().try(Joi.number().integer().positive(), Joi.string().trim().min(1)).required(),
+    service_code: requiredString("Service code", 100),
+    insurance_code: optionalString("Insurance code", 100),
+    is_cod_label: Joi.boolean().optional(),
+  })
+);
+
+exports.initializeShipmentPaymentValidator = validateBody(
+  Joi.object({
+    orderId: uuidRule.required().messages({
+      "any.required": "Order ID is required",
+      "string.guid": "Order ID must be a valid UUID",
+    }),
+    email: Joi.string().email().required().messages({
+      "any.required": "Email is required",
+      "string.empty": "Email cannot be empty",
+      "string.email": "Invalid Email format",
+    }),
+    deliveryAddress: requiredString("Delivery address", 255),
+  })
+);
