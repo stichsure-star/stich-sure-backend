@@ -110,16 +110,19 @@ exports.resendOtpValidator = (req, res, next) => {
 };
 
 exports.updateCustomerProfileValidator = async (req, res, next) => {
+  if (req.file && Object.keys(req.body || {}).length === 0) {
+    return next();
+  }
+
   const schema = Joi.object({
-    firstName: nameRule("First name").required(),
-    lastName: nameRule("Last name").required(),
-    email: Joi.string().email().required().messages({
+    firstName: nameRule("First name").optional(),
+    lastName: nameRule("Last name").optional(),
+    email: Joi.string().email().optional().messages({
       "any.required": "Email is required",
       "string.empty": "Email cannot be empty",
       "string.email": "Invalid Email format",
     }),
-    password: passwordRule,
-  });
+  }).or("firstName", "lastName", "email");
   validateBody(schema, req, res, next);
 }
 

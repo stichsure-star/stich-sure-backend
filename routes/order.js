@@ -8,12 +8,16 @@ const {
   updateOrderStatus,
   getAllOrders,
 } = require("../controller/order");
+const {
+  createOrderValidator,
+  updateOrderStatusValidator,
+} = require("../middlewares/bodyValidation");
 
 router.get("/", authentication, getAllOrders);
-router.post("/create", authentication, createOrder);
+router.post("/create", authentication, createOrderValidator, createOrder);
 router.get("/designer", authentication, getDesignerOrders);
 router.get("/customer", authentication, getCustomerOrders);
 router.get("/:id", authentication, getOrderById);
-router.put("/:id/status", authentication, updateOrderStatus);
+router.put("/:id/status", authentication, updateOrderStatusValidator, updateOrderStatus);
 
 module.exports = router;
