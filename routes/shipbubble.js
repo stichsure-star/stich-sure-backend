@@ -1,15 +1,23 @@
-const router = require("express").Router();
 
-const {fetchRates,createOrder,trackOrder, validateAddress, getCategories} = require("../controller/shipbubble");
+const express = require('express');
+const router = express.Router();
 
-router.post("/rates", fetchRates);
-
-router.post("/create", createOrder);
-
-router.get("/track/:orderId", trackOrder);
+const {
+  validateAddress,
+  getCategories,
+  fetchRates,
+  createOrder,
+  trackOrder,
+  initializePayment,
+  verifyPayment,
+} = require('../controller/shipbubble');
 
 router.post('/validate-address', validateAddress);
-
 router.get('/categories', getCategories);
+router.post('/rates', fetchRates);
+router.post('/shipment', createOrder);
+router.get('/track/:orderId', trackOrder);
+router.post('/payment/initialize', initializePayment);
+router.get('/payment/verify/:reference', verifyPayment);
 
 module.exports = router;

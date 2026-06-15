@@ -432,3 +432,35 @@ paths:
           description: Designer retrieved successfully
         '404':
           description: Designer not found
+
+  /api/v1/designer/update:
+    put:
+      summary: Update designer phone and address
+      tags: [designer]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - phone
+                - address
+              properties:
+                phone:
+                  type: string
+                  example: "08012345678"
+                  description: "Designer's phone number"
+                address:
+                  type: string
+                  example: "123 Broad Street, Lagos Island, Lagos State, Nigeria"
+                  description: "Designer's full address including street, area, city, state and country"
+      responses:
+        '200':
+          description: Profile updated successfully
+        '404':
+          description: Designer not found
+        '500':
+          description: Failed to update profile

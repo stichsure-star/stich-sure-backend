@@ -83,7 +83,13 @@ Designer.init({
   isEmailVerified: { 
     type: DataTypes.BOOLEAN, 
     defaultValue: false 
-  } 
+  },
+  phone: {
+  type: DataTypes.STRING,
+},
+address: {
+  type: DataTypes.STRING,
+},
 }, { 
   sequelize, 
   modelName: 'Designer',

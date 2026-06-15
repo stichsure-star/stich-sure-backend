@@ -28,9 +28,9 @@ module.exports = (sequelize, DataTypes) => {
         foreignKey: 'orderId',
         as: 'walletTransaction',
       });
-      Order.hasMany(models.Payment, {
-        foreignKey: 'orderId',
-        as: 'payments',
+      Order.hasOne(models.Payment, {
+      foreignKey: "orderId",
+      as: "payment"
       });
     }
   }
@@ -76,7 +76,6 @@ module.exports = (sequelize, DataTypes) => {
     deliveredAt: DataTypes.DATE,
     address: {
         type: DataTypes.STRING,
-        allowNull: false
       },
     completedAt: DataTypes.DATE,
   }, {

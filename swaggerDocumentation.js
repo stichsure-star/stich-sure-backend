@@ -10,7 +10,7 @@ const options = {
         },
         servers: [
             {
-                url: "https://stich-sure-backend.onrender.com",
+                url: "http://localhost:7001",
                 description: 'hosted server'
             },
             {
@@ -38,7 +38,8 @@ const options = {
         './docs/order.yaml',
         './docs/designerWallet.yaml',
         './docs/payment.yaml',
-        './docs/shipbubble.yaml'
+        './docs/shipbubble.yaml',
+        './docs/Payment.yaml'
     ]
 }
 

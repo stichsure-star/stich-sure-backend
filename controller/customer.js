@@ -63,15 +63,7 @@ exports.createCustomer = async (req, res, next) => {
 
     return res.status(201).json({
   success: true,
-  message: "Welcome! Account created successfully. Please check your email for the verification code.",
-  data: {
-    id: newCustomer.id,
-    firstName: newCustomer.firstName,
-    lastName: newCustomer.lastName,
-    email: newCustomer.email,
-    role: newCustomer.role,
-    isEmailVerified: newCustomer.isEmailVerified
-  }
+  message: "Account created successfully. Please check your email for the verification OTP."
 });
   } catch (error) {
     next(error);
@@ -449,6 +441,39 @@ exports.logOut = async (req, res, next) => {
     next(error);
   }
 }
+
+exports.updateProfile = async (req, res) => {
+  try {
+    const { phone, address } = req.body;
+
+    const customerId = req.user.id;
+
+    const customer = await Customer.findByPk(customerId);
+
+    if (!customer) {
+      return res.status(404).json({
+        success: false,
+        message: 'Customer not found',
+      });
+    }
+
+    customer.phone = phone;
+    customer.address = address;
+
+    await customer.save();
+
+    return res.status(200).json({
+      success: true,
+      message: "Profile updated successfully",
+      customer,
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({
+      message: error.message,
+    });
+  }
+};
 
 exports.getCustomerDashboardStats = async (req, res, next) => {
   try {

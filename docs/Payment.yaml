@@ -1,0 +1,271 @@
+openapi: 3.0.0
+info:
+  title: StitchSure API Documentation
+  version: 1.0.0
+  description: API documentation for shipment and payment endpoints in the StitchSure application.
+paths:
+  /api/v1/shipment/validate-address:
+    post:
+      summary: Validate a shipping address
+      tags: [shipment]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+                - email
+                - phone
+                - address
+              properties:
+                name:
+                  type: string
+                  example: "John Doe"
+                email:
+                  type: string
+                  example: "john@example.com"
+                phone:
+                  type: string
+                  example: "08012345678"
+                address:
+                  type: string
+                  example: "123 Broad Street, Lagos Island, Lagos State, Nigeria"
+      responses:
+        '200':
+          description: Address validated successfully
+        '400':
+          description: Address validation failed
+        '500':
+          description: Failed to validate address
+
+  /api/v1/shipment/categories:
+    get:
+      summary: Get all package categories
+      tags: [shipment]
+      responses:
+        '200':
+          description: Categories retrieved successfully
+        '500':
+          description: Failed to get categories
+
+  /api/v1/shipment/rates:
+    post:
+      summary: Fetch shipping rates
+      tags: [shipment]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - sender_address_code
+                - reciever_address_code
+                - pickup_date
+                - category_id
+                - package_items
+                - package_dimension
+              properties:
+                sender_address_code:
+                  type: integer
+                  example: 98794022
+                  description: "Address code gotten from validate address response"
+                reciever_address_code:
+                  type: integer
+                  example: 12345678
+                  description: "Address code gotten from validate address response"
+                pickup_date:
+                  type: string
+                  format: date
+                  example: "2026-06-14"
+                  description: "Format must be yyyy-mm-dd"
+                category_id:
+                  type: integer
+                  example: 74794423
+                  description: "Category ID gotten from get categories response"
+                package_items:
+                  type: array
+                  items:
+                    type: object
+                    required:
+                      - name
+                      - description
+                      - unit_weight
+                      - unit_amount
+                      - quantity
+                    properties:
+                      name:
+                        type: string
+                        example: "Fashion item"
+                      description:
+                        type: string
+                        example: "Blue cotton t-shirt"
+                      unit_weight:
+                        type: string
+                        example: "0.5"
+                        description: "Weight in KG as a string"
+                      unit_amount:
+                        type: string
+                        example: "5000"
+                        description: "Price in Naira as a string"
+                      quantity:
+                        type: string
+                        example: "1"
+                package_dimension:
+                  type: object
+                  required:
+                    - length
+                    - width
+                    - height
+                  properties:
+                    length:
+                      type: integer
+                      example: 20
+                      description: "In CM"
+                    width:
+                      type: integer
+                      example: 15
+                      description: "In CM"
+                    height:
+                      type: integer
+                      example: 10
+                      description: "In CM"
+      responses:
+        '200':
+          description: Rates retrieved successfully
+        '500':
+          description: Failed to get rates
+
+  /api/v1/shipment/shipment:
+    post:
+      summary: Create a shipment
+      tags: [shipment]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - request_token
+                - courier_id
+                - service_code
+              properties:
+                request_token:
+                  type: string
+                  example: "b724643e35047b44bf6499ce32dec6bf..."
+                  description: "Request token gotten from fetch rates response"
+                courier_id:
+                  type: string
+                  example: "cora"
+                  description: "Courier ID of selected courier from rates response"
+                service_code:
+                  type: string
+                  example: "cora"
+                  description: "Service code of selected courier from rates response"
+                insurance_code:
+                  type: string
+                  description: "Optional - include if insurance is needed"
+                is_cod_label:
+                  type: boolean
+                  description: "Optional - set to true for cash on delivery"
+      responses:
+        '200':
+          description: Shipment created successfully
+        '500':
+          description: Failed to create shipment
+
+  /api/v1/shipment/track/{orderId}:
+    get:
+      summary: Track a shipment
+      tags: [shipment]
+      parameters:
+        - in: path
+          name: orderId
+          required: true
+          schema:
+            type: string
+          example: "SB-6BAD4363F17C"
+          description: "The Shipbubble order ID returned when shipment was created"
+      responses:
+        '200':
+          description: Tracking info retrieved successfully
+        '500':
+          description: Failed to track order
+
+  /api/v1/shipment/payment/initialize:
+    post:
+      summary: Initialize payment for an order including shipping fee
+      tags: [payment]
+      description: >
+        Validates sender and receiver addresses, fetches shipping rates,
+        selects the cheapest courier, calculates total amount (order amount + shipping fee),
+        and initializes a Korapay payment — all in one call.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - orderId
+                - email
+                - deliveryAddress
+              properties:
+                orderId:
+                  type: string
+                  format: uuid
+                  example: "30b40a18-b752-46aa-aee4-63c1a9f62e40"
+                  description: "ID of the existing order in the database"
+                email:
+                  type: string
+                  example: "customer@example.com"
+                  description: "Customer email for Korapay payment"
+                deliveryAddress:
+                  type: string
+                  example: "45 Adeola Odeku Street, Victoria Island, Lagos State, Nigeria"
+                  description: "Customer delivery address for Shipbubble"
+      responses:
+        '200':
+          description: Payment initialized successfully
+        '400':
+          description: Address validation failed
+        '404':
+          description: Order or Designer or Customer not found
+        '500':
+          description: Failed to Initialize Payment
+
+  /api/v1/shipment/payment/verify/{reference}:
+    get:
+      summary: Verify payment and create shipment
+      tags: [payment]
+      description: >
+        Verifies payment with Korapay using the transaction reference.
+        If payment is successful, automatically creates the shipment on
+        Shipbubble and updates the order status to paid.
+      parameters:
+        - in: path
+          name: reference
+          required: true
+          schema:
+            type: string
+          example: "PAY_1718364000000"
+          description: "Transaction reference returned from initialize payment"
+      responses:
+        '200':
+          description: Payment verified and shipment created successfully
+        '400':
+          description: Payment was not successful
+        '404':
+          description: Payment record not found
+        '500':
+          description: Verification failed
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT

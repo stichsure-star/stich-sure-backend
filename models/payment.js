@@ -43,7 +43,11 @@ module.exports = (sequelize, DataTypes) => {
     amount: {
       type: DataTypes.INTEGER,
       allowNull: false
-    }
+    },
+    currency: DataTypes.STRING,
+    paymentProvider: DataTypes.STRING,
+    transactionReference: DataTypes.STRING,
+    paidAt: DataTypes.DATE
   }, {
     sequelize,
     modelName: 'Payment',

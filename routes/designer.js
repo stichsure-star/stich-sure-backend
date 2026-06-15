@@ -14,6 +14,7 @@ const {
   logOut,
   getAllDesigners,
   getOneDesigner,
+  updateProfile
 } = require('../controller/designer');
 const {
   createDesignerValidator,
@@ -36,6 +37,7 @@ router.post('/reset-password', authentication, resetPasswordValidator, resetPass
 router.post('/logout', authentication, logOut);
 router.get('/all-designer', getAllDesigners);
 router.get('/one/:id', getOneDesigner);
+router.put('/update',authentication, updateProfile)
 
 
 module.exports = router;
