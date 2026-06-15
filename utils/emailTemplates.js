@@ -1,11 +1,11 @@
-exports.emailTemplate = (name, otp) => {
+exports.emailTemplate = (name, otp, expiryMinutes = 5) => {
     return `
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>your otp?</title>
+    <title>Stitch Sure email verification code</title>
 
     <style>
         @media screen and (max-width: 600px) {
@@ -53,7 +53,7 @@ exports.emailTemplate = (name, otp) => {
                                 </div>
 
                                 <p style="font-size: 14px; color: #999999; margin-top: 25px; line-height: 1.4;">
-                                    This code is valid for <strong>3 minutes</strong>.<br>
+                                    This code is valid for <strong>${expiryMinutes} minutes</strong>.<br>
                                     Please do not share this code with anyone.
                                 </p>
 
@@ -81,7 +81,7 @@ exports.emailTemplate = (name, otp) => {
 };
 
 
-exports.resetPasswordTemplate = (name, otp) => {
+exports.resetPasswordTemplate = (name, otp, expiryMinutes = 5) => {
     return `
 <!DOCTYPE html>
 <html lang="en">
@@ -133,7 +133,7 @@ ${otp}
 </div>
 
 <p style="font-size:14px;color:#999999;margin-top:25px;line-height:1.4;">
-This code is valid for <strong>3 minutes</strong>.<br>
+This code is valid for <strong>${expiryMinutes} minutes</strong>.<br>
 If you didn't request this, please ignore this email or contact support if you're concerned about your account security.
 </p>
 
@@ -253,3 +253,9 @@ If you did not reset your password, please secure your account immediately by co
 </html>
 `;
 };
+
+exports.verificationTextTemplate = (name, otp, expiryMinutes = 5) =>
+    `Hi ${name}, your Stitch Sure email verification code is ${otp}. This code expires in ${expiryMinutes} minutes. If you did not request this, you can ignore this email.`;
+
+exports.resetPasswordTextTemplate = (name, otp, expiryMinutes = 5) =>
+    `Hi ${name}, your Stitch Sure password reset code is ${otp}. This code expires in ${expiryMinutes} minutes. If you did not request this, you can ignore this email.`;
