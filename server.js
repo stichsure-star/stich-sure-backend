@@ -53,7 +53,6 @@ app.use('/api/v1/designs', designs);
 app.use('/api/v1/designerProfile', designerProfile);
 app.use('/api/v1/designerWallet', designerWallet);
 app.use('/api/v1/collaboration', collaboration);
-// app.use('/api/v1/payment', payment)
 
 app.use('/api/v1/shipment', shipbubble)
 
