@@ -6,8 +6,10 @@ const {
   getCustomerOrders,
   getOrderById,
   updateOrderStatus,
+  getAllOrders,
 } = require("../controller/order");
 
+router.get("/", authentication, getAllOrders);
 router.post("/create", authentication, createOrder);
 router.get("/designer", authentication, getDesignerOrders);
 router.get("/customer", authentication, getCustomerOrders);

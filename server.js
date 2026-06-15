@@ -16,6 +16,7 @@ const designerRoutes = require('./routes/designer');
 const request = require('./routes/request')
 const designs = require('./routes/designs')
 const designerProfile = require('./routes/designerProfile')
+const designerWallet = require('./routes/designerWallet')
 const collaboration = require('./routes/collaboration')
 
 const shipbubble = require('./routes/shipbubble')
@@ -49,6 +50,7 @@ app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/request', request);
 app.use('/api/v1/designs', designs);
 app.use('/api/v1/designerProfile', designerProfile);
+app.use('/api/v1/designerWallet', designerWallet);
 app.use('/api/v1/collaboration', collaboration);
 
 app.use('/api/v1/shipment', shipbubble)

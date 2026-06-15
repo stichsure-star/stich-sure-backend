@@ -60,7 +60,7 @@ exports.createCollaboration = async (req, res, next) => {
 
     return res.status(201).json({
       success: true,
-      message: "Collaboration request sent successfully.",
+      message: "Your collaboration invitation has been sent.",
       data: collaboration,
     });
   } catch (error) {
@@ -78,7 +78,7 @@ exports.getSentCollaborations = async (req, res, next) => {
 
     return res.status(200).json({
       success: true,
-      message: "Sent collaborations loaded successfully.",
+      message: "Sent collaborations retrieved.",
       data: collaborations,
     });
   } catch (error) {
@@ -96,7 +96,7 @@ exports.getReceivedCollaborations = async (req, res, next) => {
 
     return res.status(200).json({
       success: true,
-      message: "Received collaborations loaded successfully.",
+      message: "Received collaborations retrieved.",
       data: collaborations,
     });
   } catch (error) {
@@ -128,7 +128,7 @@ exports.getOneCollaboration = async (req, res, next) => {
 
     return res.status(200).json({
       success: true,
-      message: "Collaboration loaded successfully.",
+      message: "Collaboration details retrieved.",
       data: collaboration,
     });
   } catch (error) {
@@ -175,7 +175,7 @@ exports.acceptCollaboration = async (req, res, next) => {
 
     return res.status(200).json({
       success: true,
-      message: "Collaboration accepted successfully.",
+      message: "You have accepted the collaboration invitation.",
       data: collaboration,
     });
   } catch (error) {
@@ -222,7 +222,7 @@ exports.rejectCollaboration = async (req, res, next) => {
 
     return res.status(200).json({
       success: true,
-      message: "Collaboration rejected successfully.",
+      message: "Collaboration request declined.",
       data: collaboration,
     });
   } catch (error) {
@@ -272,7 +272,7 @@ exports.completeCollaboration = async (req, res, next) => {
 
     return res.status(200).json({
       success: true,
-      message: "Collaboration completed successfully.",
+      message: "Collaboration marked as complete.",
       data: collaboration,
     });
   } catch (error) {
@@ -319,7 +319,7 @@ exports.cancelCollaboration = async (req, res, next) => {
 
     return res.status(200).json({
       success: true,
-      message: "Collaboration cancelled successfully.",
+      message: "The collaboration has been cancelled.",
       data: collaboration,
     });
   } catch (error) {
@@ -382,13 +382,30 @@ exports.getCollaborationStats = async (req, res, next) => {
 
     return res.status(200).json({
       success: true,
-      message: "Collaboration stats loaded successfully.",
+      message: "Your collaboration statistics are ready.",
       data: {
         activeCollaborations,
         trustedPartners: partnerIds.size,
         tasksCompleted,
         successRate,
       },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+exports.getAllCollaborations = async (req, res, next) => {
+  try {
+    const collaborations = await Collaboration.findAll({
+      include: collaborationInclude,
+      order: [["createdAt", "DESC"]],
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "Collaborations list retrieved.",
+      data: collaborations,
     });
   } catch (error) {
     next(error);

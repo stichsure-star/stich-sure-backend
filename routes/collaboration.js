@@ -1,10 +1,11 @@
 const router = require('express').Router();
 
-const {createCollaboration,getSentCollaborations,getReceivedCollaborations,getOneCollaboration,acceptCollaboration,rejectCollaboration,completeCollaboration, cancelCollaboration, getCollaborationStats,} = require('../controller/collaboration');
+const {createCollaboration,getSentCollaborations,getReceivedCollaborations,getOneCollaboration,acceptCollaboration,rejectCollaboration,completeCollaboration, cancelCollaboration, getCollaborationStats, getAllCollaborations} = require('../controller/collaboration');
 
 const { authentication } = require('../middlewares/authentication');
 const { authorizeRoles } = require('../middlewares/authorization');
 
+router.get('/', authentication, getAllCollaborations);
 router.post('/create', authentication, authorizeRoles('designer'), createCollaboration);
 router.get('/sent', authentication, authorizeRoles('designer'), getSentCollaborations);
 router.get('/received', authentication, authorizeRoles('designer'), getReceivedCollaborations);

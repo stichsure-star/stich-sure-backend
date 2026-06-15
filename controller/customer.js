@@ -51,7 +51,7 @@ const otp = otpGenerator.generate(6, {
 
     return res.status(201).json({
   success: true,
-  message: "Account created successfully. Please check your email for the verification OTP.",
+  message: "Welcome! Account created successfully. Please check your email for the verification code.",
   data: {
     id: newCustomer.id,
     firstName: newCustomer.firstName,
@@ -81,14 +81,14 @@ exports.verifyEmail = async (req, res, next) => {
       });
     }
 
-    if (customer.dataValues.otpExpire < Date.now()) {
+    if (customer.otpExpire < Date.now()) {
       return res.status(400).json({
         success: false,
         message: "OTP has expired",
       });
     }
 
-    if (customer.dataValues.otp !== otp) {
+    if (customer.otp !== otp) {
       return res.status(400).json({
         success: false,
         message: "OTP is invalid",
@@ -104,7 +104,7 @@ exports.verifyEmail = async (req, res, next) => {
 
     res.status(200).json({
       success: true,
-      message: "Your email has been verified successfully.",
+      message: "Email verified successfully! Welcome to Stitch Sure.",
     });
   } catch (error) {
     next(error);
@@ -150,7 +150,7 @@ exports.loginCustomer = async (req, res, next) => {
       { expiresIn: "1d" },
     );
     redisClient.del(`customer_${existingCustomer.id}`);
-    redisClient.set(`customer_${ existingCustomer.id}`, token, {EX: 86400})
+    redisClient.set(`customer_${existingCustomer.id}`, token, {EX: 86400})
     
     const data = {
       id: existingCustomer.id,
@@ -162,7 +162,7 @@ exports.loginCustomer = async (req, res, next) => {
 
     res.status(200).json({
       success: true,
-      message: "Logged in successfully.",
+      message: "Welcome back! You are now logged in.",
       token,
       data,
     });
@@ -204,7 +204,7 @@ exports.forgetPassword = async (req, res, next) => {
 
     return res.status(200).json({
       success: true,
-      message: "OTP has been sent to your email address. Use it to reset your password.",
+      message: "A reset code has been sent to your email address.",
     });
   } catch (error) {
     next(error);
@@ -266,12 +266,12 @@ exports.loginWithGoogle = async (req, res, next) => {
       id: customer.id,
       email: customer.email,
       role: customer.role,
-      fullName: customer.firstName + " " + customer.lastName,
+      fullName: `${customer.firstName} ${customer.lastName}`,
     };
 
     res.status(200).json({
       success: true,
-      message: "Logged in successfully with Google.",
+      message: "Welcome! Logged in successfully with Google.",
       data,
       token,
     });
@@ -315,9 +315,9 @@ exports.updateCustomerProfile = async (req, res, next) => {
 
     res.status(200).json({
       success: true,
-      message: "Customer profile updated successfully.",
+      message: "Your profile has been updated.",
       data: {
-        profilePhoto: customer.dataValues.profilePhoto
+        profilePhoto: customer.profilePhoto
       }
     });
   } catch (error) {
@@ -358,7 +358,7 @@ exports.updatePassword = async (req, res, next) => {
     await customer.save();
     res.status(200).json({
       success: true,
-      message: "Your password has been updated successfully.",
+      message: "Password changed successfully.",
     });
   } catch (error) {
     next(error);
@@ -397,7 +397,7 @@ exports.resendOTP = async (req, res, next) => {
 
         return res.status(200).json({
           success: true,
-          message: 'OTP sent successfully'
+          message: 'A new verification code has been sent.'
         })
     } catch (error) {
       next(error);
@@ -415,13 +415,11 @@ exports.logOut = async (req, res, next) => {
       });
     }
 
-    await Customer.update({ isEmailVerified: false }, { where: { id } });
-
     redisClient.del(`customer_${id}`);
 
     return res.status(200).json({
       success: true,
-      message: 'Logged out successfully'
+      message: 'You have been logged out.'
     })
   } catch (error) {
     next(error);
@@ -461,7 +459,7 @@ exports.getCustomerDashboardStats = async (req, res, next) => {
 
     return res.status(200).json({
       success: true,
-      message: "Customer dashboard stats loaded successfully.",
+      message: "Your dashboard statistics are ready.",
       data: {
         activeOrders,
         savedDesigners,
@@ -500,7 +498,7 @@ exports.saveDesigner = async (req, res, next) => {
     return res.status(created ? 201 : 200).json({
       success: true,
       message: created
-        ? "Designer saved successfully."
+        ? "Designer added to your favorites."
         : "Designer is already saved.",
       data: savedDesigner,
     });
@@ -540,7 +538,7 @@ exports.getSavedDesigners = async (req, res, next) => {
 
     return res.status(200).json({
       success: true,
-      message: "Saved designers loaded successfully.",
+      message: "Your favorite designers list retrieved.",
       data: savedDesigners,
     });
   } catch (error) {
@@ -573,7 +571,55 @@ exports.removeSavedDesigner = async (req, res, next) => {
 
     return res.status(200).json({
       success: true,
-      message: "Designer removed from saved designers successfully.",
+      message: "Designer removed from your favorites.",
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+exports.getAllCustomers = async (req, res, next) => {
+  try {
+    const customers = await Customer.findAll({
+      attributes: { exclude: ["password", "otp", "otpExpire"] },
+      order: [["createdAt", "DESC"]],
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "Customers list retrieved.",
+      data: customers,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+exports.getOneCustomer = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+
+    const customer = await Customer.findByPk(id, {
+      attributes: { exclude: ["password", "otp", "otpExpire"] },
+      include: [
+        {
+          model: Order,
+          as: "orders",
+        },
+      ],
+    });
+
+    if (!customer) {
+      return res.status(404).json({
+        success: false,
+        message: "Customer not found",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Customer details retrieved.",
+      data: customer,
     });
   } catch (error) {
     next(error);

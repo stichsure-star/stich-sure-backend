@@ -62,7 +62,7 @@ exports.createDesignerWallet = async (req, res, next) => {
 
     return res.status(201).json({
       success: true,
-      message: "Wallet created successfully.",
+      message: "Your wallet has been set up successfully.",
       data: wallet,
     });
   } catch (error) {
@@ -106,7 +106,7 @@ exports.updateDesignerWallet = async (req, res, next) => {
 
     return res.status(200).json({
       success: true,
-      message: "Wallet updated successfully.",
+      message: "Wallet details updated.",
       data: wallet,
     });
   } catch (error) {
@@ -131,7 +131,7 @@ exports.getDesignerWallet = async (req, res, next) => {
 
     return res.status(200).json({
       success: true,
-      message: "Designer wallet loaded successfully.",
+      message: "Wallet details retrieved.",
       data: wallet,
     });
   } catch (error) {
@@ -184,7 +184,7 @@ exports.getTransactionHistory = async (req, res, next) => {
 
     return res.status(200).json({
       success: true,
-      message: "Transaction history loaded successfully.",
+      message: "Your transaction history is ready.",
       data,
       pagination: {
         totalItems: count,
@@ -194,6 +194,33 @@ exports.getTransactionHistory = async (req, res, next) => {
         hasNextPage: page < Math.ceil(count / limit),
         hasPreviousPage: page > 1,
       },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+exports.getAllWallets = async (req, res, next) => {
+  try {
+    const { page, limit, offset } = getPagination(req.query);
+    const { count, rows } = await DesignerWallet.findAndCountAll({
+      include: [
+        {
+          model: Designer,
+          as: "designer",
+          attributes: ["id", "firstName", "lastName", "email"],
+        },
+      ],
+      order: [["createdAt", "DESC"]],
+      limit,
+      offset,
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "List of wallets retrieved.",
+      data: rows,
+      pagination: { totalItems: count, totalPages: Math.ceil(count / limit), currentPage: page, pageSize: limit },
     });
   } catch (error) {
     next(error);

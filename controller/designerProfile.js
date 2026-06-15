@@ -167,9 +167,22 @@ exports.createOrUpdateDesignerProfile = async (req, res, next) => {
       });
     }
 
+
+    let wallet = await DesignerWallet.findOne({
+      where: { designerId },
+    });
+
+    if (wallet) {
+      await wallet.update({
+        bankName: bankName || wallet.bankName,
+        accountNumber: accountNumber || wallet.accountNumber,
+        accountName: accountName || wallet.accountName,
+      });
+    }
+
     res.status(200).json({
       success: true,
-      message: "Designer profile saved successfully.",
+      message: "Your profile has been saved.",
       data: profile,
     });
   } catch (error) {
@@ -277,7 +290,7 @@ exports.createOrUpdateDesignerOnboarding = async (req, res, next) => {
 
     return res.status(200).json({
       success: true,
-      message: "Designer onboarding saved successfully.",
+      message: "Welcome aboard! Your profile and wallet are set up.",
       data: {
         profile,
         wallet,
@@ -315,6 +328,9 @@ exports.getAllDesignerProfiles = async (req, res, next) => {
         designerData.profile = {
           ...designerData.profile,
           ...getReliabilityTierInfo(designerData.profile.reliabilityScore),
+          totalEarnings: designerData.wallet?.totalEarnings || 0,
+          availableBalance: designerData.wallet?.availableBalance || 0,
+          withdrawn: designerData.wallet?.withdrawn || 0,
         };
       }
       return designerData;
@@ -322,7 +338,7 @@ exports.getAllDesignerProfiles = async (req, res, next) => {
 
     res.status(200).json({
       success: true,
-      message: "All designer profiles have been loaded successfully.",
+      message: "Designer profiles retrieved.",
       data,
     });
   } catch (error) {
@@ -363,12 +379,15 @@ exports.getDesignerProfile = async (req, res, next) => {
       data.profile = {
         ...data.profile,
         ...getReliabilityTierInfo(data.profile.reliabilityScore),
+        totalEarnings: data.wallet?.totalEarnings || 0,
+        availableBalance: data.wallet?.availableBalance || 0,
+        withdrawn: data.wallet?.withdrawn || 0,
       };
     }
 
     res.status(200).json({
       success: true,
-      message: "Designer profile has been loaded successfully.",
+      message: "Designer profile retrieved.",
       data,
     });
   } catch (error) {
@@ -381,6 +400,10 @@ exports.getDesignerDashboardStats = async (req, res, next) => {
     const designerId = req.user.id;
 
     const profile = await DesignerProfile.findOne({
+      where: { designerId },
+    });
+
+    const wallet = await DesignerWallet.findOne({
       where: { designerId },
     });
 
@@ -424,17 +447,11 @@ exports.getDesignerDashboardStats = async (req, res, next) => {
     const ratingAverage = Number(profile?.ratingAverage || 0);
     const ratingCount = Number(profile?.ratingCount || 0);
 
-    if (profile) {
-      await profile.update({
-        completedOrders: completedRequests.length,
-        reliabilityScore,
-      });
-    }
-
     return res.status(200).json({
       success: true,
-      message: "Designer dashboard stats loaded successfully.",
+      message: "Your performance stats are ready.",
       data: {
+        source: "requests",
         reliabilityScore,
         reliabilityLabel: `${reliabilityScore}/100`,
         ...getReliabilityTierInfo(reliabilityScore),
@@ -450,10 +467,74 @@ exports.getDesignerDashboardStats = async (req, res, next) => {
         customerSatisfactionLabel: `${ratingAverage.toFixed(1)}/5`,
         ratingCount,
         responseTime: formatDuration(average(responseHours)),
+        totalEarnings: wallet?.totalEarnings || 0,
+        availableBalance: wallet?.availableBalance || 0,
+        withdrawn: wallet?.withdrawn || 0,
       },
     });
   } catch (error) {
     next(error)
+  }
+};
+
+exports.getDesignerOrderDashboardStats = async (req, res, next) => {
+  try {
+    const designerId = req.user.id;
+
+    const { Order, DesignerProfile, DesignerWallet } = require("../models");
+
+    const profile = await DesignerProfile.findOne({
+      where: { designerId },
+    });
+
+    const wallet = await DesignerWallet.findOne({
+      where: { designerId },
+    });
+
+    const allOrders = await Order.findAll({
+      where: { designerId },
+      order: [["placedAt", "DESC"]],
+    });
+
+    const activeOrders = allOrders.filter((item) =>
+      ["active", "delivered"].includes(item.status)
+    ).length;
+
+    const completedOrders = allOrders.filter(
+      (item) => item.status === "completed"
+    ).length;
+
+    const totalEarnings = Number(wallet?.totalEarnings || 0);
+
+    const ratingAverage = Number(profile?.ratingAverage || 0);
+    const ratingCount = Number(profile?.ratingCount || 0);
+
+    const reliabilityScore =
+      allOrders.length === 0
+        ? 100
+        : Math.round((completedOrders / allOrders.length) * 100);
+
+    return res.status(200).json({
+      success: true,
+      message: "Your order dashboard stats are ready.",
+      data: {
+        source: "orders",
+        activeOrders,
+        totalEarnings,
+        avgRating: Number(ratingAverage.toFixed(1)),
+        avgRatingLabel: `${ratingAverage.toFixed(1)}/5`,
+        ratingCount,
+        completedOrders,
+        totalOrders: allOrders.length,
+        cancelledOrders: allOrders.filter((item) => item.status === "cancelled").length,
+        pendingOrders: allOrders.filter((item) => item.status === "pending").length,
+        reliabilityScore,
+        reliabilityLabel: `${reliabilityScore}/100`,
+        ...getReliabilityTierInfo(reliabilityScore),
+      },
+    });
+  } catch (error) {
+    next(error);
   }
 };
 
@@ -528,9 +609,22 @@ exports.updateDesignerProfile = async (req, res, next) => {
       isProfileCompleted: !!isProfileCompleted,
     });
 
+    // Sync bank details to the designer's wallet
+    let wallet = await DesignerWallet.findOne({
+      where: { designerId },
+    });
+
+    if (wallet) {
+      await wallet.update({
+        bankName: updatedBankName,
+        accountNumber: updatedAccountNumber,
+        accountName: updatedAccountName,
+      });
+    }
+
     res.status(200).json({
       success: true,
-      message: "Designer profile updated successfully.",
+      message: "Your profile has been updated.",
       data: profile,
     });
   } catch (error) {
@@ -556,7 +650,7 @@ exports.deleteDesignerProfile = async (req, res, next) => {
 
     res.status(200).json({
       success: true,
-      message: "Designer profile deleted successfully.",
+      message: "Profile deleted successfully.",
     });
   } catch (error) {
     next(error)

@@ -127,15 +127,132 @@ paths:
       responses:
         '200':
           description: List of all designer profiles loaded successfully
-  /api/v1/designerProfile/dashboard-stats:
-    get:
-      summary: Get logged-in designer dashboard stats
-      tags: [designerProfile]
-      security:
-        - bearerAuth: []
-      responses:
-        '200':
-          description: Dashboard stats loaded successfully. Reliability starts at Bronze with score 0, then increases from completed accepted orders. Tiers are Bronze 0+, Silver 50+, Gold 90+, and Diamond 98+.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "All designer profiles have been loaded successfully."
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                        firstName:
+                          type: string
+                        lastName:
+                          type: string
+                        email:
+                          type: string
+                        profile:
+                          type: object
+                          properties:
+                            id:
+                              type: string
+                              format: uuid
+                            designerId:
+                              type: string
+                              format: uuid
+                            businessName:
+                              type: string
+                            currentHouseAddress:
+                              type: string
+                            profilePhoto:
+                              type: string
+                            specialization:
+                              type: array
+                              items:
+                                type: string
+                            phoneNumber:
+                              type: string
+                            bankName:
+                              type: string
+                            accountNumber:
+                              type: string
+                            accountName:
+                              type: string
+                            yearsOfExperience:
+                              type: integer
+                            shortBio:
+                              type: string
+                            completedOrders:
+                              type: integer
+                            ratingAverage:
+                              type: number
+                            ratingCount:
+                              type: integer
+                            reliabilityScore:
+                              type: integer
+                            isProfileCompleted:
+                              type: boolean
+                            currentReliabilityTier:
+                              type: string
+                            nextReliabilityTier:
+                              type: string
+                              nullable: true
+                            nextReliabilityTierThreshold:
+                              type: integer
+                            nextReliabilityTierProgress:
+                              type: integer
+                            nextReliabilityTierLabel:
+                              type: string
+                            totalEarnings:
+                              type: integer
+                              description: "Total earnings from the designer's wallet"
+                            availableBalance:
+                              type: integer
+                              description: "Available balance from the designer's wallet"
+                            withdrawn:
+                              type: integer
+                              description: "Total withdrawn amount from the designer's wallet"
+                        wallet:
+                          type: object
+                          properties:
+                            id:
+                              type: string
+                              format: uuid
+                            designerId:
+                              type: string
+                              format: uuid
+                            bankName:
+                              type: string
+                            accountNumber:
+                              type: string
+                            accountName:
+                              type: string
+                            totalEarnings:
+                              type: integer
+                            availableBalance:
+                              type: integer
+                            withdrawn:
+                              type: integer
+                        designs:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              id:
+                                type: string
+                                format: uuid
+                              designerId:
+                                type: string
+                                format: uuid
+                              image:
+                                type: string
+                              title:
+                                type: string
+                              description:
+                                type: string
+                              price:
+                                type: number
   /api/v1/designerProfile/getByDesigner/{designerId}:
     get:
       summary: Get a designer profile by designer id
@@ -151,8 +268,101 @@ paths:
       responses:
         '200':
           description: Designer profile loaded successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Designer profile has been loaded successfully."
+                  data:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        format: uuid
+                      firstName:
+                        type: string
+                      lastName:
+                        type: string
+                      email:
+                        type: string
+                      profile:
+                        type: object
+                        properties:
+                          id:
+                            type: string
+                            format: uuid
+                          designerId:
+                            type: string
+                            format: uuid
+                          businessName:
+                            type: string
+                          currentHouseAddress:
+                            type: string
+                          profilePhoto:
+                            type: string
+                          specialization:
+                            type: array
+                            items:
+                              type: string
+                          phoneNumber:
+                            type: string
+                          bankName:
+                            type: string
+                          accountNumber:
+                            type: string
+                          accountName:
+                            type: string
+                          yearsOfExperience:
+                            type: integer
+                          shortBio:
+                            type: string
+                          completedOrders:
+                            type: integer
+                          ratingAverage:
+                            type: number
+                          ratingCount:
+                            type: integer
+                          reliabilityScore:
+                            type: integer
+                          isProfileCompleted:
+                            type: boolean
+                          currentReliabilityTier:
+                            type: string
+                          nextReliabilityTier:
+                            type: string
+                            nullable: true
+                          nextReliabilityTierThreshold:
+                            type: integer
+                          nextReliabilityTierProgress:
+                            type: integer
+                          nextReliabilityTierLabel:
+                            type: string
+                          totalEarnings:
+                            type: integer
+                            description: "Total earnings from the designer's wallet"
+                          availableBalance:
+                            type: integer
+                            description: "Available balance from the designer's wallet"
+                          withdrawn:
+                            type: integer
+                            description: "Total withdrawn amount from the designer's wallet"
         '404':
           description: Designer not found
+  /api/v1/designerProfile/dashboard-stats:
+    get:
+      summary: Get logged-in designer dashboard stats
+      tags: [designerProfile]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Dashboard stats loaded successfully. Reliability starts at Bronze with score 0, then increases from completed accepted orders. Tiers are Bronze 0+, Silver 50+, Gold 90+, and Diamond 98+.
   /api/v1/designerProfile/update:
     put:
       summary: Update designer profile
