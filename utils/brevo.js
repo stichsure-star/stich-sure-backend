@@ -8,6 +8,9 @@ exports.sendSingleEmail = async (options) => {
     if (!apikey) {
       throw new Error("BREVO_API_KEY is not configured");
     }
+    if (!process.env.BREVO_SENDER_NAME || !process.env.BREVO_SENDER_EMAIL) {
+      throw new Error("BREVO sender name and email are not configured");
+    }
 
     const apiInstance = new Brevo.TransactionalEmailsApi();
     apiInstance.setApiKey(Brevo.TransactionalEmailsApiApiKeys.apiKey, apikey);
@@ -16,7 +19,16 @@ exports.sendSingleEmail = async (options) => {
     sendSmtpEmail.subject = options.subject;
     sendSmtpEmail.to = [{ email: options.email }];
     sendSmtpEmail.htmlContent = options.html;
-    const data = await apiInstance.sendTransacEmail(sendSmtpEmail);
+    if (options.text) {
+      sendSmtpEmail.textContent = options.text;
+    }
+    if (process.env.BREVO_REPLY_TO_EMAIL) {
+      sendSmtpEmail.replyTo = {
+        email: process.env.BREVO_REPLY_TO_EMAIL,
+        name: process.env.BREVO_REPLY_TO_NAME || process.env.BREVO_SENDER_NAME,
+      };
+    }
+    await apiInstance.sendTransacEmail(sendSmtpEmail);
     console.log("Email sent to:", options.email);
   } catch (error) {
     const status = error?.response?.status;

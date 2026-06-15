@@ -30,6 +30,13 @@ const emailRule = Joi.string().email().required().messages({
   "string.email": "Invalid Email format",
 });
 
+const otpRule = Joi.string().length(6).pattern(/^\d+$/).required().messages({
+  "any.required": "OTP is required",
+  "string.empty": "OTP cannot be empty",
+  "string.length": "OTP must be 6 digits",
+  "string.pattern.base": "OTP must contain only numbers",
+});
+
 const validateBody = (schema, req, res, next) => {
   const { error } = schema.validate(req.body);
   if (error) {
@@ -72,11 +79,7 @@ exports.loginValidator = (req, res, next) => {
 
 exports.forgetPasswordValidator = async (req, res, next) => {
   const schema = Joi.object({
-    email: Joi.string().email().optional().messages({
-      "any.required": "Email is required",
-      "string.empty": "Email cannot be empty",
-      "string.email": "Invalid Email format",
-    }),
+    email: emailRule,
   })
   validateBody(schema, req, res, next);
 }
@@ -90,6 +93,21 @@ exports.resetPaswordValidator = async (req, res, next) => {
   })
   validateBody(schema, req, res, next);
 }
+
+exports.verifyEmailValidator = (req, res, next) => {
+  const schema = Joi.object({
+    email: emailRule,
+    otp: otpRule,
+  });
+  validateBody(schema, req, res, next);
+};
+
+exports.resendOtpValidator = (req, res, next) => {
+  const schema = Joi.object({
+    email: emailRule,
+  });
+  validateBody(schema, req, res, next);
+};
 
 exports.updateCustomerProfileValidator = async (req, res, next) => {
   const schema = Joi.object({

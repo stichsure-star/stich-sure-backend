@@ -19,6 +19,7 @@ const {
   createDesignerValidator,
   loginValidator,
   verifyEmailValidator,
+  resendOtpValidator,
   forgetPasswordValidator,
   resetPasswordValidator,
   updatePasswordValidator
@@ -28,7 +29,7 @@ const {
 router.post('/create', createDesignerValidator, createDesigner);
 router.post('/login', loginValidator, loginDesigner);
 router.post('/verify', verifyEmailValidator, verifyEmail);
-router.post('/resend-otp', resendOTP);
+router.post('/resend-otp', resendOtpValidator, resendOTP);
 router.post('/forget-password', forgetPasswordValidator, forgetPassword);
 router.put('/update-password-setting', authentication, updatePasswordValidator, updatePassword)
 router.post('/reset-password', authentication, resetPasswordValidator, resetPassword);
