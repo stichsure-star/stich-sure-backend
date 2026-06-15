@@ -57,3 +57,16 @@ exports.getPackageCategories = async () => {
   });
   return res.json();
 };
+exports.fundWallet = async (amount) => {
+  const res = await fetch(`${process.env.SHIPBUBBLE_BASE_URL}/shipping/wallet/fund`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${process.env.SHIPBUBBLE_TEST_KEY}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ amount }),
+  });
+  return res.json();
+};
+
+

@@ -67,3 +67,46 @@ paths:
       responses:
         '200':
           description: Package categories retrieved successfully
+  /api/v1/shipment/wallet/fund:
+    post:
+      summary: Fund Shipbubble shipping wallet
+      tags: [shipment]
+      description: >
+        Funds the Shipbubble shipping wallet. Returns a Paystack checkout URL
+        to complete the payment. Only works with production API key.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - amount
+              properties:
+                amount:
+                  type: number
+                  example: 5000
+                  description: "Amount to fund the wallet with in Naira"
+      responses:
+        '200':
+          description: Wallet funding request created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  message:
+                    type: string
+                    example: Retrieved successfully
+                  data:
+                    type: object
+                    properties:
+                      payment_url:
+                        type: string
+                        example: "https://checkout.paystack.com/un58cepyzok34gj"
+                        description: "Open this URL in browser to complete wallet funding"
+        '500':
+          description: Failed to fund wallet          
