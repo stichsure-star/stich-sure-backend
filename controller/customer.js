@@ -14,8 +14,9 @@ const { AppError } = require('../utils/errorHandler');
 exports.createCustomer = async (req, res, next) => {
   try {
     const { firstName, lastName, email, password } = req.body;
+    const normalizedEmail = email.toLowerCase();
 
-    const existingEmail = await Customer.findOne({where: {email: email.toLowerCase()}})
+    const existingEmail = await Customer.findOne({ where: { email: normalizedEmail } })
     if (existingEmail) {
       return res.status(409).json({
         success: false,
@@ -36,7 +37,7 @@ const otp = otpGenerator.generate(6, {
     const newCustomer = await Customer.create({
       firstName,
       lastName,
-      email: email.toLowerCase(),
+      email: normalizedEmail,
       password: hashPassword,
       otp,
       otpExpire,
