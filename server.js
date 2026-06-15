@@ -17,6 +17,7 @@ const request = require('./routes/request')
 const designs = require('./routes/designs')
 const designerProfile = require('./routes/designerProfile')
 const collaboration = require('./routes/collaboration')
+const payment = require('./routes/payments')
 
 const shipbubble = require('./routes/shipbubble')
 
@@ -49,6 +50,7 @@ app.use('/api/v1/request', request);
 app.use('/api/v1/designs', designs);
 app.use('/api/v1/designerProfile', designerProfile);
 app.use('/api/v1/collaboration', collaboration);
+app.use('/api/v1/payment', payment)
 
 app.use('/api/v1/shipment', shipbubble)
 

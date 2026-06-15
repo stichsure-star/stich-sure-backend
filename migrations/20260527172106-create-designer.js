@@ -43,6 +43,12 @@ module.exports = {
         type: Sequelize.BOOLEAN,
         defaultValue: false
       },
+      phone: {
+      type: Sequelize.STRING,
+      },
+      address: {
+       type: Sequelize.STRING,
+      },
       createdAt: {
         allowNull: false,
         type: Sequelize.DATE,

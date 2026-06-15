@@ -173,7 +173,7 @@ exports.verifyEmail = async (req, res) => {
     console.log(error.message);
     res.status(500).json({
       success: false,
-      message: "Something went wrong",
+      message: error.message,
     });
   }
 };
@@ -339,3 +339,31 @@ exports.logOut = async (req, res) => {
     })
   }
 }
+exports.updateProfile = async (req, res) => {
+  try {
+    const { phone, address } = req.body;
+    console.log("req.user:", req.user);
+    const designerId = req.user.id
+
+    const designer = await Designer.findByPk(designerId);
+    if (!designer) {
+      return res.status(404).json({
+        success: false,
+        message: "Designer not found",
+      });
+    }
+
+    await designer.update({ phone, address });
+
+    return res.status(200).json({
+      success: true,
+      message: "Profile updated successfully",
+      designer,
+    });
+  } catch (error) {
+    console.log(error.message);
+    return res.status(500).json({
+      message: "Failed to update profile",
+    });
+  }
+};

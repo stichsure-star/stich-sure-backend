@@ -59,15 +59,7 @@ const otp = otpGenerator.generate(6, {
 
     return res.status(201).json({
   success: true,
-  message: "Account created successfully. Please check your email for the verification OTP.",
-  data: {
-    id: newCustomer.id,
-    firstName: newCustomer.firstName,
-    lastName: newCustomer.lastName,
-    email: newCustomer.email,
-    role: newCustomer.role,
-    isEmailVerified: newCustomer.isEmailVerified  // will return false on signup
-  }
+  message: "Account created successfully. Please check your email for the verification OTP."
 });
   } catch (error) {
     console.log(error.message)
@@ -452,3 +444,36 @@ exports.logOut = async (req, res) => {
     })
   }
 }
+
+exports.updateProfile = async (req, res) => {
+  try {
+    const { phone, address } = req.body;
+
+    const customerId = req.user.id;
+
+    const customer = await Customer.findByPk(customerId);
+
+    if (!customer) {
+      return res.status(404).json({
+        success: false,
+        message: 'Customer not found',
+      });
+    }
+
+    customer.phone = phone;
+    customer.address = address;
+
+    await customer.save();
+
+    return res.status(200).json({
+      success: true,
+      message: "Profile updated successfully",
+      customer,
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({
+      message: error.message,
+    });
+  }
+};

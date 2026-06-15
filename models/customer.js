@@ -58,7 +58,15 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.BOOLEAN,
         defaultValue: false
       },
-      profilePhoto: DataTypes.TEXT
+      
+      profilePhoto: DataTypes.TEXT,
+       phone: {
+  type: DataTypes.STRING,
+},
+address: {
+  type: DataTypes.STRING,
+},
+
     },
     {
       sequelize,
