@@ -1,0 +1,69 @@
+openapi: 3.0.0
+info:
+  title: StitchSure API Documentation
+  version: 1.0.0
+  description: API documentation for Shipbubble shipment endpoints in the StitchSure application.
+paths:
+  /api/v1/shipment/rates:
+    post:
+      summary: Fetch shipping rates
+      tags: [shipment]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Shipping rates retrieved successfully
+
+  /api/v1/shipment/create:
+    post:
+      summary: Create shipment
+      tags: [shipment]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Shipment created successfully
+
+  /api/v1/shipment/track/{orderId}:
+    get:
+      summary: Track shipment
+      tags: [shipment]
+      parameters:
+        - name: orderId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Tracking information retrieved successfully
+
+  /api/v1/shipment/validate-address:
+    post:
+      summary: Validate shipping address
+      tags: [shipment]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Address validation completed
+
+  /api/v1/shipment/categories:
+    get:
+      summary: Get package categories
+      tags: [shipment]
+      responses:
+        '200':
+          description: Package categories retrieved successfully

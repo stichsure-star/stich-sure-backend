@@ -6,6 +6,7 @@ const {
   getAllDesignerProfiles,
   getDesignerProfile,
   getDesignerDashboardStats,
+  getDesignerOrderDashboardStats,
   updateDesignerProfile,
   deleteDesignerProfile,
 } = require('../controller/designerProfile')

@@ -8,10 +8,14 @@ const {
   completeRequest,
   updateRequestProgress,
   getRequestTracking,
-  rateDesigner
+  rateDesigner,
+  getAllRequests,
+  getOneRequest
 } = require('../controller/request')
 const { authentication } = require('../middlewares/authentication')
 
+router.get('/', authentication, getAllRequests);
+router.get('/:id', authentication, getOneRequest);
 router.post('/create', authentication,  createRequest);
 router.put('/send-offer/:id', authentication,  sendOffer);
 router.put('/accept/:id', authentication,  acceptRequest);

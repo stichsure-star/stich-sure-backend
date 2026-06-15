@@ -102,7 +102,7 @@ exports.createOrder = async (req, res, next) => {
 
     return res.status(201).json({
       success: true,
-      message: "Order created successfully.",
+      message: "Your order has been placed successfully!",
       data: order,
     });
   } catch (error) {
@@ -140,7 +140,7 @@ exports.getDesignerOrders = async (req, res, next) => {
 
     return res.status(200).json({
       success: true,
-      message: "Designer orders loaded successfully.",
+      message: "Your designer orders have been retrieved.",
       data: rows,
       pagination: {
         totalItems: count,
@@ -186,7 +186,7 @@ exports.getCustomerOrders = async (req, res, next) => {
 
     return res.status(200).json({
       success: true,
-      message: "Customer orders loaded successfully.",
+      message: "Your order history has been retrieved.",
       data: rows,
       pagination: {
         totalItems: count,
@@ -234,7 +234,7 @@ exports.getOrderById = async (req, res, next) => {
 
     return res.status(200).json({
       success: true,
-      message: "Order loaded successfully.",
+      message: "Order details retrieved.",
       data: order,
     });
   } catch (error) {
@@ -291,13 +291,94 @@ exports.updateOrderStatus = async (req, res, next) => {
     if (status === "completed") {
       escrow = await releaseOrderEscrowToDesigner(order.id);
       await order.reload();
+      await updateDesignerStatsFromOrders(order.designerId);
     }
 
     return res.status(200).json({
       success: true,
-      message: "Order status updated successfully.",
+      message: "The order status has been updated.",
       data: order,
       escrow,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const updateDesignerStatsFromOrders = async (designerId) => {
+  const { DesignerProfile, Order, Op } = require("../models");
+
+  const profile = await DesignerProfile.findOne({
+    where: { designerId },
+  });
+
+  if (!profile) {
+    return;
+  }
+
+  const totalOrders = await Order.count({
+    where: { designerId },
+  });
+
+  const completedOrders = await Order.count({
+    where: {
+      designerId,
+      status: "completed",
+    },
+  });
+
+  const reliabilityScore =
+    totalOrders === 0
+      ? 100
+      : Math.round((completedOrders / totalOrders) * 100);
+
+  await profile.update({
+    completedOrders,
+    reliabilityScore,
+  });
+};
+
+exports.getAllOrders = async (req, res, next) => {
+  try {
+    const { page, limit, offset } = getPagination(req.query);
+    const where = buildOrderWhere(req);
+
+    const { count, rows } = await Order.findAndCountAll({
+      where,
+      include: [
+        {
+          model: Customer,
+          as: "customer",
+          attributes: ["id", "firstName", "lastName", "email"],
+        },
+        {
+          model: Designer,
+          as: "designer",
+          attributes: ["id", "firstName", "lastName", "email"],
+        },
+        {
+          model: Designs,
+          as: "design",
+          attributes: ["id", "designTitle", "category", "designImage"],
+        },
+      ],
+      order: [["placedAt", "DESC"]],
+      limit,
+      offset,
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "List of all orders retrieved.",
+      data: rows,
+      pagination: {
+        totalItems: count,
+        totalPages: Math.ceil(count / limit),
+        currentPage: page,
+        pageSize: limit,
+        hasNextPage: page < Math.ceil(count / limit),
+        hasPreviousPage: page > 1,
+      },
     });
   } catch (error) {
     next(error);

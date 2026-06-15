@@ -15,6 +15,8 @@ const {
   saveDesigner,
   getSavedDesigners,
   removeSavedDesigner,
+  getAllCustomers,
+  getOneCustomer,
 } = require('../controller/customer')
 const { upload } = require('../middlewares/multer')
 const { authentication } = require('../middlewares/authentication')
@@ -33,5 +35,7 @@ router.get('/saved-designers', authentication, getSavedDesigners);
 router.delete('/saved-designers/:designerId', authentication, removeSavedDesigner);
 router.put('/update-profile/:id', authentication, updateCustomerProfileValidator, upload.single('profilePhoto'), updateCustomerProfile);
 router.put('/update-password', authentication, updatePasswordValidator, updatePassword)
+router.get('/',  getAllCustomers);
+router.get('/:id', getOneCustomer);
 
 module.exports = router;
