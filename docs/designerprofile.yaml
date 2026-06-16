@@ -64,6 +64,14 @@ paths:
                   type: string
                   format: binary
                   description: "Profile photo file upload"
+                firstName:
+                  type: string
+                  example: "John"
+                  description: "The designer's first name"
+                lastName:
+                  type: string
+                  example: "Doe"
+                  description: "The designer's last name"
       responses:
         '200':
           description: Designer profile saved successfully
@@ -117,6 +125,14 @@ paths:
                 profilePhoto:
                   type: string
                   format: binary
+                firstName:
+                  type: string
+                  example: "John"
+                  description: "The designer's first name"
+                lastName:
+                  type: string
+                  example: "Doe"
+                  description: "The designer's last name"                  
       responses:
         '200':
           description: Designer onboarding saved successfully. Returns the joined profile fields and wallet data.
