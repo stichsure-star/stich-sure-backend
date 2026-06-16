@@ -104,6 +104,8 @@ exports.createOrUpdateDesignerProfile = async (req, res, next) => {
       specialization,
       yearsOfExperience,
       shortBio,
+      firstName,
+      lastName
     } = req.body;
     const parsedSpecialization = parseSpecialization(specialization);
 
@@ -134,7 +136,9 @@ exports.createOrUpdateDesignerProfile = async (req, res, next) => {
       parsedSpecialization &&
       yearsOfExperience &&
       shortBio &&
-      profilePhoto;
+      profilePhoto &&
+      firstName &&
+      lastName
 
     if (profile) {
       await profile.update({
@@ -148,6 +152,8 @@ exports.createOrUpdateDesignerProfile = async (req, res, next) => {
         yearsOfExperience,
         shortBio,
         profilePhoto,
+        firstName,
+        lastName,
         isProfileCompleted: !!isProfileCompleted,
       });
     } else {
@@ -164,6 +170,8 @@ exports.createOrUpdateDesignerProfile = async (req, res, next) => {
         shortBio,
         profilePhoto,
         isProfileCompleted: !!isProfileCompleted,
+        firstName,
+        lastName
       });
     }
 
@@ -205,6 +213,8 @@ exports.createOrUpdateDesignerOnboarding = async (req, res, next) => {
       bankName,
       accountNumber,
       accountName,
+      firstName,
+      lastName
     } = req.body;
 
     if (!businessName || !currentHouseAddress || !phoneNumber) {
@@ -245,6 +255,8 @@ exports.createOrUpdateDesignerOnboarding = async (req, res, next) => {
       parsedSpecialization &&
       yearsOfExperience &&
       shortBio &&
+      firstName &&
+      lastName &&
       profilePhoto;
 
     const profilePayload = {
@@ -259,6 +271,8 @@ exports.createOrUpdateDesignerOnboarding = async (req, res, next) => {
       yearsOfExperience,
       shortBio,
       profilePhoto,
+      firstName,
+      lastName,
       isProfileCompleted: !!isProfileCompleted,
     };
 

@@ -283,7 +283,7 @@ exports.loginWithGoogle = async (req, res, next) => {
 
 exports.updateCustomerProfile = async (req, res, next) => {
   try {
-    const { firstName, lastName, email } = req.body;
+    const { firstName, lastName, email, phone, address } = req.body;
     const { id } = req.params;
 
     const customer = await Customer.findByPk(id);
@@ -312,13 +312,17 @@ exports.updateCustomerProfile = async (req, res, next) => {
       lastName: lastName || customer.lastName,
       email: email || customer.email,
       profilePhoto: profilePhoto,
+      phone,
+      address
     });
 
     res.status(200).json({
       success: true,
       message: "Your profile has been updated.",
       data: {
-        profilePhoto: customer.profilePhoto
+        profilePhoto: customer.profilePhoto,
+        phone: customer.phone,
+        address: customer.address
       }
     });
   } catch (error) {
@@ -441,39 +445,6 @@ exports.logOut = async (req, res, next) => {
     next(error);
   }
 }
-
-exports.updateProfile = async (req, res) => {
-  try {
-    const { phone, address } = req.body;
-
-    const customerId = req.user.id;
-
-    const customer = await Customer.findByPk(customerId);
-
-    if (!customer) {
-      return res.status(404).json({
-        success: false,
-        message: 'Customer not found',
-      });
-    }
-
-    customer.phone = phone;
-    customer.address = address;
-
-    await customer.save();
-
-    return res.status(200).json({
-      success: true,
-      message: "Profile updated successfully",
-      customer,
-    });
-  } catch (error) {
-    console.error(error);
-    return res.status(500).json({
-      message: error.message,
-    });
-  }
-};
 
 exports.getCustomerDashboardStats = async (req, res, next) => {
   try {
