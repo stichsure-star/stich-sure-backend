@@ -343,8 +343,6 @@ exports.updateCustomerProfile = async (req, res, next) => {
         firstName: customer.firstName,
         lastName: customer.lastName,
         email: customer.email,
-        profilePhoto: customer.profilePhoto
-      },
         profilePhoto: customer.profilePhoto,
         phone: customer.phone,
         address: customer.address
