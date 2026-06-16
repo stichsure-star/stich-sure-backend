@@ -399,6 +399,10 @@ paths:
                   type: string
                   format: binary
                   description: "Profile photo file to upload"
+                phone:
+                  type: string
+                  format: binary
+                  description: "Profile photo file to upload"
       responses:
         '200':
           description: Profile updated successfully

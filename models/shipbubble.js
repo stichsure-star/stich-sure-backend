@@ -1,6 +1,7 @@
 'use strict';
 const {
-  Model
+  Model,
+  Sequelize
 } = require('sequelize');
 module.exports = (sequelize, DataTypes) => {
   class Payment extends Model {
@@ -24,29 +25,31 @@ module.exports = (sequelize, DataTypes) => {
   
   const Shipment = sequelize.define('Shipment', {
     orderId: {
-      type: DataTypes.STRING,
+      type: Sequelize.STRING,
     },
     trackingCode: {
-      type: DataTypes.STRING,
+      type: Sequelize.STRING,
     },
     trackingUrl: {
-      type: DataTypes.STRING,
+      type: Sequelize.TEXT,
     },
     courier: {
-      type: DataTypes.STRING,
+      type: Sequelize.STRING,
     },
     status: {
-      type: DataTypes.STRING,
-      defaultValue: 'pending',
+      type: Sequelize.STRING,
+      ENUM: [
+        
+      ]
+      
     },
     shippingFee: {
-      type: DataTypes.FLOAT,
+      type: Sequelize.FLOAT,
     },
     currency: {
-      type: DataTypes.STRING,
+      type: Sequelize.STRING,
       defaultValue: 'NGN',
-    },
-    currency: DataTypes.STRING,
+    }
   });
   return Shipment;
 };
