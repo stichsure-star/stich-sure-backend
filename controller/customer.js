@@ -1,5 +1,11 @@
 const { Op } = require("sequelize");
-const { Customer, Designer, DesignerProfile, Order, SavedDesigner } = require("../models");
+const {
+  Customer,
+  Designer,
+  DesignerProfile,
+  Order,
+  SavedDesigner,
+} = require("../models");
 const bcrypt = require("bcrypt");
 const fs = require("fs");
 const jwt = require("jsonwebtoken");
@@ -10,10 +16,10 @@ const {
   resetPasswordSuccessfulTemplate,
   verificationTextTemplate,
   resetPasswordTextTemplate,
-} = require('../utils/emailTemplates')
-const { sendSingleEmail } = require('../utils/brevo');
-const redisClient = require('../Redis/redisConnection')
-const { AppError } = require('../utils/errorHandler');
+} = require("../utils/emailTemplates");
+const { sendSingleEmail } = require("../utils/brevo");
+const redisClient = require("../Redis/redisConnection");
+const { AppError } = require("../utils/errorHandler");
 const {
   VERIFICATION_OTP_TTL_MINUTES,
   RESET_PASSWORD_OTP_TTL_MINUTES,
@@ -22,15 +28,16 @@ const {
   getOtpExpiryDate,
   getResendCooldownSeconds,
   setResendCooldown,
-} = require('../utils/otp');
-
+} = require("../utils/otp");
 
 exports.createCustomer = async (req, res, next) => {
   try {
     const { firstName, lastName, email, password } = req.body;
     const normalizedEmail = email.toLowerCase();
 
-    const existingEmail = await Customer.findOne({ where: { email: normalizedEmail } })
+    const existingEmail = await Customer.findOne({
+      where: { email: normalizedEmail },
+    });
     if (existingEmail) {
       return res.status(409).json({
         success: false,
@@ -42,7 +49,6 @@ exports.createCustomer = async (req, res, next) => {
     const salt = await bcrypt.genSalt(10);
     const hashPassword = await bcrypt.hash(password, salt);
 
-    
     const newCustomer = await Customer.create({
       firstName,
       lastName,
@@ -53,18 +59,22 @@ exports.createCustomer = async (req, res, next) => {
       role: "customer",
     });
 
+    const receiverName = `${newCustomer.firstName || ""} ${newCustomer.lastName || ""}`.trim() || newCustomer.email;
+
     await sendSingleEmail({
       email: newCustomer.email,
       subject: "Verify your Stitch Sure email",
-      html: emailTemplate(newCustomer.firstName, otp, VERIFICATION_OTP_TTL_MINUTES),
-      text: verificationTextTemplate(newCustomer.firstName, otp, VERIFICATION_OTP_TTL_MINUTES),
+      name: receiverName,
+      html: emailTemplate(receiverName, otp, VERIFICATION_OTP_TTL_MINUTES),
+      text: verificationTextTemplate(receiverName, otp, VERIFICATION_OTP_TTL_MINUTES),
     });
     await setResendCooldown(redisClient, "customer", newCustomer.email);
 
     return res.status(201).json({
-  success: true,
-  message: "Account created successfully. Please check your email for the verification OTP."
-});
+      success: true,
+      message:
+        "Account created successfully. Please check your email for the verification OTP.",
+    });
   } catch (error) {
     next(error);
   }
@@ -99,17 +109,24 @@ exports.verifyEmail = async (req, res, next) => {
       });
     }
 
-    Object.assign(customer, {
-      isEmailVerified: true,
-      otp: null,
-      otpExpire: null,
-    });
-    await customer.save();
+    if (!customer.isEmailVerified) {
+      Object.assign(customer, {
+        isEmailVerified: true,
+        otp: null,
+        otpExpire: null,
+      });
+      await customer.save();
 
-    res.status(200).json({
-      success: true,
-      message: "Email verified successfully! Welcome to Stitch Sure.",
-    });
+      res.status(200).json({
+        success: true,
+        message: "Email verified successfully! Welcome to Stitch Sure.",
+      });
+    } else {
+      res.status(200).json({
+        success: true,
+        message: "OTP verified successfully!",
+      });
+    }
   } catch (error) {
     next(error);
   }
@@ -128,21 +145,21 @@ exports.loginCustomer = async (req, res, next) => {
       });
     }
     if (existingCustomer.isEmailVerified == false) {
-           return res.status(403).json({
-            success: false,
-            message: 'Please verify your email to continue'
-           })
-        }
+      return res.status(403).json({
+        success: false,
+        message: "Please verify your email to continue",
+      });
+    }
     const correctPassword = await bcrypt.compare(
       password,
       existingCustomer.password,
     );
-     if (!correctPassword) {
-           return res.status(400).json({
-            success: false,
-            message: 'Invalid Credentials'
-           })     
-        }
+    if (!correctPassword) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid Credentials",
+      });
+    }
 
     const token = jwt.sign(
       {
@@ -154,14 +171,14 @@ exports.loginCustomer = async (req, res, next) => {
       { expiresIn: "1d" },
     );
     redisClient.del(`customer_${existingCustomer.id}`);
-    redisClient.set(`customer_${existingCustomer.id}`, token, {EX: 86400})
-    
+    redisClient.set(`customer_${existingCustomer.id}`, token, { EX: 86400 });
+
     const data = {
       id: existingCustomer.id,
       email: existingCustomer.email,
       role: existingCustomer.role,
       firstName: existingCustomer.firstName,
-      lastName: existingCustomer.lastName
+      lastName: existingCustomer.lastName,
     };
 
     res.status(200).json({
@@ -196,11 +213,14 @@ exports.forgetPassword = async (req, res, next) => {
 
     await existingEmail.save();
 
+    const receiverName = `${existingEmail.firstName || ""} ${existingEmail.lastName || ""}`.trim() || existingEmail.email;
+
     await sendSingleEmail({
       email: existingEmail.email,
       subject: "Reset Your Password",
-      html: resetPasswordTemplate(existingEmail.firstName, otp, RESET_PASSWORD_OTP_TTL_MINUTES),
-      text: resetPasswordTextTemplate(existingEmail.firstName, otp, RESET_PASSWORD_OTP_TTL_MINUTES),
+      name: receiverName,
+      html: resetPasswordTemplate(receiverName, otp, RESET_PASSWORD_OTP_TTL_MINUTES),
+      text: resetPasswordTextTemplate(receiverName, otp, RESET_PASSWORD_OTP_TTL_MINUTES),
     });
 
     return res.status(200).json({
@@ -219,18 +239,21 @@ exports.resetPassword = async (req, res, next) => {
     if (!customer) {
       return res.status(404).json({
         success: false,
-        message: 'Customer not found' 
-        });
+        message: "Customer not found",
+      });
     }
     const salt = await bcrypt.genSalt(10);
     const hashPassword = await bcrypt.hash(password, salt);
     customer.password = hashPassword;
     await customer.save();
 
+    const receiverName = `${customer.firstName || ""} ${customer.lastName || ""}`.trim() || customer.email;
+
     await sendSingleEmail({
       email: customer.email,
       subject: "Password Reset Successful",
-      html: resetPasswordSuccessfulTemplate(customer.firstName),
+      name: receiverName,
+      html: resetPasswordSuccessfulTemplate(receiverName),
     });
 
     return res.status(200).json({
@@ -300,10 +323,7 @@ exports.updateCustomerProfile = async (req, res, next) => {
     if (req.file) {
       const filePath = req.file.path;
       const uploadToCloudinary = await cloudinary.uploader.upload(filePath);
-      profilePhoto = {
-        url: uploadToCloudinary.secure_url,
-        publicId: uploadToCloudinary.public_id
-      } 
+      profilePhoto = uploadToCloudinary.secure_url;
       fs.unlinkSync(filePath);
     }
 
@@ -318,8 +338,11 @@ exports.updateCustomerProfile = async (req, res, next) => {
       success: true,
       message: "Your profile has been updated.",
       data: {
+        firstName: customer.firstName,
+        lastName: customer.lastName,
+        email: customer.email,
         profilePhoto: customer.profilePhoto
-      }
+      },
     });
   } catch (error) {
     next(error);
@@ -366,68 +389,74 @@ exports.updatePassword = async (req, res, next) => {
   }
 };
 
-
 exports.resendOTP = async (req, res, next) => {
-    try {
-        const { email } = req.body;
+  try {
+    const { email } = req.body;
 
-        const normalizedEmail = email.toLowerCase();
-        const user = await Customer.findOne({where: {email: normalizedEmail}})
-        if (!user) {
-          return res.status(404).json({
-            success: false,
-            message: 'User not found'
-          })
-        }
-        if (user.isEmailVerified) {
-          return res.status(400).json({
-            success: false,
-            message: 'Email is already verified'
-          })
-        }
-
-        const retryAfter = await getResendCooldownSeconds(redisClient, "customer", normalizedEmail);
-        if (retryAfter) {
-          return res.status(429).json({
-            success: false,
-            message: `Please wait ${retryAfter} seconds before requesting another code.`,
-            retryAfter
-          })
-        }
-
-        const otp = generateNumericOtp();
-        const otpExpire = getOtpExpiryDate();
-
-        user.otp = otp;
-        user.otpExpire = otpExpire;
-        await user.save();
-
-        await sendSingleEmail({
-          email: user.email,
-          subject: "Your new Stitch Sure verification code",
-          html: emailTemplate(user.firstName, otp, VERIFICATION_OTP_TTL_MINUTES),
-          text: verificationTextTemplate(user.firstName, otp, VERIFICATION_OTP_TTL_MINUTES),
-        });
-        await setResendCooldown(redisClient, "customer", user.email);
-
-        return res.status(200).json({
-          success: true,
-          message: 'A new verification code has been sent.',
-          retryAfter: RESEND_OTP_COOLDOWN_SECONDS
-        })
-    } catch (error) {
-      next(error);
+    const normalizedEmail = email.toLowerCase();
+    const user = await Customer.findOne({ where: { email: normalizedEmail } });
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
     }
+    if (user.isEmailVerified) {
+      return res.status(400).json({
+        success: false,
+        message: "Email is already verified",
+      });
+    }
+
+    const retryAfter = await getResendCooldownSeconds(
+      redisClient,
+      "customer",
+      normalizedEmail,
+    );
+    if (retryAfter) {
+      return res.status(429).json({
+        success: false,
+        message: `Please wait ${retryAfter} seconds before requesting another code.`,
+        retryAfter,
+      });
+    }
+
+    const otp = generateNumericOtp();
+    const otpExpire = getOtpExpiryDate();
+
+    user.otp = otp;
+    user.otpExpire = otpExpire;
+    await user.save();
+
+    const receiverName = `${user.firstName || ""} ${user.lastName || ""}`.trim() || user.email;
+
+    await sendSingleEmail({
+      email: user.email,
+      subject: "Your new Stich Sure verification code",
+      name: receiverName,
+      html: emailTemplate(receiverName, otp, VERIFICATION_OTP_TTL_MINUTES),
+      text: verificationTextTemplate(receiverName, otp, VERIFICATION_OTP_TTL_MINUTES),
+    });
+    await setResendCooldown(redisClient, "customer", user.email);
+
+    return res.status(200).json({
+      success: true,
+      message: "A new verification code has been sent.",
+      retryAfter: RESEND_OTP_COOLDOWN_SECONDS,
+    });
+  } catch (error) {
+    next(error);
+  }
 };
 
 exports.logOut = async (req, res, next) => {
   try {
-    const {id, role} = req.user
+    const { id, role } = req.user;
 
-     if (role !== 'customer') {
+    if (role !== "customer") {
       return res.status(403).json({
         success: false,
-        message: 'Unauthorized. Only customers can perform this action'
+        message: "Unauthorized. Only customers can perform this action",
       });
     }
 
@@ -435,12 +464,12 @@ exports.logOut = async (req, res, next) => {
 
     return res.status(200).json({
       success: true,
-      message: 'You have been logged out.'
-    })
+      message: "You have been logged out.",
+    });
   } catch (error) {
     next(error);
   }
-}
+};
 
 exports.updateProfile = async (req, res) => {
   try {
@@ -453,12 +482,16 @@ exports.updateProfile = async (req, res) => {
     if (!customer) {
       return res.status(404).json({
         success: false,
-        message: 'Customer not found',
+        message: "Customer not found",
       });
     }
 
-    customer.phone = phone;
-    customer.address = address;
+    if (phone !== undefined) {
+      customer.phone = phone;
+    }
+    if (address !== undefined) {
+      customer.address = address;
+    }
 
     await customer.save();
 

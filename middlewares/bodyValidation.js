@@ -170,6 +170,17 @@ exports.updateOrderStatusValidator = validateBody(
   })
 );
 
+const measurementArrayRule = Joi.alternatives()
+  .try(
+    Joi.array().items(textRule("Measurement item", 1000)),
+    Joi.string().trim().min(1).max(1000)
+  )
+  .messages({
+    "array.base": "Measurement must be an array",
+    "array.includes": "Measurement items must be strings",
+    "string.base": "Measurement must be a valid string or array",
+  });
+
 exports.createDesignValidator = validateBody(
   Joi.object({
     designerId: uuidRule.required().messages({
@@ -184,7 +195,7 @@ exports.createDesignValidator = validateBody(
       "number.positive": "Price must be greater than 0",
     }),
     description: requiredString("Description", 2000),
-    measurement: optionalString("Measurement", 1000),
+    measurement: measurementArrayRule.optional(),
   })
 );
 
@@ -197,7 +208,7 @@ exports.updateDesignValidator = validateBody(
       "number.positive": "Price must be greater than 0",
     }),
     description: optionalString("Description", 2000),
-    measurement: optionalString("Measurement", 1000),
+    measurement: measurementArrayRule.optional(),
   }).or("designTitle", "category", "price", "description", "measurement"),
   { allowFileOnly: true }
 );
@@ -252,13 +263,14 @@ exports.designerProfileUpdateValidator = validateBody(
 
 exports.profileContactValidator = validateBody(
   Joi.object({
-    phone: phoneRule.required().messages({
-      "any.required": "Phone is required",
+    phone: phoneRule.optional().messages({
       "string.empty": "Phone cannot be empty",
+      "string.min": "Phone number must be at least 7 characters",
+      "string.max": "Phone number cannot be more than 20 characters",
     }),
-    address: requiredString("Address", 255),
-  })
-);
+    address: optionalString("Address", 255),
+  }).or("phone", "address")
+)
 
 exports.createCollaborationValidator = validateBody(
   Joi.object({

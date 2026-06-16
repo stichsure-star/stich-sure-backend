@@ -17,7 +17,9 @@ exports.sendSingleEmail = async (options) => {
     const sendSmtpEmail = new Brevo.SendSmtpEmail();
     sendSmtpEmail.sender = { name: process.env.BREVO_SENDER_NAME, email: process.env.BREVO_SENDER_EMAIL };
     sendSmtpEmail.subject = options.subject;
-    sendSmtpEmail.to = [{ email: options.email }];
+    sendSmtpEmail.to = options.name
+      ? [{ email: options.email, name: options.name }]
+      : [{ email: options.email }];
     sendSmtpEmail.htmlContent = options.html;
     if (options.text) {
       sendSmtpEmail.textContent = options.text;

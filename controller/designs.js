@@ -1,4 +1,4 @@
-const { Designs } = require("../models");
+const { Designs, Designer, DesignerProfile } = require("../models");
 const cloudinary = require("../utils/cloudinary");
 const fs = require("fs");
 const { AppError } = require('../utils/errorHandler');
@@ -6,8 +6,17 @@ const { AppError } = require('../utils/errorHandler');
 
 exports.createDesign = async (req, res, next) => {
   try {
-    const { designerId, designTitle, category, price, description, measurement } = req.body;
+    const { designerId, designTitle, category, price, description } = req.body;
+    let { measurement } = req.body;
     let designImage = null;
+
+    if (typeof measurement === "string" && measurement.trim().length > 0) {
+      try {
+        measurement = JSON.parse(measurement);
+      } catch (err) {
+        // keep string values for backward compatibility; validation will reject incorrect formats
+      }
+    }
 
     if (req.file) {
       const filePath = req.file.path;
@@ -38,7 +47,22 @@ exports.createDesign = async (req, res, next) => {
 
 exports.getAllDesigns = async (req, res, next) => {
   try {
-    const designs = await Designs.findAll();
+    const designs = await Designs.findAll({
+      include: [
+        {
+          model: Designer,
+          as: "designer",
+          attributes: ["id", "firstName", "lastName"],
+          include: [
+            {
+              model: DesignerProfile,
+              as: "profile",
+              attributes: ["businessName"],
+            },
+          ],
+        },
+      ],
+    });
 
     return res.status(200).json({
       success: true,
@@ -53,7 +77,22 @@ exports.getAllDesigns = async (req, res, next) => {
 exports.getDesignById = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const design = await Designs.findByPk(id);
+    const design = await Designs.findByPk(id, {
+      include: [
+        {
+          model: Designer,
+          as: "designer",
+          attributes: ["id", "firstName", "lastName"],
+          include: [
+            {
+              model: DesignerProfile,
+              as: "profile",
+              attributes: ["businessName"],
+            },
+          ],
+        },
+      ],
+    });
 
     if (!design) {
       return res.status(404).json({
@@ -74,7 +113,23 @@ exports.getDesignById = async (req, res, next) => {
 exports.getDesignerDesigns = async (req, res, next) => {
   try {
     const { designerId } = req.params;
-    const designs = await Designs.findAll({where: {designerId: designerId}});
+    const designs = await Designs.findAll({
+      where: { designerId: designerId },
+      include: [
+        {
+          model: Designer,
+          as: "designer",
+          attributes: ["id", "firstName", "lastName"],
+          include: [
+            {
+              model: DesignerProfile,
+              as: "profile",
+              attributes: ["businessName"],
+            },
+          ],
+        },
+      ],
+    });
 
     return res.status(200).json({
       success: true,
@@ -90,6 +145,7 @@ exports.updateDesign = async (req, res, next) => {
   try {
     const { id } = req.params;
     const { designTitle, category, price, description } = req.body;
+    let { measurement } = req.body;
     const design = await Designs.findByPk(id);
 
     if (!design) {
@@ -97,6 +153,14 @@ exports.updateDesign = async (req, res, next) => {
         success: false,
         message: "Design not found",
       });
+    }
+
+    if (typeof measurement === "string" && measurement.trim().length > 0) {
+      try {
+        measurement = JSON.parse(measurement);
+      } catch (err) {
+        // keep string values for backward compatibility; validation will reject incorrect formats
+      }
     }
 
     let designImage = design.designImage;
@@ -113,6 +177,7 @@ exports.updateDesign = async (req, res, next) => {
       category: category || design.category,
       price: price || design.price,
       description: description || design.description,
+      measurement: measurement !== undefined ? measurement : design.measurement,
       designImage: designImage,
     });
 
