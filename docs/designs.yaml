@@ -45,8 +45,13 @@ paths:
                   example: "Elegant lace wedding gown with hand embroidery."
                   description: "Optional long description of the design"
                 measurement:
-                  type: string
-                  example: "Bust: 34, Waist: 28, Hips: 38"
+                  type: array
+                  items:
+                    type: string
+                  example:
+                    - "Chest: 34"
+                    - "Shoulder: 15"
+                    - "Sleeve Length: 24"
                   description: "Optional measurements or sizing details"
                 designImage:
                   type: string

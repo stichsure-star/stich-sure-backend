@@ -74,7 +74,7 @@ exports.createDesigner = async (req, res, next) => {
     if (existingEmail) {
       return res.status(409).json({
         success: false,
-        message: "Customer with this email already exists",
+        message: "designer with this email already exists",
       });
     }
 
@@ -94,12 +94,15 @@ const otp = generateNumericOtp();
       isEmailVerified: false,
     });
 
-     await sendSingleEmail({
-          email: newDesigner.email,
-          subject: "Verify your Stitch Sure email",
-          html: emailTemplate(newDesigner.firstName, otp, VERIFICATION_OTP_TTL_MINUTES),
-          text: verificationTextTemplate(newDesigner.firstName, otp, VERIFICATION_OTP_TTL_MINUTES),
-        });
+    const receiverName = `${newDesigner.firstName || ""} ${newDesigner.lastName || ""}`.trim() || newDesigner.email;
+
+    await sendSingleEmail({
+      email: newDesigner.email,
+      subject: "Verify your Stich Sure email",
+      name: receiverName,
+      html: emailTemplate(receiverName, otp, VERIFICATION_OTP_TTL_MINUTES),
+      text: verificationTextTemplate(receiverName, otp, VERIFICATION_OTP_TTL_MINUTES),
+       });
      await setResendCooldown(redisClient, "designer", newDesigner.email);
         
   return res.status(201).json({
@@ -110,6 +113,59 @@ const otp = generateNumericOtp();
     next(error);
   }
 };
+
+exports.verifyEmail = async (req, res, next) => {
+  try {
+    const { otp, email } = req.body;
+
+    const designer = await Designer.findOne({
+      where: { email: email.toLowerCase() },
+    });
+
+    if (!designer) {
+      return res.status(404).json({
+        success: false,
+        message: "Account not found",
+      });
+    }
+
+    if (designer.otpExpire < Date.now()) {
+      return res.status(400).json({
+        success: false,
+        message: "OTP has expired",
+      });
+    }
+
+    if (designer.otp !== otp) {
+      return res.status(400).json({
+        success: false,
+        message: "OTP is invalid",
+      });
+    }
+
+    if (!designer.isEmailVerified) {
+      Object.assign(designer, {
+        isEmailVerified: true,
+        otp: null,
+        otpExpire: null,
+      });
+      await designer.save();
+
+      res.status(200).json({
+        success: true,
+        message: "Email verified successfully! Welcome to Stitch Sure.",
+      });
+    } else {
+      res.status(200).json({
+        success: true,
+        message: "OTP verified successfully!",
+      });
+    }
+  } catch (error) {
+    next(error);
+  }
+};
+
 
 exports.loginDesigner = async (req, res, next) => {
   try {
@@ -172,58 +228,7 @@ exports.loginDesigner = async (req, res, next) => {
   }
 };
 
-exports.verifyEmail = async (req, res, next) => {
-  try {
-    const { otp, email } = req.body;
 
-    const designer = await Designer.findOne({ where: { email: email.toLowerCase() } });
-
-    if (!designer) {
-      return res.status(404).json({
-        success: false,
-        message: "Designer account not found",
-      });
-    }
-
-    if (designer.isEmailVerified) {
-      return res.status(400).json({
-        success: false,
-        message: "Designer email is already verified",
-      });
-    }
-
-    if (designer.otpExpire < Date.now()) {
-      return res.status(400).json({
-        success: false,
-        message: "OTP has expired",
-      });
-    }
-
-    if (designer.otp !== otp) {
-      return res.status(400).json({
-        success: false,
-        message: "OTP is invalid",
-      });
-    }
-
-    await designer.update({
-      isEmailVerified: true,
-      otp: null,
-      otpExpire: null,
-    });
-
-    return res.status(200).json({
-      success: true,
-      message: "Email verified! You can now access your account.",
-    });
-  } catch (error) {
-    console.log(error.message);
-    res.status(500).json({
-      success: false,
-      message: error.message,
-    });
-  }
-};
 
 exports.updatePassword = async (req, res, next) => {
   try {
@@ -287,11 +292,14 @@ exports.forgetPassword = async (req, res, next) => {
 
     await existingEmail.save();
 
+    const receiverName = `${existingEmail.firstName || ""} ${existingEmail.lastName || ""}`.trim() || existingEmail.email;
+
     await sendSingleEmail({
       email: existingEmail.email,
       subject: "Reset Your Password",
-      html: resetPasswordTemplate(existingEmail.firstName, otp, RESET_PASSWORD_OTP_TTL_MINUTES),
-      text: resetPasswordTextTemplate(existingEmail.firstName, otp, RESET_PASSWORD_OTP_TTL_MINUTES),
+      name: receiverName,
+      html: resetPasswordTemplate(receiverName, otp, RESET_PASSWORD_OTP_TTL_MINUTES),
+      text: resetPasswordTextTemplate(receiverName, otp, RESET_PASSWORD_OTP_TTL_MINUTES),
     });
 
     res.status(200).json({
@@ -328,10 +336,13 @@ exports.resetPassword = async (req, res, next) => {
     designer.password = hashPassword;
     await designer.save();
 
+    const receiverName = `${designer.firstName || ""} ${designer.lastName || ""}`.trim() || designer.email;
+
     await sendSingleEmail({
       email: designer.email,
       subject: "Password Reset Successful",
-      html: resetPasswordSuccessfulTemplate(designer.firstName),
+      name: receiverName,
+      html: resetPasswordSuccessfulTemplate(receiverName),
     });
 
     res.status(200).json({
@@ -379,11 +390,14 @@ exports.resendOTP = async (req, res, next) => {
         user.otpExpire = otpExpire;
         await user.save();
 
+        const receiverName = `${user.firstName || ""} ${user.lastName || ""}`.trim() || user.email;
+
         await sendSingleEmail({
           email: user.email,
           subject: "Your new Stitch Sure verification code",
-          html: emailTemplate(user.firstName, otp, VERIFICATION_OTP_TTL_MINUTES),
-          text: verificationTextTemplate(user.firstName, otp, VERIFICATION_OTP_TTL_MINUTES),
+          name: receiverName,
+          html: emailTemplate(receiverName, otp, VERIFICATION_OTP_TTL_MINUTES),
+          text: verificationTextTemplate(receiverName, otp, VERIFICATION_OTP_TTL_MINUTES),
         });
         await setResendCooldown(redisClient, "designer", user.email);
 
