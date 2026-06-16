@@ -1,5 +1,5 @@
 const axios = require('axios');
-
+require('dotenv').config()
 exports.validateAddress = async (payload) => {
   const res = await fetch(`${process.env.SHIPBUBBLE_BASE_URL}/shipping/address/validate`, {
     method: 'POST',
@@ -61,12 +61,13 @@ exports.fundWallet = async (amount) => {
   const res = await fetch(`${process.env.SHIPBUBBLE_BASE_URL}/shipping/wallet/fund`, {
     method: 'POST',
     headers: {
-      Authorization: `Bearer ${process.env.SHIPBUBBLE_TEST_KEY}`,
+      Authorization: `Bearer ${process.env.SHIPBUBBLE_API_KEY}`,
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({ amount }),
   });
   return res.json();
 };
+console.log('sent Payload', this.validateAddress);
 
 
