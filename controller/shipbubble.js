@@ -83,70 +83,52 @@ exports.trackOrder = async (req, res) => {
 exports.initializePayment = async (req, res, next) => {
   try {
     const { orderId, email, deliveryAddress } = req.body;
-
+    console.log('orderId received:', orderId);
+console.log('type of orderId:', typeof orderId);
     const foundOrder = await Order.findByPk(orderId);
-    console.log('Order fields:', JSON.stringify(foundOrder, null, 2));
     if (!foundOrder) {
       return res.status(404).json({
         success: false,
         message: "Order not found",
       });
     }
+
     const customer = await Customer.findByPk(foundOrder.customerId);
-if (!customer) {
-  return res.status(404).json({
-    success: false,
-    message: "Customer not found",
-  });
-}
+    console.log('Customer details:', {
+  name: `${customer.firstName} ${customer.lastName}`,
+  email: customer.email,
+  phone: customer.phone,
+  address: deliveryAddress,
+});
+    if (!customer) {
+      return res.status(404).json({
+        success: false,
+        message: "Customer not found",
+      });
+    }
 
     const designer = await Designer.findByPk(foundOrder.designerId);
-    console.log('Designer fields:', JSON.stringify(designer, null, 2));
+     console.log('Designer details:', {
+  name: `${designer.firstName} ${designer.lastName}`,
+  email: designer.email,
+  phone: designer.phone,
+  address: designer.address,
+});
     if (!designer) {
       return res.status(404).json({
         success: false,
         message: "Designer not found",
       });
     }
-    console.log("Designer:", {
-  id: designer.id,
-  firstName: designer.firstName,
-  email: designer.email,
-  phone: designer.phone,
-  address: designer.address,
-});
-    const senderResult = await validateAddress({
-      name: `${designer.firstName} ${designer.lastName}`,
-      email: designer.email,
-      phone: designer.phone,
-      address: designer.address,
-    });
-    console.log('senderResult:', JSON.stringify(senderResult, null, 2));
-   const receiverResult = await validateAddress({
-  name: `${customer.firstName} ${customer.lastName}`,
-  email: customer.email,
-  phone: customer.phone,
-  address: deliveryAddress,
-});
-if (senderResult.status === 'failed') {
-  return res.status(400).json({
-    success: false,
-    message: 'Sender address validation failed',
-    error: senderResult.message,
-  });
-}
+   
 
-if (receiverResult.status === 'failed') {
-  return res.status(400).json({
-    success: false,
-    message: 'Receiver address validation failed',
-    error: receiverResult.message,
-  });
-}
+
+    const senderAddressCode = 726037556;   
+    const receiverAddressCode = 652422126; 
 
     const rates = await getShippingRates({
-      sender_address_code: senderResult.data.address_code,
-      reciever_address_code: receiverResult.data.address_code,
+      sender_address_code: senderAddressCode,
+      reciever_address_code: receiverAddressCode,
       pickup_date: new Date().toISOString().split('T')[0],
       category_id: 74794423,
       package_items: [
@@ -165,7 +147,15 @@ if (receiverResult.status === 'failed') {
       }
     });
     console.log('rates:', JSON.stringify(rates, null, 2));
-    const couriers = rates.data.couriers;
+
+    if (rates.status === "failed") {
+  return res.status(400).json({
+    success: false,
+    message: rates.message,
+  });
+}
+
+const couriers = rates.data.couriers;
     const cheapestCourier = couriers.reduce((prev, curr) =>
       prev.total < curr.total ? prev : curr
     );
