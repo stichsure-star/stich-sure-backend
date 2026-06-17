@@ -13,22 +13,10 @@ module.exports = {
       customerId: {
         type: Sequelize.UUID,
         allowNull: false,
-        references: {
-          model: 'Customers',
-          key: 'id',
-        },
-        onUpdate: 'CASCADE',
-        onDelete: 'CASCADE',
       },
       designerId: {
         type: Sequelize.UUID,
         allowNull: false,
-        references: {
-          model: 'Designers',
-          key: 'id',
-        },
-        onUpdate: 'CASCADE',
-        onDelete: 'CASCADE',
       },
       createdAt: {
         allowNull: false,
