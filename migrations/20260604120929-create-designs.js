@@ -33,7 +33,7 @@ module.exports = {
         scale: 2
       },
       measurement: {
-        type: Sequelize.JSON
+        type: Sequelize.TEXT
       },
       description: {
         type: Sequelize.TEXT
