@@ -5,15 +5,18 @@ router.get('/google', passport.authenticate('google', { scope: ['profile', 'emai
 
 router.get('/google/callback',
   passport.authenticate('google', {
-    failureRedirect: '/api/v1/auth/login',
+    failureRedirect: process.env.GOOGLE_AUTH_FAILURE_REDIRECT_URL || '/api/v1/auth/login',
     session: false
   }),
   (req, res) => {
-    return res.status(200).json({
-      success: true,
-      message: 'Login successful',
-      token: req.user
-    });
+    const redirectUrl = new URL(
+      process.env.GOOGLE_AUTH_SUCCESS_REDIRECT_URL || `${process.env.FRONTEND_URL || 'http://localhost:3000'}/auth/google/callback`
+    );
+
+    redirectUrl.searchParams.set('token', req.user);
+    redirectUrl.searchParams.set('success', 'true');
+
+    return res.redirect(redirectUrl.toString());
   }
 );
 
