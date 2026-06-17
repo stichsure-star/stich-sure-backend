@@ -9,6 +9,7 @@ const {
   getDesignerOrderDashboardStats,
   updateDesignerProfile,
   deleteDesignerProfile,
+  updateDesignerProfileSettings
 } = require('../controller/designerProfile')
 const { authentication } = require('../middlewares/authentication')
 const {
@@ -26,6 +27,7 @@ router.get('/getAll', getAllDesignerProfiles);
 router.get('/dashboard-stats', authentication, getDesignerDashboardStats);
 router.get('/getByDesigner/:designerId', getDesignerProfile);
 router.put('/update', authentication, upload.single('profilePhoto'), designerProfileUpdateValidator, updateDesignerProfile);
+router.patch('/updateDesignerProfileSettings', authentication, upload.single('profilePhoto'), updateDesignerProfileSettings);
 router.delete('/delete', authentication, deleteDesignerProfile);
 
 module.exports = router;

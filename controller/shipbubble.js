@@ -125,11 +125,13 @@ console.log('type of orderId:', typeof orderId);
 
     const senderAddressCode = 726037556;   
     const receiverAddressCode = 652422126; 
-
+    const today = new Date();
+const pickup_date = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+    console.log('pickup_date:', pickup_date);
     const rates = await getShippingRates({
       sender_address_code: senderAddressCode,
       reciever_address_code: receiverAddressCode,
-      pickup_date: new Date().toISOString().split('T')[0],
+      pickup_date,
       category_id: 74794423,
       package_items: [
         {
@@ -180,6 +182,8 @@ const couriers = rates.data.couriers;
 
     const payment = await Payment.create({
       orderId,
+      customerId: foundOrder.customerId,
+      designerId: foundOrder.designerId,
       amount: totalAmount,
       shippingFee,
       currency: "NGN",
@@ -254,7 +258,10 @@ exports.verifyPayment = async (req, res, next) => {
       service_code: payment.serviceCode,
     });
 
-    await payment.update({ status: "success" });
+    await payment.update({ status: "success" ,
+      paidAt: Date.now(),
+      reference: transactionReference
+    });
     await Order.update(
       { status: "paid" },
       { where: { id: payment.orderId } }
@@ -277,6 +284,7 @@ exports.verifyPayment = async (req, res, next) => {
       payment,
       shipment: shipmentResult.data,
     });
+    
   } catch (error) {
     console.log(error.message);
     return res.status(500).json({ 
