@@ -191,6 +191,10 @@ paths:
                               type: string
                             currentHouseAddress:
                               type: string
+                            state:
+                              type: string
+                            country:
+                              type: string
                             profilePhoto:
                               type: string
                             specialization:
@@ -330,6 +334,10 @@ paths:
                             type: string
                           currentHouseAddress:
                             type: string
+                          state:
+                            type: string
+                          country:
+                            type: string
                           profilePhoto:
                             type: string
                           specialization:
@@ -408,6 +416,12 @@ paths:
                 currentHouseAddress:
                   type: string
                   example: "123 Fashion Avenue"
+                state:
+                  type: string
+                  example: "Lagos"
+                country:
+                  type: string
+                  example: "Nigeria"
                 phoneNumber:
                   type: string
                   example: "+2348012345678"
