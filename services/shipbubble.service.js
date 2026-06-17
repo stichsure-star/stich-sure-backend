@@ -22,6 +22,9 @@ exports.getShippingRates = async (payload) => {
     body: JSON.stringify(payload),
   });
   return res.json();
+    const data = await res.json();
+  console.log('getShippingRates response:', JSON.stringify(data, null, 2));
+  return data;
 };
 
 exports.createShipment = async (payload) => {
