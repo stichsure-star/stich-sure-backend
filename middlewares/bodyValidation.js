@@ -244,9 +244,7 @@ exports.designerOnboardingValidator = validateBody(
       "any.required": "Account number is required",
       "string.pattern.base": "Account number must be 10 digits",
     }),
-    accountName: requiredString("Account name", 100),
-    firstName: requiredString("First name", 100),
-    lastName: requiredString("Last name", 100),
+    accountName: requiredString("Account name", 100)
   })
 );
 
