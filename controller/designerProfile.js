@@ -215,6 +215,8 @@ exports.createOrUpdateDesignerOnboarding = async (req, res, next) => {
     const {
       businessName,
       currentHouseAddress,
+      state,
+      country,
       phoneNumber,
       specialization,
       yearsOfExperience,
@@ -272,6 +274,8 @@ exports.createOrUpdateDesignerOnboarding = async (req, res, next) => {
       designerId,
       businessName,
       currentHouseAddress,
+      state,
+      country,
       phoneNumber,
       bankName,
       accountNumber,
@@ -569,6 +573,8 @@ exports.updateDesignerProfile = async (req, res, next) => {
     const {
       businessName,
       currentHouseAddress,
+      state,
+      country,
       phoneNumber,
       bankName,
       accountNumber,
@@ -600,6 +606,8 @@ exports.updateDesignerProfile = async (req, res, next) => {
     const updatedBusinessName = businessName || profile.businessName;
     const updatedCurrentHouseAddress =
       currentHouseAddress || profile.currentHouseAddress;
+    const updatedState = state !== undefined ? state : profile.state;
+    const updatedCountry = country !== undefined ? country : profile.country;
     const updatedPhoneNumber = phoneNumber || profile.phoneNumber;
     const updatedBankName = bankName || profile.bankName;
     const updatedAccountNumber = accountNumber || profile.accountNumber;
@@ -623,6 +631,8 @@ exports.updateDesignerProfile = async (req, res, next) => {
     await profile.update({
       businessName: updatedBusinessName,
       currentHouseAddress: updatedCurrentHouseAddress,
+      state: updatedState,
+      country: updatedCountry,
       phoneNumber: updatedPhoneNumber,
       bankName: updatedBankName,
       accountNumber: updatedAccountNumber,

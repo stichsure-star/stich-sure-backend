@@ -11,13 +11,7 @@ module.exports = {
       },
       customerId: {
         type: Sequelize.UUID,
-        defaultValue: Sequelize.UUIDV4,
-        references : {
-          model: 'Customers',
-          key: 'id'
-        },
-        onUpdate: 'CASCADE',
-        onDelete: 'SET NULL'
+        defaultValue: Sequelize.UUIDV4
       },
       designerId: {
         type: Sequelize.UUID,

@@ -123,11 +123,9 @@ console.log('type of orderId:', typeof orderId);
    
 
 
-    const senderAddressCode = 726037556;   
-    const receiverAddressCode = 652422126; 
-    const today = new Date();
-const pickup_date = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
-    console.log('pickup_date:', pickup_date);
+    const senderAddressCode = 204283134;   
+    const receiverAddressCode = 220717646; 
+
     const rates = await getShippingRates({
       sender_address_code: senderAddressCode,
       reciever_address_code: receiverAddressCode,
