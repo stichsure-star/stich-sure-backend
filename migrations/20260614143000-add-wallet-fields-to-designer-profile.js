@@ -18,8 +18,16 @@ module.exports = {
   },
 
   async down(queryInterface) {
-    await queryInterface.removeColumn('DesignerProfiles', 'accountName');
-    await queryInterface.removeColumn('DesignerProfiles', 'accountNumber');
-    await queryInterface.removeColumn('DesignerProfiles', 'bankName');
+    const table = await queryInterface.describeTable('DesignerProfiles');
+
+    const removeColumnIfPresent = async (columnName) => {
+      if (table[columnName]) {
+        await queryInterface.removeColumn('DesignerProfiles', columnName);
+      }
+    };
+
+    await removeColumnIfPresent('accountName');
+    await removeColumnIfPresent('accountNumber');
+    await removeColumnIfPresent('bankName');
   },
 };
