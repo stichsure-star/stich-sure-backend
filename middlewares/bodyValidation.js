@@ -77,6 +77,8 @@ const profileFields = {
     .optional(),
   yearsOfExperience: Joi.number().integer().min(0).max(80).optional(),
   shortBio: optionalString("Short bio", 1000),
+  firstName: optionalString("First name", 100),
+  lastName: optionalString("Last name", 100),
 };
 
 const addressSchema = Joi.object({
@@ -243,6 +245,8 @@ exports.designerOnboardingValidator = validateBody(
       "string.pattern.base": "Account number must be 10 digits",
     }),
     accountName: requiredString("Account name", 100),
+    firstName: requiredString("First name", 100),
+    lastName: requiredString("Last name", 100),
   })
 );
 

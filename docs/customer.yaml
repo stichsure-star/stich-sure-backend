@@ -362,20 +362,20 @@ paths:
                   message:
                     type: string
                     example: "User not found"
-  /api/v1/customer/update-profile/{id}:
+  /api/v1/customer/update-profile:
     put:
       summary: Update customer profile
       tags: [customer]
-      security:
-        - bearerAuth: []
       parameters:
-        - in: path
-          name: id
+        - name: id
+          in: path
           required: true
+          description: Customer ID (extracted from token in controller)
           schema:
             type: string
             format: uuid
-          description: "Customer ID"
+      security:
+        - bearerAuth: []
       requestBody:
         required: true
         content:
@@ -401,8 +401,12 @@ paths:
                   description: "Profile photo file to upload"
                 phone:
                   type: string
-                  format: binary
-                  description: "Profile photo file to upload"
+                  example: "+2344567890"
+                  description: "The new phone number"
+                address:
+                  type: string
+                  example: "123 New Street, New City, Country"
+                  description: "The new address"
       responses:
         '200':
           description: Profile updated successfully

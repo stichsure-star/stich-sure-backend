@@ -295,7 +295,7 @@ exports.loginWithGoogle = async (req, res, next) => {
 
     res.status(200).json({
       success: true,
-      message: "Welcome! Logged in successfully with Google.",
+      message: "Logged in successfully with Google.",
       data,
       token,
     });
@@ -307,7 +307,7 @@ exports.loginWithGoogle = async (req, res, next) => {
 exports.updateCustomerProfile = async (req, res, next) => {
   try {
     const { firstName, lastName, email, phone, address } = req.body;
-    const { id } = req.params;
+    const { id } = req.user;
 
     const customer = await Customer.findByPk(id);
 
@@ -327,25 +327,25 @@ exports.updateCustomerProfile = async (req, res, next) => {
       fs.unlinkSync(filePath);
     }
 
-    await customer.update({
+    const updatedCustomer = await customer.update({
       firstName: firstName || customer.firstName,
       lastName: lastName || customer.lastName,
       email: email || customer.email,
+      phone: phone || customer.phone,
+      address: address || customer.address,
       profilePhoto: profilePhoto,
-      phone,
-      address
     });
 
     res.status(200).json({
       success: true,
       message: "Your profile has been updated.",
       data: {
-        firstName: customer.firstName,
-        lastName: customer.lastName,
-        email: customer.email,
-        profilePhoto: customer.profilePhoto,
-        phone: customer.phone,
-        address: customer.address
+        firstName: updatedCustomer.firstName,
+        lastName: updatedCustomer.lastName,
+        email: updatedCustomer.email,
+        profilePhoto: updatedCustomer.profilePhoto,
+        phone: updatedCustomer.phone,
+        address: updatedCustomer.address,
       }
     });
   } catch (error) {

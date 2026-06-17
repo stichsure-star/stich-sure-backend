@@ -4,79 +4,79 @@ info:
   version: 1.0.0
   description: API documentation for designer profile endpoints in the StitchSure application.
 paths:
-  /api/v1/designerProfile/create:
-    post:
-      summary: Create or update designer profile
-      tags: [designerProfile]
-      security:
-        - bearerAuth: []
-      requestBody:
-        required: true
-        content:
-          multipart/form-data:
-            schema:
-              type: object
-              required:
-                - businessName
-                - currentHouseAddress
-                - phoneNumber
-                - specialization
-                - yearsOfExperience
-                - shortBio
-              properties:
-                businessName:
-                  type: string
-                  example: "Stitch Masters"
-                  description: "The designer's business name"
-                currentHouseAddress:
-                  type: string
-                  example: "123 Fashion Avenue"
-                  description: "The designer's current work address"
-                phoneNumber:
-                  type: string
-                  example: "+2348012345678"
-                  description: "The designer's phone number"
-                bankName:
-                  type: string
-                  example: "Access Bank"
-                  description: "Designer payout bank name, stored on the profile"
-                accountNumber:
-                  type: string
-                  example: "0123456789"
-                  description: "Designer payout account number, stored on the profile"
-                accountName:
-                  type: string
-                  example: "Stitch Masters"
-                  description: "Designer payout account name, stored on the profile"
-                specialization:
-                  type: string
-                  example: "Bridal, Formal Wear"
-                  description: "Designer specialization, can be comma-separated or JSON array"
-                yearsOfExperience:
-                  type: integer
-                  example: 5
-                  description: "Years of experience in the designer's field"
-                shortBio:
-                  type: string
-                  example: "Experienced bridal and couture designer."
-                  description: "Short bio of the designer"
-                profilePhoto:
-                  type: string
-                  format: binary
-                  description: "Profile photo file upload"
-                firstName:
-                  type: string
-                  example: "John"
-                  description: "The designer's first name"
-                lastName:
-                  type: string
-                  example: "Doe"
-                  description: "The designer's last name"
-      responses:
-        '200':
-          description: Designer profile saved successfully
+  # /api/v1/designerProfile/create:
+  #   post:
+  #     summary: Create or update designer profile
+  #     tags: [designerProfile]
+  #     security:
+  #       - bearerAuth: []
+  #     requestBody:
+  #       required: true
+  #       content:
+  #         multipart/form-data:
+  #           schema:
+  #             type: object
+  #             required:
+  #               - businessName
+  #               - currentHouseAddress
+  #               - phoneNumber
+  #               - specialization
+  #               - yearsOfExperience
+  #               - shortBio
+  #             properties:
+  #               businessName:
+  #                 type: string
+  #                 example: "Stitch Masters"
+  #                 description: "The designer's business name"
+  #               currentHouseAddress:
+  #                 type: string
+  #                 example: "123 Fashion Avenue"
+  #                 description: "The designer's current work address"
+  #               phoneNumber:
+  #                 type: string
+  #                 example: "+2348012345678"
+  #                 description: "The designer's phone number"
+  #               bankName:
+  #                 type: string
+  #                 example: "Access Bank"
+  #                 description: "Designer payout bank name, stored on the profile"
+  #               accountNumber:
+  #                 type: string
+  #                 example: "0123456789"
+  #                 description: "Designer payout account number, stored on the profile"
+  #               accountName:
+  #                 type: string
+  #                 example: "Stitch Masters"
+  #                 description: "Designer payout account name, stored on the profile"
+  #               specialization:
+  #                 type: string
+  #                 example: "Bridal, Formal Wear"
+  #                 description: "Designer specialization, can be comma-separated or JSON array"
+  #               yearsOfExperience:
+  #                 type: integer
+  #                 example: 5
+  #                 description: "Years of experience in the designer's field"
+  #               shortBio:
+  #                 type: string
+  #                 example: "Experienced bridal and couture designer."
+  #                 description: "Short bio of the designer"
+  #               profilePhoto:
+  #                 type: string
+  #                 format: binary
+  #                 description: "Profile photo file upload"
+  #               firstName:
+  #                 type: string
+  #                 example: "John"
+  #                 description: "The designer's first name"
+  #               lastName:
+  #                 type: string
+  #                 example: "Doe"
+  #                 description: "The designer's last name"
+  #     responses:
+  #       '200':
+  #         description: Designer profile saved successfully
   /api/v1/designerProfile/onboarding:
-    post:
+    patch:
       summary: Create or update designer profile with wallet setup
       tags: [designerProfile]
       security:
