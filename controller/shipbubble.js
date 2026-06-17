@@ -123,8 +123,8 @@ console.log('type of orderId:', typeof orderId);
    
 
 
-    const senderAddressCode = 726037556;   
-    const receiverAddressCode = 652422126; 
+    const senderAddressCode = 204283134;   
+    const receiverAddressCode = 220717646; 
 
     const rates = await getShippingRates({
       sender_address_code: senderAddressCode,
