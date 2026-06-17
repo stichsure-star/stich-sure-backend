@@ -114,6 +114,7 @@ exports.updateCustomerProfileValidator = async (req, res, next) => {
     return next();
   }
 
+  const phoneRule = Joi.string().trim().min(7).max(20);
   const schema = Joi.object({
     firstName: nameRule("First name").optional(),
     lastName: nameRule("Last name").optional(),
@@ -122,7 +123,16 @@ exports.updateCustomerProfileValidator = async (req, res, next) => {
       "string.empty": "Email cannot be empty",
       "string.email": "Invalid Email format",
     }),
-  }).or("firstName", "lastName", "email");
+    phone: phoneRule.optional().messages({
+      "string.empty": "Phone cannot be empty",
+      "string.min": "Phone number must be at least 7 characters",
+      "string.max": "Phone number cannot be more than 20 characters",
+    }),
+    address: Joi.string().trim().min(1).max(255).optional().messages({
+      "string.empty": "Address cannot be empty",
+      "string.max": "Address cannot be more than 255 characters",
+    }),
+  }).or("firstName", "lastName", "email", "phone", "address");
   validateBody(schema, req, res, next);
 }
 

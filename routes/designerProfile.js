@@ -17,8 +17,11 @@ const {
   designerProfileUpdateValidator,
 } = require('../middlewares/bodyValidation')
 
-router.post('/onboarding', authentication, upload.single('profilePhoto'), designerOnboardingValidator, createOrUpdateDesignerOnboarding);
-router.post('/create', authentication, upload.single('profilePhoto'), designerProfileCreateValidator, createOrUpdateDesignerProfile);
+router.route('/onboarding')
+  .put(authentication, upload.single('profilePhoto'), designerOnboardingValidator, createOrUpdateDesignerOnboarding)
+  .patch(authentication, upload.single('profilePhoto'), designerOnboardingValidator, createOrUpdateDesignerOnboarding)
+  .post(authentication, upload.single('profilePhoto'), designerOnboardingValidator, createOrUpdateDesignerOnboarding);
+// router.post('/create', authentication, upload.single('profilePhoto'), designerProfileCreateValidator, createOrUpdateDesignerProfile);
 router.get('/getAll', getAllDesignerProfiles);
 router.get('/dashboard-stats', authentication, getDesignerDashboardStats);
 router.get('/getByDesigner/:designerId', getDesignerProfile);

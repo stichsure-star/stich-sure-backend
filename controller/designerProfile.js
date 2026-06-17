@@ -90,113 +90,122 @@ const average = (numbers) => {
   return numbers.reduce((total, number) => total + number, 0) / numbers.length;
 };
 
-exports.createOrUpdateDesignerProfile = async (req, res, next) => {
-  try {
-    const designerId = req.user.id;
+const sanitizeProfileResponse = (profile) => {
+  if (!profile) return profile;
 
-    const {
-      businessName,
-      currentHouseAddress,
-      phoneNumber,
-      bankName,
-      accountNumber,
-      accountName,
-      specialization,
-      yearsOfExperience,
-      shortBio,
-      firstName,
-      lastName
-    } = req.body;
-    const parsedSpecialization = parseSpecialization(specialization);
+  const data = profile.toJSON ? profile.toJSON() : { ...profile };
+  const { kycDocument, ...rest } = data;
 
-    if (!businessName || !currentHouseAddress || !phoneNumber) {
-      return res.status(400).json({
-        success: false,
-        message: "Business name, current house address, and phone number are required.",
-      });
-    }
-
-    let profile = await DesignerProfile.findOne({
-      where: { designerId },
-    });
-
-    let profilePhoto = profile ? profile.profilePhoto : null;
-
-    if (req.file) {
-      const filePath = req.file.path;
-      const uploadToCloudinary = await cloudinary.uploader.upload(filePath);
-      profilePhoto = uploadToCloudinary.secure_url;
-      fs.unlinkSync(filePath);
-    }
-
-    const isProfileCompleted =
-      businessName &&
-      currentHouseAddress &&
-      phoneNumber &&
-      parsedSpecialization &&
-      yearsOfExperience &&
-      shortBio &&
-      profilePhoto &&
-      firstName &&
-      lastName
-
-    if (profile) {
-      await profile.update({
-        businessName,
-        currentHouseAddress,
-        phoneNumber,
-        bankName,
-        accountNumber,
-        accountName,
-        specialization: parsedSpecialization,
-        yearsOfExperience,
-        shortBio,
-        profilePhoto,
-        firstName,
-        lastName,
-        isProfileCompleted: !!isProfileCompleted,
-      });
-    } else {
-      profile = await DesignerProfile.create({
-        designerId,
-        businessName,
-        currentHouseAddress,
-        phoneNumber,
-        bankName,
-        accountNumber,
-        accountName,
-        specialization: parsedSpecialization,
-        yearsOfExperience,
-        shortBio,
-        profilePhoto,
-        isProfileCompleted: !!isProfileCompleted,
-        firstName,
-        lastName
-      });
-    }
-
-
-    let wallet = await DesignerWallet.findOne({
-      where: { designerId },
-    });
-
-    if (wallet) {
-      await wallet.update({
-        bankName: bankName || wallet.bankName,
-        accountNumber: accountNumber || wallet.accountNumber,
-        accountName: accountName || wallet.accountName,
-      });
-    }
-
-    res.status(200).json({
-      success: true,
-      message: "Your profile has been saved.",
-      data: profile,
-    });
-  } catch (error) {
-    next(error);
-  }
+  return rest;
 };
+
+// exports.createOrUpdateDesignerProfile = async (req, res, next) => {
+//   try {
+//     const designerId = req.user.id;
+
+//     const {
+//       businessName,
+//       currentHouseAddress,
+//       phoneNumber,
+//       bankName,
+//       accountNumber,
+//       accountName,
+//       specialization,
+//       yearsOfExperience,
+//       shortBio,
+//       firstName,
+//       lastName
+//     } = req.body;
+//     const parsedSpecialization = parseSpecialization(specialization);
+
+//     if (!businessName || !currentHouseAddress || !phoneNumber) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "Business name, current house address, and phone number are required.",
+//       });
+//     }
+
+//     let profile = await DesignerProfile.findOne({
+//       where: { designerId },
+//     });
+
+//     let profilePhoto = profile ? profile.profilePhoto : null;
+
+//     if (req.file) {
+//       const filePath = req.file.path;
+//       const uploadToCloudinary = await cloudinary.uploader.upload(filePath);
+//       profilePhoto = uploadToCloudinary.secure_url;
+//       fs.unlinkSync(filePath);
+//     }
+
+//     const isProfileCompleted =
+//       businessName &&
+//       currentHouseAddress &&
+//       phoneNumber &&
+//       parsedSpecialization &&
+//       yearsOfExperience &&
+//       shortBio &&
+//       profilePhoto &&
+//       firstName &&
+//       lastName
+
+//     if (profile) {
+//       await profile.update({
+//         businessName,
+//         currentHouseAddress,
+//         phoneNumber,
+//         bankName,
+//         accountNumber,
+//         accountName,
+//         specialization: parsedSpecialization,
+//         yearsOfExperience,
+//         shortBio,
+//         profilePhoto,
+//         firstName,
+//         lastName,
+//         isProfileCompleted: !!isProfileCompleted,
+//       });
+//     } else {
+//       profile = await DesignerProfile.create({
+//         designerId,
+//         businessName,
+//         currentHouseAddress,
+//         phoneNumber,
+//         bankName,
+//         accountNumber,
+//         accountName,
+//         specialization: parsedSpecialization,
+//         yearsOfExperience,
+//         shortBio,
+//         profilePhoto,
+//         isProfileCompleted: !!isProfileCompleted,
+//         firstName,
+//         lastName
+//       });
+//     }
+
+
+//     let wallet = await DesignerWallet.findOne({
+//       where: { designerId },
+//     });
+
+//     if (wallet) {
+//       await wallet.update({
+//         bankName: bankName || wallet.bankName,
+//         accountNumber: accountNumber || wallet.accountNumber,
+//         accountName: accountName || wallet.accountName,
+//       });
+//     }
+
+//     res.status(200).json({
+//       success: true,
+//       message: "Your profile has been saved.",
+//       data: sanitizeProfileResponse(profile),
+//     });
+//   } catch (error) {
+//     next(error);
+//   }
+// };
 
 exports.createOrUpdateDesignerOnboarding = async (req, res, next) => {
   const transaction = await sequelize.transaction();
@@ -274,6 +283,8 @@ exports.createOrUpdateDesignerOnboarding = async (req, res, next) => {
       firstName,
       lastName,
       isProfileCompleted: !!isProfileCompleted,
+      isKycVerified: true,
+      kycStatus: "approved",
     };
 
     if (profile) {
@@ -306,7 +317,7 @@ exports.createOrUpdateDesignerOnboarding = async (req, res, next) => {
       success: true,
       message: "Welcome aboard! Your profile and wallet are set up.",
       data: {
-        profile,
+        profile: sanitizeProfileResponse(profile),
         wallet,
       },
     });
@@ -340,7 +351,7 @@ exports.getAllDesignerProfiles = async (req, res, next) => {
       const designerData = designer.toJSON();
       if (designerData.profile) {
         designerData.profile = {
-          ...designerData.profile,
+          ...sanitizeProfileResponse(designerData.profile),
           ...getReliabilityTierInfo(designerData.profile.reliabilityScore),
           totalEarnings: designerData.wallet?.totalEarnings || 0,
           availableBalance: designerData.wallet?.availableBalance || 0,
@@ -391,7 +402,7 @@ exports.getDesignerProfile = async (req, res, next) => {
     const data = designer.toJSON();
     if (data.profile) {
       data.profile = {
-        ...data.profile,
+        ...sanitizeProfileResponse(data.profile),
         ...getReliabilityTierInfo(data.profile.reliabilityScore),
         totalEarnings: data.wallet?.totalEarnings || 0,
         availableBalance: data.wallet?.availableBalance || 0,
