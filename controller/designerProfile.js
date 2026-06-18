@@ -681,3 +681,59 @@ exports.deleteDesignerProfile = async (req, res, next) => {
     next(error)
   }
 };
+
+exports.updateDesignerProfileSettings = async (req, res) => {
+  try {
+    const id = req.user.id;
+
+    const foundProfile = await Designer.findOne({ where: { id } });
+    if (!foundProfile) {
+      return res.status(404).json({
+        message: 'Designer not found'
+      });
+    }
+
+    const { bio, email, firstName, lastName, location } = req.body;
+    let profile = await DesignerProfile.findOne({
+      where: { id }
+    });
+    let profilePhoto = profile ? profile.profilePhoto : null;
+
+    if (req.file) {
+      const filePath = req.file.path;
+      const uploadToCloudinary = await cloudinary.uploader.upload(filePath);
+      profilePhoto = uploadToCloudinary.secure_url;
+      fs.unlinkSync(filePath);
+    }
+
+   
+    if (!bio  || !email || !firstName || !lastName || !location ) {
+      return res.status(error).json({
+        message: 'All fields are required'
+      });
+    }
+
+   
+    await Designer.update(
+      { email, firstName, lastName },
+      { where: { id } }
+    );
+
+    
+    const updatedProfileSetting = await DesignerProfile.update(
+      { bio, profilePhoto, email, firstName, lastName, location },
+      { where: { designerId: id } }
+    );
+
+    return res.status(200).json({
+      message: 'Profile Updated Successfully',
+      updatedProfileSetting
+    });
+
+  } catch (error) {
+    console.log(error.message);
+    return res.status(500).json({
+      message: error.message
+    });
+  }
+};

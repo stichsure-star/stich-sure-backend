@@ -135,6 +135,9 @@ module.exports = (sequelize, DataTypes) => {
     },
     lastName: {
       type: DataTypes.STRING
+    },
+    email: {
+      type: DataTypes.STRING
     }
   }, {
     sequelize,

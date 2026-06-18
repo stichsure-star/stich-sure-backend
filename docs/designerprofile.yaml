@@ -452,6 +452,54 @@ paths:
           description: Designer profile updated successfully
         '404':
           description: Designer profile not found
+  /api/v1/designerProfile/updateDesignerProfileSettings:
+    patch:
+      summary: Update designer profile settings
+      tags: [designerProfile]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - bio
+                - profilePhoto
+                - email
+                - firstName
+                - lastName
+                - location
+              properties:
+                firstName:
+                  type: string
+                  example: "Jane"
+                lastName:
+                  type: string
+                  example: "Tailor"
+                email:
+                  type: string
+                  example: "jane@example.com"
+                bio:
+                  type: string
+                  example: "I am a fashion designer"
+                location:
+                  type: string
+                  example: "Lagos, Nigeria"
+                profilePhoto:
+                  type: string
+                  format: binary
+                  description: "Profile image file"
+      responses:
+        '200':
+          description: Profile updated successfully
+        '400':
+          description: All fields are required
+        '404':
+          description: Designer not found
+        '500':
+          description: Failed to update profile
   /api/v1/designerProfile/delete:
     delete:
       summary: Delete designer profile
