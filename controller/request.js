@@ -1,6 +1,7 @@
 const { Op } = require("sequelize");
 const { request, DesignerProfile, Customer, Designer } = require("../models");
 const { AppError } = require('../utils/errorHandler');
+const {createNotification} = require("../utils/createNotification");
 
 const progressByStatus = {
   pending: 0,
@@ -35,23 +36,16 @@ const updateDesignerStats = async (designerId) => {
     where: { designerId },
   });
 
-  if (!profile) {
-    return;
-  }
+  if (!profile) return;
 
   const completedOrders = await request.count({
-    where: {
-      designerId,
-      status: "completed",
-    },
+    where: { designerId, status: "completed" },
   });
 
   const totalAcceptedJobs = await request.count({
     where: {
       designerId,
-      status: {
-        [Op.in]: ["picked_up", "ready", "completed"],
-      },
+      status: { [Op.in]: ["accepted", "picked_up", "ready", "completed"] },
     },
   });
 
@@ -60,10 +54,7 @@ const updateDesignerStats = async (designerId) => {
       ? 100
       : Math.round((completedOrders / totalAcceptedJobs) * 100);
 
-  await profile.update({
-    completedOrders,
-    reliabilityScore,
-  });
+  await profile.update({ completedOrders, reliabilityScore });
 };
 
 exports.createRequest = async (req, res, next) => {
@@ -81,13 +72,24 @@ exports.createRequest = async (req, res, next) => {
       status: "pending",
     });
 
+
+    await createNotification({
+      customerId: designerId,
+      role: 'designer',
+      title: 'New Request Received',
+      message: `You have received a new request from a customer. Please review and respond.`,
+      type: 'new_request',
+      userType: 'customer',
+      requestId: newRequest.id,
+    });
+
     res.status(201).json({
       success: true,
       message: "Your request has been sent to the designer!",
       data: newRequest,
     });
   } catch (error) {
-    next(error)
+    next(error);
   }
 };
 
@@ -143,6 +145,138 @@ exports.getOneRequest = async (req, res, next) => {
   }
 };
 
+exports.sendOffer = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { designerMessage } = req.body;
+
+    const foundRequest = await request.findByPk(id);
+
+    if (!foundRequest) {
+      return res.status(404).json({ message: "Request not found" });
+    }
+
+    if (foundRequest.status !== "pending") {
+      return res.status(400).json({
+        message: "You can only send an offer for a pending request",
+      });
+    }
+
+    await foundRequest.update({
+      designerMessage,
+      status: "proposal_sent",
+      progress: progressByStatus.proposal_sent,
+      offerSentAt: new Date(),
+    });
+
+    await createNotification({
+      customerId: foundRequest.customerId,
+      role: 'customer',
+      title: 'New Offer Received 📬',
+      message: 'A designer has responded to your request. Please review the offer.',
+      type: 'proposal_sent',
+      requestId: foundRequest.id,
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "Your offer has been sent to the customer.",
+      data: foundRequest,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+exports.acceptRequest = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+
+    const foundRequest = await request.findByPk(id);
+
+    if (!foundRequest) {
+      return res.status(404).json({ message: "Request not found" });
+    }
+
+    if (foundRequest.status !== "proposal_sent") {
+      return res.status(400).json({
+        message: "Only requests with an offer can be accepted",
+      });
+    }
+
+    await foundRequest.update({
+      status: "accepted",
+      progress: progressByStatus.accepted,
+    });
+
+  
+    await createNotification({
+      customerId: foundRequest.customerId,
+      role: 'customer',
+      title: 'Request Accepted 🎉',
+      message: `Your request has been accepted by the designer. They will start working on it shortly.`,
+      type: 'request_accepted',
+      requestId: foundRequest.id,
+    });
+
+    // Notify designer of acceptance
+    await createNotification({
+      customerId: foundRequest.designerId,
+      role: 'designer',
+      title: 'Offer Accepted ',
+      message: `The customer has accepted your offer. You can now start working on the request.`,
+      type: 'request_accepted',
+      requestId: foundRequest.id,
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "Request accepted!",
+      data: foundRequest,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+exports.rejectRequest = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+
+    const foundRequest = await request.findByPk(id);
+
+    if (!foundRequest) {
+      return res.status(404).json({ message: "Request not found" });
+    }
+
+    if (foundRequest.status !== "proposal_sent") {
+      return res.status(400).json({
+        message: "Only requests with an offer can be rejected",
+      });
+    }
+
+    await foundRequest.update({ status: "rejected" });
+
+
+    await createNotification({
+      customerId: foundRequest.designerId,
+      role: 'designer',
+      title: 'Offer Rejected ❌',
+      message: `The customer has declined your offer for this request.`,
+      type: 'request_rejected',
+      requestId: foundRequest.id,
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "The request has been declined.",
+      data: foundRequest,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 exports.completeRequest = async (req, res, next) => {
   try {
     const { id } = req.params;
@@ -150,9 +284,7 @@ exports.completeRequest = async (req, res, next) => {
     const foundRequest = await request.findByPk(id);
 
     if (!foundRequest) {
-      return res.status(404).json({
-        message: "Request not found",
-      });
+      return res.status(404).json({ message: "Request not found" });
     }
 
     if (!["pending", "picked_up", "ready"].includes(foundRequest.status)) {
@@ -169,6 +301,16 @@ exports.completeRequest = async (req, res, next) => {
 
     await updateDesignerStats(foundRequest.designerId);
 
+
+    await createNotification({
+      customerId: foundRequest.customerId,
+      role: 'customer',
+      title: 'Order Completed 🎊',
+      message: `Your order has been completed and delivered successfully. Thank you for using StitchSure!`,
+      type: 'completed',
+      requestId: foundRequest.id,
+    });
+
     return res.status(200).json({
       success: true,
       message: "Project marked as delivered and complete.",
@@ -178,7 +320,7 @@ exports.completeRequest = async (req, res, next) => {
       },
     });
   } catch (error) {
-    next(error)
+    next(error);
   }
 };
 
@@ -195,6 +337,21 @@ exports.updateRequestProgress = async (req, res, next) => {
       completed: "ready",
     };
 
+    const progressNotifications = {
+      picked_up: {
+        title: 'Work Has Started ✂️',
+        message: 'The designer has picked up your request and started working on it.',
+      },
+      ready: {
+        title: 'Your Outfit is Ready! 🎉',
+        message: 'Your outfit is ready and will be delivered to you soon.',
+      },
+      completed: {
+        title: 'Order Delivered 🚚',
+        message: 'Your outfit has been delivered successfully. Enjoy!',
+      },
+    };
+
     if (!allowedSteps.includes(nextStatus)) {
       return res.status(400).json({
         message: "Status must be picked_up, ready, or delivered",
@@ -204,9 +361,7 @@ exports.updateRequestProgress = async (req, res, next) => {
     const foundRequest = await request.findByPk(id);
 
     if (!foundRequest) {
-      return res.status(404).json({
-        message: "Request not found",
-      });
+      return res.status(404).json({ message: "Request not found" });
     }
 
     if (foundRequest.designerId !== req.user.id) {
@@ -226,23 +381,26 @@ exports.updateRequestProgress = async (req, res, next) => {
       progress: progressByStatus[nextStatus],
     };
 
-    if (nextStatus === "picked_up") {
-      updateData.pickedUpAt = new Date();
-    }
-
-    if (nextStatus === "ready") {
-      updateData.readyAt = new Date();
-    }
-
-    if (nextStatus === "completed") {
-      updateData.completedAt = new Date();
-    }
+    if (nextStatus === "picked_up") updateData.pickedUpAt = new Date();
+    if (nextStatus === "ready") updateData.readyAt = new Date();
+    if (nextStatus === "completed") updateData.completedAt = new Date();
 
     await foundRequest.update(updateData);
 
     if (nextStatus === "completed") {
       await updateDesignerStats(foundRequest.designerId);
     }
+
+    const { title, message } = progressNotifications[nextStatus];
+    await createNotification({
+      customerId: foundRequest.customerId,
+      role: 'customer',
+      title,
+      message,
+      type: nextStatus === 'ready' ? 'ready_for_delivery' :
+            nextStatus === 'completed' ? 'delivery_update' : 'progress_update',
+      requestId: foundRequest.id,
+    });
 
     await foundRequest.reload();
 
@@ -255,7 +413,7 @@ exports.updateRequestProgress = async (req, res, next) => {
       },
     });
   } catch (error) {
-    next(error)
+    next(error);
   }
 };
 
@@ -266,9 +424,7 @@ exports.getRequestTracking = async (req, res, next) => {
     const foundRequest = await request.findByPk(id);
 
     if (!foundRequest) {
-      return res.status(404).json({
-        message: "Request not found",
-      });
+      return res.status(404).json({ message: "Request not found" });
     }
 
     return res.status(200).json({
@@ -280,7 +436,7 @@ exports.getRequestTracking = async (req, res, next) => {
       },
     });
   } catch (error) {
-    next(error)
+    next(error);
   }
 };
 
@@ -299,9 +455,7 @@ exports.rateDesigner = async (req, res, next) => {
     const foundRequest = await request.findByPk(id);
 
     if (!foundRequest) {
-      return res.status(404).json({
-        message: "Request not found",
-      });
+      return res.status(404).json({ message: "Request not found" });
     }
 
     if (foundRequest.status !== "completed") {
@@ -315,19 +469,26 @@ exports.rateDesigner = async (req, res, next) => {
     });
 
     if (!profile) {
-      return res.status(404).json({
-        message: "Designer profile not found",
-      });
+      return res.status(404).json({ message: "Designer profile not found" });
     }
 
     const oldAverage = Number(profile.ratingAverage);
     const oldCount = profile.ratingCount;
-    const newAverage =
-      (oldAverage * oldCount + ratingValue) / (oldCount + 1);
+    const newAverage = (oldAverage * oldCount + ratingValue) / (oldCount + 1);
 
     await profile.update({
       ratingAverage: newAverage.toFixed(2),
       ratingCount: oldCount + 1,
+    });
+
+    // Notify designer of new rating
+    await createNotification({
+      customerId: foundRequest.designerId,
+      role: 'designer',
+      title: 'New Rating Received ⭐',
+      message: `A customer has rated your work ${ratingValue} out of 5.`,
+      type: 'rating_received',
+      requestId: foundRequest.id,
     });
 
     return res.status(200).json({
@@ -336,6 +497,6 @@ exports.rateDesigner = async (req, res, next) => {
       data: profile,
     });
   } catch (error) {
-    next(error)
+    next(error);
   }
 };
