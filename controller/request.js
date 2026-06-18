@@ -60,8 +60,32 @@ const updateDesignerStats = async (designerId) => {
 exports.createRequest = async (req, res, next) => {
   try {
     const customerId = req.user.id;
-    const {designerId} = req.params
+    const designerId = req.params.designerId || req.body.designerId;
     const { fullName, deadLine, measurement, description } = req.body;
+
+    if (!designerId) {
+      return res.status(400).json({
+        success: false,
+        message: "Designer ID is required",
+      });
+    }
+
+    const customer = await Customer.findByPk(customerId);
+    const designer = await Designer.findByPk(designerId);
+
+    if (!customer) {
+      return res.status(404).json({
+        success: false,
+        message: "Customer not found",
+      });
+    }
+
+    if (!designer) {
+      return res.status(404).json({
+        success: false,
+        message: "Designer not found",
+      });
+    }
 
     const newRequest = await request.create({
       customerId,
@@ -73,15 +97,13 @@ exports.createRequest = async (req, res, next) => {
       status: "pending",
     });
 
-
     await createNotification({
-      customerId: designerId,
-      role: 'designer',
-      title: 'New Request Received',
-      message: `You have received a new request from a customer. Please review and respond.`,
-      type: 'new_request',
-      userType: 'customer',
+      customerId,
+      designerId,
       requestId: newRequest.id,
+      title: "New Request Received",
+      message: "You have received a new request from a customer. Please review and respond.",
+      type: "new_request",
     });
 
     res.status(201).json({

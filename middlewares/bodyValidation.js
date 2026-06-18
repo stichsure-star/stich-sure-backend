@@ -107,10 +107,6 @@ const packageItemSchema = Joi.object({
 
 exports.createRequestValidator = validateBody(
   Joi.object({
-    designerId: uuidRule.required().messages({
-      "any.required": "Designer ID is required",
-      "string.guid": "Designer ID must be a valid UUID",
-    }),
     fullName: requiredString("Full name", 100),
     deadLine: dateRule.required().messages({
       "any.required": "Deadline is required",
