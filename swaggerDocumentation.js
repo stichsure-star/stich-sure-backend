@@ -39,7 +39,8 @@ const options = {
         './docs/designerWallet.yaml',
         './docs/payment.yaml',
         './docs/shipbubble.yaml',
-        './docs/Payment.yaml'
+        './docs/Payment.yaml',
+        './docs/notifications.yaml'
     ]
 }
 
