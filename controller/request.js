@@ -4,8 +4,6 @@ const { AppError } = require('../utils/errorHandler');
 
 const progressByStatus = {
   pending: 0,
-  proposal_sent: 0,
-  accepted: 0,
   picked_up: 33,
   ready: 66,
   completed: 100,
@@ -52,7 +50,7 @@ const updateDesignerStats = async (designerId) => {
     where: {
       designerId,
       status: {
-        [Op.in]: ["accepted", "picked_up", "ready", "completed"],
+        [Op.in]: ["picked_up", "ready", "completed"],
       },
     },
   });
@@ -145,108 +143,6 @@ exports.getOneRequest = async (req, res, next) => {
   }
 };
 
-exports.sendOffer = async (req, res, next) => {
-  try {
-    const { id } = req.params;
-
-    const { designerMessage } = req.body;
-
-    const foundRequest = await request.findByPk(id);
-
-    if (!foundRequest) {
-      return res.status(404).json({
-        message: "Request not found",
-      });
-    }
-
-    if (foundRequest.status !== "pending") {
-      return res.status(400).json({
-        message: "You can only send an offer for a pending request",
-      });
-    }
-
-    await foundRequest.update({
-      designerMessage,
-      status: "proposal_sent",
-      progress: progressByStatus.proposal_sent,
-      offerSentAt: new Date(),
-    });
-
-    return res.status(200).json({
-      success: true,
-      message: "Your offer has been sent to the customer.",
-      data: foundRequest,
-    });
-  } catch (error) {
-    next(error)
-  }
-};
-
-exports.acceptRequest = async (req, res, next) => {
-  try {
-    const { id } = req.params;
-
-    const foundRequest = await request.findByPk(id);
-
-    if (!foundRequest) {
-      return res.status(404).json({
-        message: "Request not found"
-      })
-    }
-
-    if (foundRequest.status !== "proposal_sent") {
-      return res.status(400).json({
-        message: "Only requests with an offer can be accepted",
-      });
-    }
-
-    await foundRequest.update({
-      status: "accepted",
-      progress: progressByStatus.accepted,
-    });
-
-    return res.status(200).json({
-      success: true,
-      message: "Request accepted!",
-      data: foundRequest,
-    });
-  } catch (error) {
-    next(error)
-  }
-}
-
-exports.rejectRequest = async (req, res, next) => {
-  try {
-    const { id } = req.params;
-
-    const foundRequest = await request.findByPk(id);
-
-    if (!foundRequest) {
-      return res.status(404).json({
-         message: "Request not found"
-      });
-    }
-
-    if (foundRequest.status !== "proposal_sent") {
-      return res.status(400).json({
-        message: "Only requests with an offer can be rejected",
-      });
-    }
-
-    await foundRequest.update({
-      status: "rejected",
-    });
-
-    return res.status(200).json({
-      success: true,
-      message: "The request has been declined.",
-      data: foundRequest,
-    });
-  } catch (error) {
-    next(error)
-  }
-};
-
 exports.completeRequest = async (req, res, next) => {
   try {
     const { id } = req.params;
@@ -259,9 +155,9 @@ exports.completeRequest = async (req, res, next) => {
       });
     }
 
-    if (!["accepted", "picked_up", "ready"].includes(foundRequest.status)) {
+    if (!["pending", "picked_up", "ready"].includes(foundRequest.status)) {
       return res.status(400).json({
-        message: "Only active requests can be completed",
+        message: "Only pending or active requests can be completed",
       });
     }
 
@@ -294,7 +190,7 @@ exports.updateRequestProgress = async (req, res, next) => {
 
     const allowedSteps = ["picked_up", "ready", "completed"];
     const previousStatus = {
-      picked_up: "accepted",
+      picked_up: "pending",
       ready: "picked_up",
       completed: "ready",
     };

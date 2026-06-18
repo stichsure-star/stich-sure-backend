@@ -119,12 +119,6 @@ exports.createRequestValidator = validateBody(
   })
 );
 
-exports.sendOfferValidator = validateBody(
-  Joi.object({
-    designerMessage: requiredString("Designer message", 2000),
-  })
-);
-
 exports.requestProgressValidator = validateBody(
   Joi.object({
     status: Joi.string().valid("picked_up", "ready", "delivered", "completed").required().messages({
