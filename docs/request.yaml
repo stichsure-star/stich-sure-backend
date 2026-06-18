@@ -4,10 +4,13 @@ info:
   version: 1.0.0
   description: API documentation for request endpoints in the StitchSure application.
 paths:
-  /api/v1/request/create:
+  /api/v1/request/create{designerId}:
     post:
       summary: Create a new request
       tags: [request]
+      parameters:
+        - in: path
+          name: id
       security:
         - bearerAuth: []
       requestBody:
