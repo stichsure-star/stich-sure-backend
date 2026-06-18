@@ -10,7 +10,12 @@ paths:
       tags: [request]
       parameters:
         - in: path
-          name: id
+          name: designerId
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: "The ID of the designer receiving the request"
       security:
         - bearerAuth: []
       requestBody:
@@ -20,16 +25,11 @@ paths:
             schema:
               type: object
               required:
-                - designerId
                 - fullName
                 - deadLine
                 - measurement
                 - description
               properties:
-                designerId:
-                  type: string
-                  example: "c7b4f3c9-31f3-4f6e-b1d4-abc123def456"
-                  description: "The ID of the designer receiving the request"
                 fullName:
                   type: string
                   example: "Jane Doe"
