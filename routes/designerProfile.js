@@ -26,7 +26,7 @@ router.route('/onboarding')
 router.get('/getAll', getAllDesignerProfiles);
 router.get('/dashboard-stats', authentication, getDesignerDashboardStats);
 router.get('/getByDesigner/:designerId', getDesignerProfile);
-router.put('/update', authentication, upload.single('profilePhoto'), designerProfileUpdateValidator, updateDesignerProfile);
+router.patch('/update', authentication, upload.single('profilePhoto'), designerProfileUpdateValidator, updateDesignerProfile);
 router.patch('/updateDesignerProfileSettings', authentication, upload.single('profilePhoto'), updateDesignerProfileSettings);
 router.delete('/delete', authentication, deleteDesignerProfile);
 

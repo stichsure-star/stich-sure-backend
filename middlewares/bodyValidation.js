@@ -62,6 +62,8 @@ const walletUpdateSchema = Joi.object({
 const profileFields = {
   businessName: optionalString("Business name", 100),
   currentHouseAddress: optionalString("Current house address", 255),
+  state: optionalString("State", 100),
+  country: optionalString("Country", 100),
   phoneNumber: phoneRule.optional().messages({
     "string.empty": "Phone number cannot be empty",
     "string.min": "Phone number must be at least 7 characters",
@@ -217,6 +219,8 @@ exports.designerProfileCreateValidator = validateBody(
     ...profileFields,
     businessName: requiredString("Business name", 100),
     currentHouseAddress: requiredString("Current house address", 255),
+    state: requiredString("State", 100),
+    country: requiredString("Country", 100),
     phoneNumber: phoneRule.required().messages({
       "any.required": "Phone number is required",
       "string.empty": "Phone number cannot be empty",
@@ -229,6 +233,8 @@ exports.designerOnboardingValidator = validateBody(
     ...profileFields,
     businessName: requiredString("Business name", 100),
     currentHouseAddress: requiredString("Current house address", 255),
+    state: requiredString("State", 100),
+    country: requiredString("Country", 100),
     phoneNumber: phoneRule.required().messages({
       "any.required": "Phone number is required",
       "string.empty": "Phone number cannot be empty",
@@ -246,6 +252,8 @@ exports.designerProfileUpdateValidator = validateBody(
   Joi.object(profileFields).or(
     "businessName",
     "currentHouseAddress",
+    "state",
+    "country",
     "phoneNumber",
     "bankName",
     "accountNumber",
