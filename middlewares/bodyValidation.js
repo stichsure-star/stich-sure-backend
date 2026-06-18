@@ -20,7 +20,7 @@ const validateBody = (schema, options = {}) => (req, res, next) => {
     return next();
   }
 
-  const { error, value } = schema.validate(req.body, {
+  const { error, value } = schema.validate(req.body || {}, {
     abortEarly: true,
     convert: true,
     stripUnknown: true,

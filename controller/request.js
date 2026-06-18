@@ -60,7 +60,8 @@ const updateDesignerStats = async (designerId) => {
 exports.createRequest = async (req, res, next) => {
   try {
     const customerId = req.user.id;
-    const { designerId, fullName, deadLine, measurement, description } = req.body;
+    const {designerId} = req.params
+    const { fullName, deadLine, measurement, description } = req.body;
 
     const newRequest = await request.create({
       customerId,
