@@ -5,8 +5,6 @@ const {createNotification} = require("../utils/createNotification");
 
 const progressByStatus = {
   pending: 0,
-  proposal_sent: 0,
-  accepted: 0,
   picked_up: 33,
   ready: 66,
   completed: 100,
@@ -289,9 +287,9 @@ exports.completeRequest = async (req, res, next) => {
       return res.status(404).json({ message: "Request not found" });
     }
 
-    if (!["accepted", "picked_up", "ready"].includes(foundRequest.status)) {
+    if (!["pending", "picked_up", "ready"].includes(foundRequest.status)) {
       return res.status(400).json({
-        message: "Only active requests can be completed",
+        message: "Only pending or active requests can be completed",
       });
     }
 
@@ -334,7 +332,7 @@ exports.updateRequestProgress = async (req, res, next) => {
 
     const allowedSteps = ["picked_up", "ready", "completed"];
     const previousStatus = {
-      picked_up: "accepted",
+      picked_up: "pending",
       ready: "picked_up",
       completed: "ready",
     };

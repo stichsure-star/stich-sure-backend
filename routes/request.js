@@ -2,9 +2,6 @@ const router = require('express').Router()
 
 const {
   createRequest,
-  sendOffer,
-  acceptRequest,
-  rejectRequest,
   completeRequest,
   updateRequestProgress,
   getRequestTracking,
@@ -27,7 +24,6 @@ console.log({
 const { authentication } = require('../middlewares/authentication')
 const {
   createRequestValidator,
-  sendOfferValidator,
   requestProgressValidator,
   rateDesignerValidator,
 } = require('../middlewares/bodyValidation')
