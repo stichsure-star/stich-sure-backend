@@ -145,99 +145,7 @@ exports.getOneRequest = async (req, res, next) => {
   }
 };
 
-exports.sendOffer = async (req, res, next) => {
-  try {
-    const { id } = req.params;
-    const { designerMessage } = req.body;
 
-    const foundRequest = await request.findByPk(id);
-
-    if (!foundRequest) {
-      return res.status(404).json({ message: "Request not found" });
-    }
-
-    if (foundRequest.status !== "pending") {
-      return res.status(400).json({
-        message: "You can only send an offer for a pending request",
-      });
-    }
-
-    await foundRequest.update({
-      designerMessage,
-      status: "proposal_sent",
-      progress: progressByStatus.proposal_sent,
-      offerSentAt: new Date(),
-    });
-
-    await createNotification({
-      customerId: foundRequest.customerId,
-      role: 'customer',
-      title: 'New Offer Received 📬',
-      message: 'A designer has responded to your request. Please review the offer.',
-      type: 'proposal_sent',
-      requestId: foundRequest.id,
-    });
-
-    return res.status(200).json({
-      success: true,
-      message: "Your offer has been sent to the customer.",
-      data: foundRequest,
-    });
-  } catch (error) {
-    next(error);
-  }
-};
-
-exports.acceptRequest = async (req, res, next) => {
-  try {
-    const { id } = req.params;
-
-    const foundRequest = await request.findByPk(id);
-
-    if (!foundRequest) {
-      return res.status(404).json({ message: "Request not found" });
-    }
-
-    if (foundRequest.status !== "proposal_sent") {
-      return res.status(400).json({
-        message: "Only requests with an offer can be accepted",
-      });
-    }
-
-    await foundRequest.update({
-      status: "accepted",
-      progress: progressByStatus.accepted,
-    });
-
-  
-    await createNotification({
-      customerId: foundRequest.customerId,
-      role: 'customer',
-      title: 'Request Accepted 🎉',
-      message: `Your request has been accepted by the designer. They will start working on it shortly.`,
-      type: 'request_accepted',
-      requestId: foundRequest.id,
-    });
-
-    // Notify designer of acceptance
-    await createNotification({
-      customerId: foundRequest.designerId,
-      role: 'designer',
-      title: 'Offer Accepted ',
-      message: `The customer has accepted your offer. You can now start working on the request.`,
-      type: 'request_accepted',
-      requestId: foundRequest.id,
-    });
-
-    return res.status(200).json({
-      success: true,
-      message: "Request accepted!",
-      data: foundRequest,
-    });
-  } catch (error) {
-    next(error);
-  }
-};
 
 exports.rejectRequest = async (req, res, next) => {
   try {
@@ -261,7 +169,7 @@ exports.rejectRequest = async (req, res, next) => {
     await createNotification({
       customerId: foundRequest.designerId,
       role: 'designer',
-      title: 'Offer Rejected ❌',
+      title: 'Offer Rejected ',
       message: `The customer has declined your offer for this request.`,
       type: 'request_rejected',
       requestId: foundRequest.id,

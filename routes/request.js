@@ -7,12 +7,11 @@ const {
   getRequestTracking,
   rateDesigner,
   getAllRequests,
-  getOneRequest
+  getOneRequest,
+  rejectRequest
 } = require('../controller/request')
 console.log({
   createRequest,
-  sendOffer,
-  acceptRequest,
   rejectRequest,
   completeRequest,
   updateRequestProgress,
@@ -31,8 +30,6 @@ const {
 router.get('/', authentication, getAllRequests);
 router.get('/:id', authentication, getOneRequest);
 router.post('/create', authentication, createRequestValidator, createRequest);
-router.put('/send-offer/:id', authentication, sendOfferValidator, sendOffer);
-router.put('/accept/:id', authentication, acceptRequest);
 router.put('/reject/:id', authentication, rejectRequest);
 router.put('/complete/:id', authentication, completeRequest);
 router.put('/progress/:id', authentication, requestProgressValidator, updateRequestProgress);

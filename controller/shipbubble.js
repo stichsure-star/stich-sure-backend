@@ -83,9 +83,11 @@ exports.trackOrder = async (req, res) => {
 exports.initializePayment = async (req, res, next) => {
   try {
     const { orderId, email, deliveryAddress } = req.body;
-    console.log('orderId received:', orderId);
-console.log('type of orderId:', typeof orderId);
+
+    console.log("orderId:", orderId);
+
     const foundOrder = await Order.findByPk(orderId);
+
     if (!foundOrder) {
       return res.status(404).json({
         success: false,
@@ -93,13 +95,10 @@ console.log('type of orderId:', typeof orderId);
       });
     }
 
-    const customer = await Customer.findByPk(foundOrder.customerId);
-    console.log('Customer details:', {
-  name: `${customer.firstName} ${customer.lastName}`,
-  email: customer.email,
-  phone: customer.phone,
-  address: deliveryAddress,
-});
+    const customer = await Customer.findByPk(
+      foundOrder.customerId
+    );
+
     if (!customer) {
       return res.status(404).json({
         success: false,
@@ -107,25 +106,34 @@ console.log('type of orderId:', typeof orderId);
       });
     }
 
-    const designer = await Designer.findByPk(foundOrder.designerId);
-     console.log('Designer details:', {
-  name: `${designer.firstName} ${designer.lastName}`,
-  email: designer.email,
-  phone: designer.phone,
-  address: designer.address,
-});
+    const designer = await Designer.findByPk(
+      foundOrder.designerId
+    );
+
     if (!designer) {
       return res.status(404).json({
         success: false,
         message: "Designer not found",
       });
     }
-   
 
+    console.log("Customer:", {
+      name: `${customer.firstName} ${customer.lastName}`,
+      email: customer.email,
+      phone: customer.phone,
+    });
 
-    const senderAddressCode = 204283134;   
-    const receiverAddressCode = 220717646; 
+    console.log("Designer:", {
+      name: `${designer.firstName} ${designer.lastName}`,
+      email: designer.email,
+      phone: designer.phone,
+    });
 
+    const senderAddressCode = 204283134;
+    const receiverAddressCode = 220717646;
+    const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+const pickup_date = `${tomorrow.getFullYear()}-${String(tomorrow.getMonth() + 1).padStart(2, '0')}-${String(tomorrow.getDate()).padStart(2, '0')}`;
     const rates = await getShippingRates({
       sender_address_code: senderAddressCode,
       reciever_address_code: receiverAddressCode,
@@ -133,41 +141,72 @@ console.log('type of orderId:', typeof orderId);
       category_id: 74794423,
       package_items: [
         {
-          name: "Order package",
-          description: "Fashion item",
+          name: "Order Package",
+          description: "Fashion Item",
           unit_weight: "0.5",
-          unit_amount: String(foundOrder.amount),
+          unit_amount: String(foundOrder.amount || 0),
           quantity: "1",
-        }
+        },
       ],
       package_dimension: {
         length: 20,
         width: 15,
         height: 10,
-      }
+      },
     });
-    console.log('rates:', JSON.stringify(rates, null, 2));
-
-    if (rates.status === "failed") {
-  return res.status(400).json({
-    success: false,
-    message: rates.message,
-  });
-}
-
-const couriers = rates.data.couriers;
-    const cheapestCourier = couriers.reduce((prev, curr) =>
-      prev.total < curr.total ? prev : curr
+console.log('rates response:', JSON.stringify(rates, null, 2));
+    console.log(
+      "Shipbubble Rates:",
+      JSON.stringify(rates, null, 2)
     );
-    const shippingFee = cheapestCourier.total;
-    const totalAmount = Number(foundOrder.amount) + Number(shippingFee);
 
-    const response = await axios.post(
+    if (
+      rates.status === "failed" ||
+      !rates.data ||
+      !rates.data.couriers ||
+      rates.data.couriers.length === 0
+    ) {
+      return res.status(400).json({
+        success: false,
+        message:
+          rates.message ||
+          "No courier available for this shipment",
+      });
+    }
+
+    const couriers = rates.data.couriers;
+
+    const cheapestCourier = couriers.reduce((prev, curr) =>
+      Number(prev.total) < Number(curr.total)
+        ? prev
+        : curr
+    );
+
+    const shippingFee = Number(
+      cheapestCourier.total
+    );
+
+    const orderAmount = Number(
+      foundOrder.amount || 0
+    );
+
+    const totalAmount =
+      orderAmount + shippingFee;
+
+    console.log({
+      orderAmount,
+      shippingFee,
+      totalAmount,
+    });
+
+    const paymentResponse = await axios.post(
       "https://api.korapay.com/merchant/api/v1/charges/initialize",
       {
         amount: totalAmount,
         currency: "NGN",
-        customer: { email },
+        customer: {
+          email,
+        },
         reference: `PAY_${Date.now()}`,
       },
       {
@@ -179,30 +218,46 @@ const couriers = rates.data.couriers;
     );
 
     const payment = await Payment.create({
-      orderId,
+      orderId: foundOrder.id,
       customerId: foundOrder.customerId,
       designerId: foundOrder.designerId,
       amount: totalAmount,
       shippingFee,
       currency: "NGN",
       paymentProvider: "korapay",
-      transactionReference: response.data.data.reference,
+      transactionReference:
+        paymentResponse.data.data.reference,
       status: "pending",
       requestToken: rates.data.request_token,
-      courierId: String(cheapestCourier.courier_id),
-      serviceCode: cheapestCourier.service_code,
+      courierId: String(
+        cheapestCourier.courier_id
+      ),
+      serviceCode:
+        cheapestCourier.service_code,
     });
 
     return res.status(200).json({
       success: true,
-      message: "Payment initialized successfully",
-      checkoutUrl: response.data.data.checkout_url,
+      message:
+        "Payment initialized successfully",
+      shippingFee,
+      totalAmount,
+      checkoutUrl:
+        paymentResponse.data.data.checkout_url,
       payment,
     });
   } catch (error) {
-    console.log(error.message);
+    console.log(
+      "Initialize Payment Error:",
+      error.response?.data || error.message
+    );
+
     return res.status(500).json({
-      message: 'Failed to Initialize Payment'
+      success: false,
+      message: "Failed to initialize payment",
+      error:
+        error.response?.data ||
+        error.message,
     });
   }
 };
