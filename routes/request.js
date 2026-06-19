@@ -7,9 +7,19 @@ const {
   getRequestTracking,
   rateDesigner,
   getAllRequests,
-  getOneRequest
+  getOneRequest,
+  rejectRequest
 } = require('../controller/request')
-
+console.log({
+  createRequest,
+  rejectRequest,
+  completeRequest,
+  updateRequestProgress,
+  getRequestTracking,
+  rateDesigner,
+  getAllRequests,
+  getOneRequest
+});
 const { authentication } = require('../middlewares/authentication')
 const {
   createRequestValidator,
@@ -19,6 +29,8 @@ const {
 
 router.post('/create/:designerId', authentication, createRequestValidator, createRequest);
 router.get('/', authentication, getAllRequests);
+router.get('/:id', authentication, getOneRequest);
+router.post('/create', authentication, createRequestValidator, createRequest);
 router.put('/complete/:id', authentication, completeRequest);
 router.put('/progress/:id', authentication, requestProgressValidator, updateRequestProgress);
 router.get('/tracking/:id', authentication, getRequestTracking);

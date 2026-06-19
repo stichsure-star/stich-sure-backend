@@ -49,7 +49,7 @@ module.exports = (sequelize, DataTypes) => {
     currency: {
       type: Sequelize.STRING,
       defaultValue: 'NGN',
-    }
+    },
   });
   return Shipment;
 };
