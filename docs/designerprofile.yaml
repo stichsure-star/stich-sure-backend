@@ -398,7 +398,7 @@ paths:
         '200':
           description: Dashboard stats loaded successfully. Reliability starts at Bronze with score 0, then increases from completed accepted orders. Tiers are Bronze 0+, Silver 50+, Gold 90+, and Diamond 98+.
   /api/v1/designerProfile/update:
-    put:
+    patch:
       summary: Update designer profile
       tags: [designerProfile]
       security:

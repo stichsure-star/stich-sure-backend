@@ -60,7 +60,32 @@ const updateDesignerStats = async (designerId) => {
 exports.createRequest = async (req, res, next) => {
   try {
     const customerId = req.user.id;
-    const { designerId, fullName, deadLine, measurement, description } = req.body;
+    const designerId = req.params.designerId || req.body.designerId;
+    const { fullName, deadLine, measurement, description } = req.body;
+
+    if (!designerId) {
+      return res.status(400).json({
+        success: false,
+        message: "Designer ID is required",
+      });
+    }
+
+    const customer = await Customer.findByPk(customerId);
+    const designer = await Designer.findByPk(designerId);
+
+    if (!customer) {
+      return res.status(404).json({
+        success: false,
+        message: "Customer not found",
+      });
+    }
+
+    if (!designer) {
+      return res.status(404).json({
+        success: false,
+        message: "Designer not found",
+      });
+    }
 
     const newRequest = await request.create({
       customerId,
@@ -72,15 +97,13 @@ exports.createRequest = async (req, res, next) => {
       status: "pending",
     });
 
-
     await createNotification({
-      customerId: designerId,
-      role: 'designer',
-      title: 'New Request Received',
-      message: `You have received a new request from a customer. Please review and respond.`,
-      type: 'new_request',
-      userType: 'customer',
+      customerId,
+      designerId,
       requestId: newRequest.id,
+      title: "New Request Received",
+      message: "You have received a new request from a customer. Please review and respond.",
+      type: "new_request",
     });
 
     res.status(201).json({
@@ -146,44 +169,7 @@ exports.getOneRequest = async (req, res, next) => {
 };
 
 
-
-exports.rejectRequest = async (req, res, next) => {
-  try {
-    const { id } = req.params;
-
-    const foundRequest = await request.findByPk(id);
-
-    if (!foundRequest) {
-      return res.status(404).json({ message: "Request not found" });
-    }
-
-    if (foundRequest.status !== "proposal_sent") {
-      return res.status(400).json({
-        message: "Only requests with an offer can be rejected",
-      });
-    }
-
-    await foundRequest.update({ status: "rejected" });
-
-
-    await createNotification({
-      customerId: foundRequest.designerId,
-      role: 'designer',
-      title: 'Offer Rejected ',
-      message: `The customer has declined your offer for this request.`,
-      type: 'request_rejected',
-      requestId: foundRequest.id,
-    });
-
-    return res.status(200).json({
-      success: true,
-      message: "The request has been declined.",
-      data: foundRequest,
-    });
-  } catch (error) {
-    next(error);
-  }
-};
+    
 
 exports.completeRequest = async (req, res, next) => {
   try {

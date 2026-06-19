@@ -20,7 +20,7 @@ const validateBody = (schema, options = {}) => (req, res, next) => {
     return next();
   }
 
-  const { error, value } = schema.validate(req.body, {
+  const { error, value } = schema.validate(req.body || {}, {
     abortEarly: true,
     convert: true,
     stripUnknown: true,
@@ -62,6 +62,8 @@ const walletUpdateSchema = Joi.object({
 const profileFields = {
   businessName: optionalString("Business name", 100),
   currentHouseAddress: optionalString("Current house address", 255),
+  state: optionalString("State", 100),
+  country: optionalString("Country", 100),
   phoneNumber: phoneRule.optional().messages({
     "string.empty": "Phone number cannot be empty",
     "string.min": "Phone number must be at least 7 characters",
@@ -105,10 +107,6 @@ const packageItemSchema = Joi.object({
 
 exports.createRequestValidator = validateBody(
   Joi.object({
-    designerId: uuidRule.required().messages({
-      "any.required": "Designer ID is required",
-      "string.guid": "Designer ID must be a valid UUID",
-    }),
     fullName: requiredString("Full name", 100),
     deadLine: dateRule.required().messages({
       "any.required": "Deadline is required",
@@ -150,7 +148,6 @@ exports.createOrderValidator = validateBody(
       "number.base": "Amount must be a number",
       "number.positive": "Amount must be greater than 0",
     }),
-    address: requiredString("Address", 255),
   }).or("requestId", "designerId")
 );
 
@@ -217,6 +214,8 @@ exports.designerProfileCreateValidator = validateBody(
     ...profileFields,
     businessName: requiredString("Business name", 100),
     currentHouseAddress: requiredString("Current house address", 255),
+    state: requiredString("State", 100),
+    country: requiredString("Country", 100),
     phoneNumber: phoneRule.required().messages({
       "any.required": "Phone number is required",
       "string.empty": "Phone number cannot be empty",
@@ -229,6 +228,8 @@ exports.designerOnboardingValidator = validateBody(
     ...profileFields,
     businessName: requiredString("Business name", 100),
     currentHouseAddress: requiredString("Current house address", 255),
+    state: requiredString("State", 100),
+    country: requiredString("Country", 100),
     phoneNumber: phoneRule.required().messages({
       "any.required": "Phone number is required",
       "string.empty": "Phone number cannot be empty",
@@ -246,6 +247,8 @@ exports.designerProfileUpdateValidator = validateBody(
   Joi.object(profileFields).or(
     "businessName",
     "currentHouseAddress",
+    "state",
+    "country",
     "phoneNumber",
     "bankName",
     "accountNumber",
