@@ -9,7 +9,14 @@ const textRule = (label, max = 1000) =>
   });
 
 const amountRule = Joi.number().positive().precision(2);
-const phoneRule = Joi.string().trim().min(7).max(20);
+const phoneRule = Joi.string()
+  .trim()
+  .pattern(/^\+?\d{7,20}$/)
+  .min(7)
+  .max(20)
+  .messages({
+    "string.pattern.base": "Invalid phone number format. Only digits and an optional leading '+' are allowed.",
+  });
 const dateRule = Joi.date().iso();
 
 const validateBody = (schema, options = {}) => (req, res, next) => {
