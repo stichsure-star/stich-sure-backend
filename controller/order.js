@@ -51,9 +51,9 @@ const buildOrderWhere = (req) => {
 exports.createOrder = async (req, res, next) => {
   try {
     const customerId = req.user.id;
-    const { requestId, designerId, designId, itemName, amount, address } = req.body;
+    const { requestId, designerId, designId, itemName, amount, } = req.body;
 
-    if (!itemName || !amount || !address) {
+    if (!itemName || !amount ) {
       return res.status(400).json({
         success: false,
         message: "itemName, amount, and address are required",
@@ -95,7 +95,6 @@ exports.createOrder = async (req, res, next) => {
       designId: designId || null,
       itemName,
       amount,
-      address,
       status: "new",
       placedAt: new Date(),
     });
