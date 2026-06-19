@@ -148,7 +148,6 @@ exports.createOrderValidator = validateBody(
       "number.base": "Amount must be a number",
       "number.positive": "Amount must be greater than 0",
     }),
-    address: requiredString("Address", 255),
   }).or("requestId", "designerId")
 );
 
