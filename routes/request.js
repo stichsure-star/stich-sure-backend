@@ -8,7 +8,8 @@ const {
   rateDesigner,
   getAllRequests,
   getOneRequest,
-  rejectRequest
+  rejectRequest,
+  acceptRequestFromCustomer
 } = require('../controller/request')
 console.log({
   createRequest,
@@ -33,6 +34,8 @@ router.get('/:id', authentication, getOneRequest);
 router.post('/create', authentication, createRequestValidator, createRequest);
 router.put('/complete/:id', authentication, completeRequest);
 router.put('/progress/:id', authentication, requestProgressValidator, updateRequestProgress);
+router.put('/accept/:id', authentication, acceptRequestFromCustomer);
+router.put('/reject/:id', authentication, rejectRequest);
 router.get('/tracking/:id', authentication, getRequestTracking);
 router.put('/rate/:id', authentication, rateDesignerValidator, rateDesigner);
 router.get('/:id', authentication, getOneRequest);
