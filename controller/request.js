@@ -116,6 +116,127 @@ exports.createRequest = async (req, res, next) => {
   }
 };
 
+exports.acceptRequestFromCustomer = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const designerId = req.user.id;
+
+    if (req.user.role !== "designer") {
+      return res.status(403).json({
+        success: false,
+        message: "Unauthorized. Only designers can accept requests.",
+      });
+    }
+
+    const foundRequest = await request.findByPk(id);
+
+    if (!foundRequest) {
+      return res.status(404).json({
+        success: false,
+        message: "Request not found",
+      });
+    }
+
+    if (foundRequest.designerId !== designerId) {
+      return res.status(403).json({
+        success: false,
+        message: "You can only accept requests assigned to you",
+      });
+    }
+
+    if (foundRequest.status !== "pending" && foundRequest.status !== "proposal_sent") {
+      return res.status(400).json({
+        success: false,
+        message: `Request cannot be accepted. Current status is: ${foundRequest.status}`,
+      });
+    }
+
+    await foundRequest.update({
+      status: "accepted",
+      progress: 10,
+    });
+
+    await updateDesignerStats(designerId);
+
+    await createNotification({
+      customerId: foundRequest.customerId,
+      role: 'customer',
+      title: 'Request Accepted! 👗',
+      message: `The designer has accepted your request. Work will begin soon!`,
+      type: 'request_accepted',
+      requestId: foundRequest.id,
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "Request accepted successfully.",
+      data: foundRequest,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+exports.rejectRequest = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const designerId = req.user.id;
+
+    if (req.user.role !== "designer") {
+      return res.status(403).json({
+        success: false,
+        message: "Unauthorized. Only designers can reject requests.",
+      });
+    }
+
+    const foundRequest = await request.findByPk(id);
+
+    if (!foundRequest) {
+      return res.status(404).json({
+        success: false,
+        message: "Request not found",
+      });
+    }
+
+    if (foundRequest.designerId !== designerId) {
+      return res.status(403).json({
+        success: false,
+        message: "You can only reject requests assigned to you",
+      });
+    }
+
+    if (foundRequest.status !== "pending" && foundRequest.status !== "proposal_sent") {
+      return res.status(400).json({
+        success: false,
+        message: `Request cannot be rejected. Current status is: ${foundRequest.status}`,
+      });
+    }
+
+    await foundRequest.update({
+      status: "rejected",
+    });
+
+    await updateDesignerStats(designerId);
+
+    await createNotification({
+      customerId: foundRequest.customerId,
+      role: 'customer',
+      title: 'Request Rejected ❌',
+      message: `The designer has declined your request.`,
+      type: 'request_rejected',
+      requestId: foundRequest.id,
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "Request has been rejected.",
+      data: foundRequest,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 exports.getAllRequests = async (req, res, next) => {
   try {
     const requests = await request.findAll({
