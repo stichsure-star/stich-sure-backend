@@ -491,7 +491,7 @@ exports.getCustomerDashboardStats = async (req, res, next) => {
         where: {
           customerId,
           status: {
-            [Op.in]: ["new", "preparing", "ready"],
+            [Op.in]: ["pending", "active", "delivered"],
           },
         },
       }),

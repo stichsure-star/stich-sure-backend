@@ -161,10 +161,14 @@ exports.createOrderValidator = validateBody(
 exports.updateOrderStatusValidator = validateBody(
   Joi.object({
     status: Joi.string()
-      .valid("new", "preparing", "ready", "completed", "cancelled", "picked_up", "pickedUp", "picked-up", "in_production", "delivered")
+      .valid(
+        "new", "preparing", "ready", "completed", "cancelled",
+        "picked_up", "pickedUp", "picked-up", "in_production", "delivered",
+        "pending", "active"
+      )
       .required()
       .messages({
-        "any.only": "Status must be new, preparing, ready, completed, cancelled, picked_up, or delivered",
+        "any.only": "Status must be pending, active, delivered, completed, cancelled, or legacy statuses (new, preparing, ready)",
         "any.required": "Status is required",
       }),
   })

@@ -398,6 +398,7 @@ exports.getFeaturedDesigners = async (req, res, next) => {
         {
           model: Designs,
           as: "designs",
+          separate: true,
         },
       ],
       order: [
