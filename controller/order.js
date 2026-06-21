@@ -9,13 +9,15 @@ const {
 const { AppError } = require('../utils/errorHandler');
 const { releaseOrderEscrowToDesigner } = require("../utils/escrow");
 
-const allowedStatuses = ["new", "preparing", "ready", "completed", "cancelled"];
+const allowedStatuses = ["pending", "active", "delivered", "completed", "cancelled"];
 const statusAliases = {
-  picked_up: "preparing",
-  pickedUp: "preparing",
-  "picked-up": "preparing",
-  in_production: "preparing",
-  delivered: "completed",
+  new: "pending",
+  preparing: "active",
+  ready: "delivered",
+  picked_up: "active",
+  pickedUp: "active",
+  "picked-up": "active",
+  in_production: "active",
 };
 
 const generateOrderNumber = () => {
@@ -95,7 +97,7 @@ exports.createOrder = async (req, res, next) => {
       designId: designId || null,
       itemName,
       amount,
-      status: "new",
+      status: "pending",
       placedAt: new Date(),
     });
 
@@ -360,12 +362,12 @@ exports.updateOrderStatus = async (req, res, next) => {
 
     const updateData = { status };
 
-    if (status === "preparing" && !order.preparingAt) {
-      updateData.preparingAt = new Date();
+    if (status === "active" && !order.activeAt) {
+      updateData.activeAt = new Date();
     }
 
-    if (status === "ready" && !order.readyAt) {
-      updateData.readyAt = new Date();
+    if (status === "delivered" && !order.deliveredAt) {
+      updateData.deliveredAt = new Date();
     }
 
     if (status === "completed" && !order.completedAt) {
