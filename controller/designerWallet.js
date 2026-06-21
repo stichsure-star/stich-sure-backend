@@ -226,3 +226,83 @@ exports.getAllWallets = async (req, res, next) => {
     next(error);
   }
 };
+
+exports.withdrawFunds = async (req, res, next) => {
+  try {
+    const designerId = req.user.id;
+    const { amount } = req.body;
+    const withdrawAmount = Number(amount);
+
+    if (req.user.role !== "designer") {
+      return res.status(403).json({
+        success: false,
+        message: "Unauthorized. Only designers can withdraw funds.",
+      });
+    }
+
+    const wallet = await DesignerWallet.findOne({
+      where: { designerId },
+    });
+
+    if (!wallet) {
+      return res.status(404).json({
+        success: false,
+        message: "Designer wallet not found. Please set up your wallet first.",
+      });
+    }
+
+    if (!wallet.bankName || !wallet.accountNumber) {
+      return res.status(400).json({
+        success: false,
+        message: "Please update your bank details in your wallet before withdrawing.",
+      });
+    }
+
+    const availableBalance = Number(wallet.availableBalance || 0);
+
+    if (availableBalance < withdrawAmount) {
+      return res.status(400).json({
+        success: false,
+        message: "Insufficient funds. Available balance is lower than the requested withdrawal amount.",
+      });
+    }
+
+    //withdrawal process for designer
+    const fee = 100; // Plartform FEE
+    const netReceiveAmount = withdrawAmount - fee;
+
+    // Deduct from available balance, add to withdrawn
+    const updatedWallet = await wallet.update({
+      availableBalance: availableBalance - withdrawAmount,
+      withdrawn: Number(wallet.withdrawn || 0) + withdrawAmount,
+    });
+
+    // Generate a unique placeholder UUID for orderId to satisfy the allowNull: false and unique: true constraint
+    const crypto = require("crypto");
+    const placeholderOrderId = crypto.randomUUID(); 
+
+    // Create a transaction 
+    const transaction = await DesignerWalletTransaction.create({
+      designerWalletId: wallet.id,
+      designerId,
+      orderId: placeholderOrderId, // dummy order id to bypass schema constraint
+      amount: -withdrawAmount,      // negative amount representing a debit
+      status: "completed",
+      transactionDate: new Date(),
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "Withdrawal completed successfully.",
+      data: {
+        wallet: updatedWallet,
+        withdrawalAmount: withdrawAmount,
+        fee,
+        netReceiveAmount,
+        transaction,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};

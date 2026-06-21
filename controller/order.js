@@ -241,6 +241,94 @@ exports.getOrderById = async (req, res, next) => {
   }
 };
 
+exports.getDesignerOrderById = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const designerId = req.user.id;
+
+    if (req.user.role !== "designer") {
+      return res.status(403).json({
+        success: false,
+        message: "Unauthorized. Only designers can fetch designer orders.",
+      });
+    }
+
+    const order = await Order.findOne({
+      where: { id, designerId },
+      include: [
+        {
+          model: Customer,
+          as: "customer",
+          attributes: ["id", "firstName", "lastName", "email"],
+        },
+        {
+          model: Designs,
+          as: "design",
+        },
+      ],
+    });
+
+    if (!order) {
+      return res.status(404).json({
+        success: false,
+        message: "Order not found or not assigned to you",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Order details retrieved successfully.",
+      data: order,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+exports.getCustomerOrderById = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const customerId = req.user.id;
+
+    if (req.user.role !== "customer") {
+      return res.status(403).json({
+        success: false,
+        message: "Unauthorized. Only customers can fetch customer orders.",
+      });
+    }
+
+    const order = await Order.findOne({
+      where: { id, customerId },
+      include: [
+        {
+          model: Designer,
+          as: "designer",
+          attributes: ["id", "firstName", "lastName", "email"],
+        },
+        {
+          model: Designs,
+          as: "design",
+        },
+      ],
+    });
+
+    if (!order) {
+      return res.status(404).json({
+        success: false,
+        message: "Order not found or does not belong to you",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Order details retrieved successfully.",
+      data: order,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 exports.updateOrderStatus = async (req, res, next) => {
   try {
     const { id } = req.params;

@@ -95,6 +95,34 @@ paths:
       responses:
         '200':
           description: Transaction history loaded successfully. Returns designerName, date, orderId/orderNumber, itemName, amount, and status.
+  /api/v1/designerWallet/withdraw:
+    post:
+      summary: Withdraw funds from designer wallet
+      tags: [designerWallet]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - amount
+              properties:
+                amount:
+                  type: integer
+                  example: 50000
+                  description: "The amount to withdraw in Naira"
+      responses:
+        '200':
+          description: Withdrawal completed successfully
+        '400':
+          description: Insufficient funds or missing bank details
+        '403':
+          description: Unauthorized. Only designers can withdraw funds.
+        '404':
+          description: Wallet not found
   /api/v1/designerWallet/all:
     get:
       summary: Get all designer wallets
