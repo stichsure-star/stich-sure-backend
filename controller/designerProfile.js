@@ -378,6 +378,59 @@ exports.getAllDesignerProfiles = async (req, res, next) => {
   }
 };
 
+exports.getFeaturedDesigners = async (req, res, next) => {
+  try {
+    const designers = await Designer.findAll({
+      attributes: ["id", "firstName", "lastName", "email"],
+      include: [
+        {
+          model: DesignerProfile,
+          as: "profile",
+          required: true,
+          where: {
+            isProfileCompleted: true,
+          },
+        },
+        {
+          model: DesignerWallet,
+          as: "wallet",
+        },
+        {
+          model: Designs,
+          as: "designs",
+        },
+      ],
+      order: [
+        [{ model: DesignerProfile, as: "profile" }, "reliabilityScore", "DESC"],
+        [{ model: DesignerProfile, as: "profile" }, "ratingAverage", "DESC"],
+      ],
+      limit: 3,
+    });
+
+    const data = designers.map((designer) => {
+      const designerData = designer.toJSON();
+      if (designerData.profile) {
+        designerData.profile = {
+          ...sanitizeProfileResponse(designerData.profile),
+          ...getReliabilityTierInfo(designerData.profile.reliabilityScore),
+          totalEarnings: designerData.wallet?.totalEarnings || 0,
+          availableBalance: designerData.wallet?.availableBalance || 0,
+          withdrawn: designerData.wallet?.withdrawn || 0,
+        };
+      }
+      return designerData;
+    });
+
+    res.status(200).json({
+      success: true,
+      message: "Top three featured designers retrieved.",
+      data,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 exports.getDesignerProfile = async (req, res, next) => {
   try {
     const { designerId } = req.params;
@@ -649,7 +702,7 @@ exports.updateDesignerProfile = async (req, res, next) => {
       isProfileCompleted: !!isProfileCompleted,
     });
 
-    // Sync bank details to the designer's wallet
+   
     let wallet = await DesignerWallet.findOne({
       where: { designerId },
     });
