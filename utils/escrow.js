@@ -40,14 +40,17 @@ const releaseOrderEscrowToDesigner = async (orderId) => {
     };
   }
 
-  const amount = Number(successfulPayment.amount || order.amount || 0);
+  const totalAmount = Number(successfulPayment.amount || order.amount || 0);
 
-  if (amount <= 0) {
+  if (totalAmount <= 0) {
     return {
       released: false,
       reason: "Invalid escrow amount",
     };
   }
+
+  const commission = Math.round(totalAmount * 0.10);
+  const netAmount = totalAmount - commission;
 
   let wallet = await DesignerWallet.findOne({
     where: { designerId: order.designerId },
@@ -63,22 +66,25 @@ const releaseOrderEscrowToDesigner = async (orderId) => {
   }
 
   await wallet.update({
-    totalEarnings: Number(wallet.totalEarnings) + amount,
-    availableBalance: Number(wallet.availableBalance) + amount,
+    totalEarnings: Number(wallet.totalEarnings) + netAmount,
+    availableBalance: Number(wallet.availableBalance) + netAmount,
   });
 
   const transaction = await DesignerWalletTransaction.create({
     designerWalletId: wallet.id,
     designerId: order.designerId,
     orderId: order.id,
-    amount,
+    amount: netAmount,
     status: "completed",
     transactionDate: order.completedAt || new Date(),
   });
 
   return {
     released: true,
-    reason: "Escrow released to designer wallet",
+    reason: "Escrow released to designer wallet (10% commission deducted)",
+    totalAmount,
+    commissionDeducted: commission,
+    amountCreditedToDesigner: netAmount,
     transaction,
   };
 };

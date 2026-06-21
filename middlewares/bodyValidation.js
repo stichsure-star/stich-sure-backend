@@ -340,3 +340,14 @@ exports.initializeShipmentPaymentValidator = validateBody(
     deliveryAddress: requiredString("Delivery address", 255),
   })
 );
+
+const withdrawalSchema = Joi.object({
+  amount: Joi.number().positive().integer().required().messages({
+    "any.required": "Withdrawal amount is required",
+    "number.base": "Withdrawal amount must be a number",
+    "number.positive": "Withdrawal amount must be greater than 0",
+    "number.integer": "Withdrawal amount must be an integer",
+  }),
+});
+
+exports.withdrawalValidator = validateBody(withdrawalSchema);

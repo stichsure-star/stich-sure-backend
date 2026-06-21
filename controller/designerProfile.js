@@ -351,6 +351,7 @@ exports.getAllDesignerProfiles = async (req, res, next) => {
           as: "designs",
         },
       ],
+      order: [["createdAt", "DESC"]],
     });
 
     const data = designers.map((designer) => {

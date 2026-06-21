@@ -17,7 +17,7 @@ const {
   removeSavedDesigner,
   getAllCustomers,
   getOneCustomer,
-  updateProfile
+  updateProfile,
 } = require('../controller/customer')
 const { upload } = require('../middlewares/multer')
 const { authentication } = require('../middlewares/authentication')
