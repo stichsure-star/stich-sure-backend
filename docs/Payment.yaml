@@ -199,6 +199,8 @@ paths:
     post:
       summary: Initialize payment for an order including shipping fee
       tags: [payment]
+      security: 
+       - bearerAuth: [] 
       description: >
         Validates sender and receiver addresses, fetches shipping rates,
         selects the cheapest courier, calculates total amount (order amount + shipping fee),

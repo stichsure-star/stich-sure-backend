@@ -4,6 +4,7 @@ const {
   createOrUpdateDesignerProfile,
   createOrUpdateDesignerOnboarding,
   getAllDesignerProfiles,
+  getFeaturedDesigners,
   getDesignerProfile,
   getDesignerDashboardStats,
   getDesignerOrderDashboardStats,
@@ -24,6 +25,7 @@ router.route('/onboarding')
   .post(authentication, upload.single('profilePhoto'), designerOnboardingValidator, createOrUpdateDesignerOnboarding);
 // router.post('/create', authentication, upload.single('profilePhoto'), designerProfileCreateValidator, createOrUpdateDesignerProfile);
 router.get('/getAll', getAllDesignerProfiles);
+router.get('/featured', getFeaturedDesigners);
 router.get('/dashboard-stats', authentication, getDesignerDashboardStats);
 router.get('/getByDesigner/:designerId', getDesignerProfile);
 router.patch('/update', authentication, upload.single('profilePhoto'), designerProfileUpdateValidator, updateDesignerProfile);
