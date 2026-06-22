@@ -36,8 +36,21 @@ const getPagination = (query) => {
 const buildOrderWhere = (req) => {
   const where = {};
 
+  if (req.query.id) {
+    where.id = req.query.id;
+  }
+
+  if (req.query.designerId) {
+    where.designerId = req.query.designerId;
+  }
+
+  if (req.query.customerId) {
+    where.customerId = req.query.customerId;
+  }
+
   if (req.query.status) {
-    where.status = req.query.status;
+    const requestedStatus = req.query.status.toLowerCase();
+    where.status = statusAliases[requestedStatus] || requestedStatus;
   }
 
   if (req.query.search) {
@@ -459,6 +472,98 @@ exports.getAllOrders = async (req, res, next) => {
     return res.status(200).json({
       success: true,
       message: "List of all orders retrieved.",
+      data: rows,
+      pagination: {
+        totalItems: count,
+        totalPages: Math.ceil(count / limit),
+        currentPage: page,
+        pageSize: limit,
+        hasNextPage: page < Math.ceil(count / limit),
+        hasPreviousPage: page > 1,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+exports.getOrdersByDesignerId = async (req, res, next) => {
+  try {
+    const { designerId } = req.params;
+    const { page, limit, offset } = getPagination(req.query);
+    const where = {
+      designerId,
+      ...buildOrderWhere(req),
+    };
+
+    const { count, rows } = await Order.findAndCountAll({
+      where,
+      include: [
+        {
+          model: Customer,
+          as: "customer",
+          attributes: ["id", "firstName", "lastName", "email"],
+        },
+        {
+          model: Designs,
+          as: "design",
+          attributes: ["id", "designTitle", "category", "designImage"],
+        },
+      ],
+      order: [["placedAt", "DESC"]],
+      limit,
+      offset,
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "Designer orders retrieved.",
+      data: rows,
+      pagination: {
+        totalItems: count,
+        totalPages: Math.ceil(count / limit),
+        currentPage: page,
+        pageSize: limit,
+        hasNextPage: page < Math.ceil(count / limit),
+        hasPreviousPage: page > 1,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+exports.getOrdersByCustomerId = async (req, res, next) => {
+  try {
+    const { customerId } = req.params;
+    const { page, limit, offset } = getPagination(req.query);
+    const where = {
+      customerId,
+      ...buildOrderWhere(req),
+    };
+
+    const { count, rows } = await Order.findAndCountAll({
+      where,
+      include: [
+        {
+          model: Designer,
+          as: "designer",
+          attributes: ["id", "firstName", "lastName", "email"],
+        },
+        {
+          model: Designs,
+          as: "design",
+          attributes: ["id", "designTitle", "category", "designImage"],
+        },
+      ],
+      order: [["placedAt", "DESC"]],
+      limit,
+      offset,
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "Customer orders retrieved.",
       data: rows,
       pagination: {
         totalItems: count,
