@@ -57,6 +57,13 @@ paths:
         - bearerAuth: []
       parameters:
         - in: query
+          name: id
+          schema:
+            type: string
+            format: uuid
+          description: "Optional order UUID filter"
+          example: "3270cc4f-e57d-4b93-8ebc-bf1b42e4b314"
+        - in: query
           name: status
           schema:
             type: string
@@ -112,6 +119,52 @@ paths:
             type: integer
             default: 10
           example: 10
+      responses:
+        '200':
+          description: Customer orders loaded successfully
+  /api/v1/orders/designer/list/{designerId}:
+    get:
+      summary: Get all orders for a specific designer by designer ID
+      tags: [orders]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: designerId
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: "The designer UUID"
+        - in: query
+          name: status
+          schema:
+            type: string
+            enum: [new, preparing, ready, completed, cancelled]
+          example: new
+      responses:
+        '200':
+          description: Designer orders loaded successfully
+  /api/v1/orders/customer/list/{customerId}:
+    get:
+      summary: Get all orders for a specific customer by customer ID
+      tags: [orders]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: customerId
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: "The customer UUID"
+        - in: query
+          name: status
+          schema:
+            type: string
+            enum: [new, preparing, ready, completed, cancelled]
+          example: new
       responses:
         '200':
           description: Customer orders loaded successfully
@@ -218,6 +271,28 @@ paths:
       tags: [orders]
       security:
         - bearerAuth: []
+      parameters:
+        - in: query
+          name: designerId
+          schema:
+            type: string
+            format: uuid
+          description: "Filter orders by designer UUID"
+          example: "8c84f246-c61e-475c-82bf-d1992d34b4af"
+        - in: query
+          name: customerId
+          schema:
+            type: string
+            format: uuid
+          description: "Filter orders by customer UUID"
+          example: "8944666b-a40a-4690-97fd-930645fa18a6"
+        - in: query
+          name: status
+          schema:
+            type: string
+            enum: [new, preparing, ready, completed, cancelled]
+          description: "Filter orders by status"
+          example: "new"
       responses:
         '200':
           description: Orders retrieved successfully
