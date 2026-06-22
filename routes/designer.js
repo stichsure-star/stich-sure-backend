@@ -34,7 +34,7 @@ router.post('/verify', verifyEmailValidator, verifyEmail);
 router.post('/resend-otp', resendOtpValidator, resendOTP);
 router.post('/forget-password', forgetPasswordValidator, forgetPassword);
 router.put('/update-password-setting', authentication, updatePasswordValidator, updatePassword)
-router.post('/reset-password', authentication, resetPasswordValidator, resetPassword);
+router.post('/reset-password', resetPasswordValidator, resetPassword);
 router.post('/logout', authentication, logOut);
 router.get('/all-designer', getAllDesigners);
 router.get('/one/:id', getOneDesigner);
