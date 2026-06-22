@@ -2,6 +2,17 @@ const axios = require("axios");
 const { Payment, Order, Designer, Shipment, Customer } = require("../models");
 const { getShippingRates, validateAddress, getPackageCategories, trackShipment,createShipment, fundWallet} = require("../services/shipbubble.service");
 
+const getCheapestCourier = (couriers) =>
+  couriers.reduce((prev, curr) =>
+    Number(prev.total) < Number(curr.total) ? prev : curr
+  );
+
+const getTomorrowDate = () => {
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  return `${tomorrow.getFullYear()}-${String(tomorrow.getMonth() + 1).padStart(2, '0')}-${String(tomorrow.getDate()).padStart(2, '0')}`;
+};
+
 exports.validateAddress = async (req, res) => {
   try {
     const result = await validateAddress(req.body);
@@ -80,133 +91,148 @@ exports.trackOrder = async (req, res) => {
   }
 };
 
-exports.initializePayment = async (req, res, next) => {
+exports.initializePayment  = async (req, res, next) => {
   try {
-    const { orderId, email, deliveryAddress } = req.body;
-
-    console.log("orderId:", orderId);
+    const { orderId, email } = req.body;
 
     const foundOrder = await Order.findByPk(orderId);
-
     if (!foundOrder) {
-      return res.status(404).json({
-        success: false,
-        message: "Order not found",
-      });
+      return res.status(404).json({ success: false, message: "Order not found" });
     }
 
-    const customer = await Customer.findByPk(
-      foundOrder.customerId
-    );
-
+    const customer = await Customer.findByPk(foundOrder.customerId);
     if (!customer) {
-      return res.status(404).json({
-        success: false,
-        message: "Customer not found",
-      });
+      return res.status(404).json({ success: false, message: "Customer not found" });
     }
 
-    const designer = await Designer.findByPk(
-      foundOrder.designerId
-    );
-
+    const designer = await Designer.findByPk(foundOrder.designerId);
     if (!designer) {
-      return res.status(404).json({
-        success: false,
-        message: "Designer not found",
-      });
+      return res.status(404).json({ success: false, message: "Designer not found" });
     }
+console.log("Step 1: Order, customer and designer found");
+const customerAddressResult = await validateAddress({
+  name: `${customer.firstName} ${customer.lastName}`,
+  email: customer.email,
+  phone: customer.phone,
+  address: customer.address,
+});
+console.log('customerAddressResult:', JSON.stringify(customerAddressResult, null, 2));
 
-    console.log("Customer:", {
-      name: `${customer.firstName} ${customer.lastName}`,
-      email: customer.email,
-      phone: customer.phone,
-    });
+const designerAddressResult = await validateAddress({
+  name: `${designer.firstName} ${designer.lastName}`,
+  email: designer.email,
+  phone: designer.phone,
+  address: designer.address,
+});
+    console.log({
+    customerPhone: customer.phone,
+    customerAddress: customer.address,
+    designerPhone: designer.phone,
+    designerAddress: designer.address,
+}); 
+console.log({
+  name: `${customer.firstName} ${customer.lastName}`,
+  email: customer.email,
+  phone: customer.phone,
+  address: customer.address,
+});
+console.log('designerAddressResult:', JSON.stringify(designerAddressResult, null, 2));
+if (customerAddressResult.status === "failed") {
+  return res.status(400).json({
+    success: false,
+    message: customerAddressResult.message,
+  });
+}
 
-    console.log("Designer:", {
-      name: `${designer.firstName} ${designer.lastName}`,
-      email: designer.email,
-      phone: designer.phone,
-    });
+if (designerAddressResult.status === "failed") {
+  return res.status(400).json({
+    success: false,
+    message: designerAddressResult.message,
+  });
+}
 
-    const senderAddressCode = 204283134;
-    const receiverAddressCode = 220717646;
-    const tomorrow = new Date();
-  tomorrow.setDate(tomorrow.getDate() + 1);
-const pickup_date = `${tomorrow.getFullYear()}-${String(tomorrow.getMonth() + 1).padStart(2, '0')}-${String(tomorrow.getDate()).padStart(2, '0')}`;
-    const rates = await getShippingRates({
-      sender_address_code: senderAddressCode,
-      reciever_address_code: receiverAddressCode,
-      pickup_date,
-      category_id: 74794423,
-      package_items: [
-        {
-          name: "Order Package",
-          description: "Fashion Item",
-          unit_weight: "0.5",
-          unit_amount: String(foundOrder.amount || 0),
-          quantity: "1",
-        },
-      ],
-      package_dimension: {
-        length: 20,
-        width: 15,
-        height: 10,
-      },
-    });
-console.log('rates response:', JSON.stringify(rates, null, 2));
-    console.log(
-      "Shipbubble Rates:",
-      JSON.stringify(rates, null, 2)
+const customerAddressCode = customerAddressResult.data.address_code;
+const designerAddressCode = designerAddressResult.data.address_code;
+
+    const pickup_date = getTomorrowDate();
+
+   const packagePayload = (sender, receiver) => ({
+  sender_address_code: sender,
+  reciever_address_code: receiver,
+  pickup_date,
+  category_id: 74794423,
+  package_items: [
+    {
+      name: "Order Package",
+      description: "Fashion Item",
+      unit_weight: "0.5",
+      unit_amount: String(foundOrder.amount || 0),
+      quantity: "1",
+    },
+  ],
+  package_dimension: {
+    length: 20,
+    width: 15,
+    height: 10,
+  },
+});
+console.log(
+  JSON.stringify(
+    packagePayload(customerAddressCode, designerAddressCode),
+    null,
+    2
+  )
+);
+
+ console.log("Step 2: Fetching pickup rates...");
+    const pickupRates = await getShippingRates(
+      packagePayload(customerAddressCode, designerAddressCode)
     );
 
-    if (
-      rates.status === "failed" ||
-      !rates.data ||
-      !rates.data.couriers ||
-      rates.data.couriers.length === 0
-    ) {
+    if (pickupRates.status === "failed" || !pickupRates.data?.couriers?.length) {
       return res.status(400).json({
         success: false,
-        message:
-          rates.message ||
-          "No courier available for this shipment",
+        message: pickupRates.message || "No courier available for pickup",
       });
     }
+console.log("Pickup Rates:", pickupRates);
 
-    const couriers = rates.data.couriers;
-
-    const cheapestCourier = couriers.reduce((prev, curr) =>
-      Number(prev.total) < Number(curr.total)
-        ? prev
-        : curr
+console.log("Step 3: Fetching delivery rates...");
+    const deliveryRates = await getShippingRates(
+      packagePayload(designerAddressCode, customerAddressCode)
     );
 
-    const shippingFee = Number(
-      cheapestCourier.total
-    );
+    if (deliveryRates.status === "failed" || !deliveryRates.data?.couriers?.length) {
+      return res.status(400).json({
+        success: false,
+        message: deliveryRates.message || "No courier available for delivery",
+      });
+    }
+    console.log("Delivery Rates:", deliveryRates);
+    const cheapestPickup = getCheapestCourier(pickupRates.data.couriers);
+    const cheapestDelivery = getCheapestCourier(deliveryRates.data.couriers);
 
-    const orderAmount = Number(
-      foundOrder.amount || 0
-    );
+    const pickupFee = Number(cheapestPickup.total);
+    const deliveryFee = Number(cheapestDelivery.total);
+    const shippingFee = pickupFee + deliveryFee; 
+    const orderAmount = Number(foundOrder.amount || 0);
 
-    const totalAmount =
-      orderAmount + shippingFee;
+    const totalAmount = orderAmount + shippingFee;
 
-    console.log({
-      orderAmount,
-      shippingFee,
-      totalAmount,
-    });
+    console.log({ orderAmount, pickupFee, deliveryFee, shippingFee, totalAmount });
 
+console.log("Step 4: Initializing payment...");
+console.log({
+  amount: totalAmount,
+  email: customer.email,
+  key: process.env.KORA_SECRET_KEY?.slice(0, 10) + "..."
+});
     const paymentResponse = await axios.post(
       "https://api.korapay.com/merchant/api/v1/charges/initialize",
       {
         amount: totalAmount,
         currency: "NGN",
-        customer: {
-          email,
-        },
+        customer: { email },
         reference: `PAY_${Date.now()}`,
       },
       {
@@ -225,67 +251,55 @@ console.log('rates response:', JSON.stringify(rates, null, 2));
       shippingFee,
       currency: "NGN",
       paymentProvider: "korapay",
-      transactionReference:
-        paymentResponse.data.data.reference,
+      transactionReference: paymentResponse.data.data.reference,
       status: "pending",
-      requestToken: rates.data.request_token,
-      courierId: String(
-        cheapestCourier.courier_id
-      ),
-      serviceCode:
-        cheapestCourier.service_code,
+
+      pickupRequestToken: pickupRates.data.request_token,
+      pickupCourierId: String(cheapestPickup.courier_id),
+      pickupServiceCode: cheapestPickup.service_code,
+      pickupFee,
+
+      deliveryRequestToken: deliveryRates.data.request_token,
+      deliveryCourierId: String(cheapestDelivery.courier_id),
+      deliveryServiceCode: cheapestDelivery.service_code,
+      deliveryFee,
     });
 
     return res.status(200).json({
       success: true,
-      message:
-        "Payment initialized successfully",
+      message: "Payment initialized successfully",
+      orderAmount,
+      pickupFee,
+      deliveryFee,
       shippingFee,
       totalAmount,
-      checkoutUrl:
-        paymentResponse.data.data.checkout_url,
+      checkoutUrl: paymentResponse.data.data.checkout_url,
       payment,
     });
   } catch (error) {
-    console.log(
-      "Initialize Payment Error:",
-      error.response?.data || error.message
-    );
-
+    console.log("Initialize Payment Error:", error.response?.data || error.message);
     return res.status(500).json({
-      success: false,
       message: "Failed to initialize payment",
-      error:
-        error.response?.data ||
-        error.message,
     });
+    console.log(error.response?.status);
+console.log(error.response?.data);
   }
 };
 
-exports.verifyPayment = async (req, res, next) => {
+exports.verifyPayment =  async (req, res, next) => {
   try {
     const { reference } = req.params;
 
     const response = await axios.get(
       `https://api.korapay.com/merchant/api/v1/charges/${reference}`,
-      {
-        headers: {
-          Authorization: `Bearer ${process.env.KORA_SECRET_KEY}`,
-        },
-      }
+      { headers: { Authorization: `Bearer ${process.env.KORA_SECRET_KEY}` } }
     );
 
     const paymentData = response.data.data;
 
-    const payment = await Payment.findOne({
-      where: { transactionReference: reference },
-    });
-
+    const payment = await Payment.findOne({ where: { transactionReference: reference } });
     if (!payment) {
-      return res.status(404).json({
-        success: false,
-        message: "Payment record not found",
-      });
+      return res.status(404).json({ success: false, message: "Payment record not found" });
     }
 
     if (payment.status === "success") {
@@ -305,47 +319,125 @@ exports.verifyPayment = async (req, res, next) => {
       });
     }
 
-    const shipmentResult = await createShipment({
-      request_token: payment.requestToken,
-      courier_id: payment.courierId,
-      service_code: payment.serviceCode,
+    const pickupShipmentResult = await createShipment({
+      request_token: payment.pickupRequestToken,
+      courier_id: payment.pickupCourierId,
+      service_code: payment.pickupServiceCode,
     });
 
-    await payment.update({ status: "success" ,
-      paidAt: Date.now(),
-      reference: transactionReference
+    await payment.update({
+      status: "success",
+      paidAt: new Date(),
+      pickupShipmentCreated: true,
     });
-    await Order.update(
-      { status: "paid" },
-      { where: { id: payment.orderId } }
-    );
 
-    const courier = shipmentResult.data?.courier;
+    await Order.update({ status: "paid" }, { where: { id: payment.orderId } });
+
+    const courier = pickupShipmentResult.data?.courier;
     await Shipment.create({
       orderId: payment.orderId,
-      trackingCode: courier?.tracking_code,
-      trackingUrl: shipmentResult.data?.tracking_url,
+      type: "pickup",
+      trackingCode: pickupShipmentResult.data?.order_id,
+      trackingUrl: pickupShipmentResult.data?.tracking_url,
       courier: courier?.name,
-      status: shipmentResult.data?.status,
-      shippingFee: shipmentResult.data?.payment?.shipping_fee,
-      currency: shipmentResult.data?.payment?.currency,
+      status: pickupShipmentResult.data?.status,
+      shippingFee: pickupShipmentResult.data?.payment?.shipping_fee,
+      currency: pickupShipmentResult.data?.payment?.currency,
     });
 
     return res.status(200).json({
       success: true,
-      message: "Payment verified and shipment created successfully",
+      message: "Payment verified and pickup shipment created successfully",
       payment,
-      shipment: shipmentResult.data,
+      pickupShipment: pickupShipmentResult.data,
     });
-    
   } catch (error) {
     console.log(error.message);
-    return res.status(500).json({ 
-      message: 'Verification failed'
+    return res.status(500).json({ message: "Verification failed" });
+  }
+},
+exports.createDeliveryShipment= async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    const designerId = req.user.id; 
+
+    const foundOrder = await Order.findByPk(orderId);
+    if (!foundOrder) {
+      return res.status(404).json({
+        success: false,
+        message: "Order not found",
+      });
+    }
+
+   
+    if (foundOrder.designerId !== designerId) {
+      return res.status(403).json({
+        success: false,
+        message: "Only the assigned designer can create the delivery shipment",
+      });
+    }
+
+    const payment = await Payment.findOne({
+      where: { orderId, status: "success" },
+    });
+
+    if (!payment) {
+      return res.status(404).json({
+        success: false,
+        message: "No successful payment found for this order",
+      });
+    }
+
+    if (payment.deliveryShipmentCreated) {
+      return res.status(400).json({
+        success: false,
+        message: "Delivery shipment has already been created for this order",
+      });
+    }
+
+    const deliveryResult = await createShipment({
+      request_token: payment.deliveryRequestToken,
+      courier_id: payment.deliveryCourierId,
+      service_code: payment.deliveryServiceCode,
+    });
+
+    console.log("createDeliveryShipment result:", JSON.stringify(deliveryResult, null, 2));
+
+    if (deliveryResult.status === "failed") {
+      return res.status(400).json({
+        success: false,
+        message: deliveryResult.message || "Failed to create delivery shipment",
+      });
+    }
+
+    await payment.update({ deliveryShipmentCreated: true });
+
+    const courier = deliveryResult.data?.courier;
+    const shipment = await Shipment.create({
+      orderId: payment.orderId,
+      type: "delivery",
+      trackingCode: deliveryResult.data?.order_id,
+      trackingUrl: deliveryResult.data?.tracking_url,
+      courier: courier?.name,
+      status: deliveryResult.data?.status,
+      shippingFee: deliveryResult.data?.payment?.shipping_fee,
+      currency: deliveryResult.data?.payment?.currency,
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "Delivery shipment created successfully",
+      shipment,
+      data: deliveryResult.data,
+    });
+  } catch (error) {
+    console.log(error.message);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to create delivery shipment",
     });
   }
-};
-
+},
 exports.fundWallet = async (req, res) => {
   try {
     const { amount } = req.body;

@@ -62,7 +62,7 @@ paths:
               type: object
               required:
                 - sender_address_code
-                - reciever_address_code
+                - receiver_address_code
                 - pickup_date
                 - category_id
                 - package_items
@@ -214,21 +214,16 @@ paths:
               required:
                 - orderId
                 - email
-                - deliveryAddress
               properties:
                 orderId:
                   type: string
                   format: uuid
-                  example: "30b40a18-b752-46aa-aee4-63c1a9f62e40"
+                  example: "0a587e7c-a36b-4036-932b-60405e6f7a1d"
                   description: "ID of the existing order in the database"
                 email:
                   type: string
                   example: "customer@example.com"
                   description: "Customer email for Korapay payment"
-                deliveryAddress:
-                  type: string
-                  example: "45 Adeola Odeku Street, Victoria Island, Lagos State, Nigeria"
-                  description: "Customer delivery address for Shipbubble"
       responses:
         '200':
           description: Payment initialized successfully
