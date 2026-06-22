@@ -267,26 +267,26 @@ exports.withdrawFunds = async (req, res, next) => {
       });
     }
 
-    //withdrawal process for designer
+    
     const fee = 100; // Plartform FEE
     const netReceiveAmount = withdrawAmount - fee;
 
-    // Deduct from available balance, add to withdrawn
+    
     const updatedWallet = await wallet.update({
       availableBalance: availableBalance - withdrawAmount,
       withdrawn: Number(wallet.withdrawn || 0) + withdrawAmount,
     });
 
-    // Generate a unique placeholder UUID for orderId to satisfy the allowNull: false and unique: true constraint
+    
     const crypto = require("crypto");
     const placeholderOrderId = crypto.randomUUID(); 
 
-    // Create a transaction 
+     
     const transaction = await DesignerWalletTransaction.create({
       designerWalletId: wallet.id,
       designerId,
-      orderId: placeholderOrderId, // dummy order id to bypass schema constraint
-      amount: -withdrawAmount,      // negative amount representing a debit
+      orderId: placeholderOrderId, 
+      amount: -withdrawAmount,      
       status: "completed",
       transactionDate: new Date(),
     });
