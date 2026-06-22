@@ -6,27 +6,39 @@ exports.validateAddress = async (payload) => {
     headers: {
       Authorization: `Bearer ${process.env.SHIPBUBBLE_TEST_KEY}`,
       'Content-Type': 'application/json',
+      
     },
     body: JSON.stringify(payload),
   });
+   const data = await res.json();
+  console.log('validateAddress response:', JSON.stringify(data, null, 2));
+  return data;
   return res.json();
 };
 
 exports.getShippingRates = async (payload) => {
-  const res = await fetch(`${process.env.SHIPBUBBLE_BASE_URL}/shipping/fetch_rates`, {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${process.env.SHIPBUBBLE_TEST_KEY}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(payload),
-  });
-  return res.json();
-    const data = await res.json();
-  console.log('getShippingRates response:', JSON.stringify(data, null, 2));
+  const res = await fetch(
+    `${process.env.SHIPBUBBLE_BASE_URL}/shipping/fetch_rates`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${process.env.SHIPBUBBLE_TEST_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    }
+  );
+
+  const data = await res.json();
+
+  console.log("Payload:");
+  console.log(JSON.stringify(payload, null, 2));
+
+  console.log("Shipbubble Response:");
+  console.log(JSON.stringify(data, null, 2));
+
   return data;
 };
-
 exports.createShipment = async (payload) => {
   const res = await fetch(`${process.env.SHIPBUBBLE_BASE_URL}/shipping/labels`, {
     method: 'POST',
