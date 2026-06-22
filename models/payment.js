@@ -33,7 +33,6 @@ module.exports = (sequelize, DataTypes) => {
       defaultValue: DataTypes.UUIDV4
     },
     customerId: DataTypes.UUID,
-    designerId: DataTypes.UUID,
     orderId: DataTypes.UUID,
     reference: DataTypes.STRING,
     status: {
@@ -47,8 +46,30 @@ module.exports = (sequelize, DataTypes) => {
     currency: DataTypes.STRING,
     paymentProvider: DataTypes.STRING,
     transactionReference: DataTypes.STRING,
-    paidAt: DataTypes.DATE
-  }, {
+    paidAt: DataTypes.DATE,
+      pickupRequestToken: { 
+    type: DataTypes.STRING
+  }, 
+pickupCourierId: {
+  type:DataTypes.STRING
+},
+pickupServiceCode: DataTypes.STRING,
+pickupFee: DataTypes.DECIMAL,
+deliveryRequestToken: DataTypes.STRING,
+deliveryCourierId: DataTypes.STRING,
+deliveryServiceCode: DataTypes.STRING,
+deliveryFee: DataTypes.DECIMAL,
+shippingFee: DataTypes.DECIMAL,
+pickupShipmentCreated: { 
+  type: DataTypes.BOOLEAN, 
+  defaultValue: false 
+},
+deliveryShipmentCreated: 
+{ type: DataTypes.BOOLEAN, 
+  defaultValue: false 
+}
+  }, 
+{
     sequelize,
     modelName: 'Payment',
   });
