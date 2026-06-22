@@ -280,8 +280,6 @@ console.log({
     console.log("Initialize Payment Error:", error.response?.data || error.message);
     return res.status(500).json({
       message: "Failed to initialize payment",
-      success: false,
-      error: error.response?.data || error.message,
     });
     console.log(error.response?.status);
 console.log(error.response?.data);
