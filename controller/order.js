@@ -122,7 +122,7 @@ exports.createOrder = async (req, res, next) => {
 
     const order = await Order.create({
       orderNumber: generateOrderNumber(),
-      requestId: requestId || null,
+      requestId: requestId,
       customerId,
       designerId: resolvedDesignerId,
       designId: designId || null,
