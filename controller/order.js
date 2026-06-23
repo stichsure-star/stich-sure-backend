@@ -225,12 +225,12 @@ exports.getOrderById = async (req, res, next) => {
         {
           model: Customer,
           as: "customer",
-          attributes: ["id", "firstName", "lastName", "email", "phoneNumber", "address"],
+          attributes: ["id", "firstName", "lastName", "email", "phone", "address"],
         },
         {
           model: Designer,
           as: "designer",
-          attributes: ["id", "firstName", "lastName", "email", "phoneNumber", "address"],
+          attributes: ["id", "firstName", "lastName", "email", "phone", "address"],
         },
         {
           model: Designs,
