@@ -1,8 +1,15 @@
 const axios = require("axios");
 const crypto = require("crypto");
 const { Payment, Order, Designer, Shipment, Customer } = require("../models");
-const { getShippingRates, validateAddress, getPackageCategories, trackShipment, createShipment, fundWallet } = require("../services/shipbubble.service");
-
+const { handleTransferWebhook } = require("../utils/withdrawal");
+const {
+  getShippingRates,
+  validateAddress,
+  getPackageCategories,
+  trackShipment,
+  createShipment,
+  fundWallet
+} = require("../services/shipbubble.service");
 const getCheapestCourier = (couriers) =>
   couriers.reduce((prev, curr) =>
     Number(prev.total) < Number(curr.total) ? prev : curr
@@ -270,27 +277,57 @@ exports.initializePayment = async (req, res, next) => {
 
     console.log({ orderAmount, pickupFee, deliveryFee, shippingFee, totalAmount });
 
-    console.log("Step 4: Initializing payment...");
-    console.log({
-      amount: totalAmount,
-      email: customer.email,
-      key: process.env.KORA_SECRET_KEY?.slice(0, 10) + "..."
-    });
-    const paymentResponse = await axios.post(
-      "https://api.korapay.com/merchant/api/v1/charges/initialize",
-      {
-        amount: totalAmount,
-        currency: "NGN",
-        customer: { email },
-        reference: `PAY_${Date.now()}`,
-      },
-      {
-        headers: {
-          Authorization: `Bearer ${process.env.KORA_SECRET_KEY}`,
-          "Content-Type": "application/json",
-        },
-      }
-    );
+console.log("Step 4: Initializing payment...");
+console.log({
+  amount: totalAmount,
+  email: customer.email,
+  key: process.env.KORA_SECRET_KEY?.slice(0, 10) + "..."
+});
+   console.log("Step 4: Initializing payment...");
+
+const reference = `PAY_${Date.now()}`;
+
+const paymentResponse = await axios.post(
+  "https://api.korapay.com/merchant/api/v1/charges/initialize",
+  {
+    amount: totalAmount,
+    currency: "NGN",
+    customer: { email },
+
+    reference,
+
+    redirect_url: "https://stich-sure-frontend.vercel.app/checkoutpayment",
+  },
+  {
+    headers: {
+      Authorization: `Bearer ${process.env.KORA_SECRET_KEY}`,
+      "Content-Type": "application/json",
+    },
+  }
+);
+
+const payment = await Payment.create({
+  orderId: foundOrder.id,
+  customerId: foundOrder.customerId,
+  designerId: foundOrder.designerId,
+
+  amount: totalAmount,
+  shippingFee,
+
+  reference,
+  transactionReference: reference,
+
+  currency: "NGN",
+  paymentProvider: "korapay",
+  totalAmount: totalAmount,        
+  designAmount: orderAmount,  
+  status: "pending",
+  escrowStatus: null,
+
+  pickupRequestToken: pickupRates.data.request_token,
+  pickupCourierId: String(cheapestPickup.courier_id),
+  pickupServiceCode: cheapestPickup.service_code,
+  pickupFee,
 
     const payment = await Payment.create({
       orderId: foundOrder.id,

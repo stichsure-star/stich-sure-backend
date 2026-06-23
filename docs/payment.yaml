@@ -264,7 +264,7 @@ paths:
           description: Payment record not found
         '500':
           description: Verification failed
-  /api/v1/payment/webhook:
+  /api/v1/shipment/payment/webhook:
     post:
       summary: Webhook endpoint
       tags: [payment]
