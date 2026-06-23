@@ -265,6 +265,8 @@ const payment = await Payment.create({
 
   currency: "NGN",
   paymentProvider: "korapay",
+  totalAmount: totalAmount,        
+  designAmount: orderAmount,  
   status: "pending",
   escrowStatus: null,
 
