@@ -1,7 +1,7 @@
 const axios = require("axios");
 const crypto = require("crypto");
 const { Payment, Order, Designer, Shipment, Customer } = require("../models");
-const { handleTransferWebhook } = require("../utils/withdrawal");
+const { getShippingRates, validateAddress, getPackageCategories, trackShipment, createShipment, fundWallet } = require("../services/shipbubble.service");
 
 const getCheapestCourier = (couriers) =>
   couriers.reduce((prev, curr) =>
@@ -104,21 +104,21 @@ exports.createOrder = async (req, res) => {
     const result = await createShipment(req.body);
     console.log('createShipment result:', JSON.stringify(result, null, 2));
 
-const courier = result.data?.courier;
+    const courier = result.data?.courier;
 
-const shipmentData = {
-  orderId: result.data?.order_id,
-  trackingCode: result.data?.order_id,
-  trackingUrl: result.data?.tracking_url,
-  courier: courier?.name,
-  status: result.data?.status,
-  shippingFee: result.data?.payment?.shipping_fee,
-  currency: result.data?.payment?.currency,
-};
+    const shipmentData = {
+      orderId: result.data?.order_id,
+      trackingCode: result.data?.order_id,
+      trackingUrl: result.data?.tracking_url,
+      courier: courier?.name,
+      status: result.data?.status,
+      shippingFee: result.data?.payment?.shipping_fee,
+      currency: result.data?.payment?.currency,
+    };
 
-console.log('Shipment data to save:', JSON.stringify(shipmentData, null, 2));
+    console.log('Shipment data to save:', JSON.stringify(shipmentData, null, 2));
 
-const shipment = await Shipment.create(shipmentData);
+    const shipment = await Shipment.create(shipmentData);
   } catch (error) {
     console.log(error.message);
     return res.status(500).json({
@@ -140,7 +140,7 @@ exports.trackOrder = async (req, res) => {
   }
 };
 
-exports.initializePayment  = async (req, res, next) => {
+exports.initializePayment = async (req, res, next) => {
   try {
     const { orderId, email } = req.body;
 
@@ -158,82 +158,82 @@ exports.initializePayment  = async (req, res, next) => {
     if (!designer) {
       return res.status(404).json({ success: false, message: "Designer not found" });
     }
-console.log("Step 1: Order, customer and designer found");
-const customerAddressResult = await validateAddress({
-  name: `${customer.firstName} ${customer.lastName}`,
-  email: customer.email,
-  phone: customer.phone,
-  address: customer.address,
-});
-console.log('customerAddressResult:', JSON.stringify(customerAddressResult, null, 2));
+    console.log("Step 1: Order, customer and designer found");
+    const customerAddressResult = await validateAddress({
+      name: `${customer.firstName} ${customer.lastName}`,
+      email: customer.email,
+      phone: customer.phone,
+      address: customer.address,
+    });
+    console.log('customerAddressResult:', JSON.stringify(customerAddressResult, null, 2));
 
-const designerAddressResult = await validateAddress({
-  name: `${designer.firstName} ${designer.lastName}`,
-  email: designer.email,
-  phone: designer.phone,
-  address: designer.address,
-});
+    const designerAddressResult = await validateAddress({
+      name: `${designer.firstName} ${designer.lastName}`,
+      email: designer.email,
+      phone: designer.phone,
+      address: designer.address,
+    });
     console.log({
-    customerPhone: customer.phone,
-    customerAddress: customer.address,
-    designerPhone: designer.phone,
-    designerAddress: designer.address,
-}); 
-console.log({
-  name: `${customer.firstName} ${customer.lastName}`,
-  email: customer.email,
-  phone: customer.phone,
-  address: customer.address,
-});
-console.log('designerAddressResult:', JSON.stringify(designerAddressResult, null, 2));
-if (customerAddressResult.status === "failed") {
-  return res.status(400).json({
-    success: false,
-    message: customerAddressResult.message,
-  });
-}
+      customerPhone: customer.phone,
+      customerAddress: customer.address,
+      designerPhone: designer.phone,
+      designerAddress: designer.address,
+    });
+    console.log({
+      name: `${customer.firstName} ${customer.lastName}`,
+      email: customer.email,
+      phone: customer.phone,
+      address: customer.address,
+    });
+    console.log('designerAddressResult:', JSON.stringify(designerAddressResult, null, 2));
+    if (customerAddressResult.status === "failed") {
+      return res.status(400).json({
+        success: false,
+        message: customerAddressResult.message,
+      });
+    }
 
-if (designerAddressResult.status === "failed") {
-  return res.status(400).json({
-    success: false,
-    message: designerAddressResult.message,
-  });
-}
+    if (designerAddressResult.status === "failed") {
+      return res.status(400).json({
+        success: false,
+        message: designerAddressResult.message,
+      });
+    }
 
-const customerAddressCode = customerAddressResult.data.address_code;
-const designerAddressCode = designerAddressResult.data.address_code;
+    const customerAddressCode = customerAddressResult.data.address_code;
+    const designerAddressCode = designerAddressResult.data.address_code;
 
     const pickup_date = getTomorrowDate();
 
-   const packagePayload = (sender, receiver) => ({
-  sender_address_code: sender,
-  reciever_address_code: receiver,
-  pickup_date,
-  category_id: 74794423,
-  package_items: [
-    {
-      name: "Order Package",
-      description: "Fashion Item",
-      unit_weight: "0.5",
-      unit_amount: String(foundOrder.amount || 0),
-      quantity: "1",
-    },
-  ],
-  package_dimension: {
-    length: 20,
-    width: 15,
-    height: 10,
-  },
-});
-console.log(
-  JSON.stringify(
-    packagePayload(customerAddressCode, designerAddressCode),
-    null,
-    2
-  )
-);
+    const packagePayload = (sender, receiver) => ({
+      sender_address_code: sender,
+      reciever_address_code: receiver,
+      pickup_date,
+      category_id: 74794423,
+      package_items: [
+        {
+          name: "Order Package",
+          description: "Fashion Item",
+          unit_weight: "0.5",
+          unit_amount: String(foundOrder.amount || 0),
+          quantity: "1",
+        },
+      ],
+      package_dimension: {
+        length: 20,
+        width: 15,
+        height: 10,
+      },
+    });
+    console.log(
+      JSON.stringify(
+        packagePayload(customerAddressCode, designerAddressCode),
+        null,
+        2
+      )
+    );
 
- console.log("Step 2: Fetching pickup rates...");
+    console.log("Step 2: Fetching pickup rates...");
     const pickupRates = await getShippingRates(
       packagePayload(customerAddressCode, designerAddressCode)
     );
@@ -244,9 +244,9 @@ console.log(
         message: pickupRates.message || "No courier available for pickup",
       });
     }
-console.log("Pickup Rates:", pickupRates);
+    console.log("Pickup Rates:", pickupRates);
 
-console.log("Step 3: Fetching delivery rates...");
+    console.log("Step 3: Fetching delivery rates...");
     const deliveryRates = await getShippingRates(
       packagePayload(designerAddressCode, customerAddressCode)
     );
@@ -263,19 +263,19 @@ console.log("Step 3: Fetching delivery rates...");
 
     const pickupFee = Number(cheapestPickup.total);
     const deliveryFee = Number(cheapestDelivery.total);
-    const shippingFee = pickupFee + deliveryFee; 
+    const shippingFee = pickupFee + deliveryFee;
     const orderAmount = Number(foundOrder.amount || 0);
 
     const totalAmount = orderAmount + shippingFee;
 
     console.log({ orderAmount, pickupFee, deliveryFee, shippingFee, totalAmount });
 
-console.log("Step 4: Initializing payment...");
-console.log({
-  amount: totalAmount,
-  email: customer.email,
-  key: process.env.KORA_SECRET_KEY?.slice(0, 10) + "..."
-});
+    console.log("Step 4: Initializing payment...");
+    console.log({
+      amount: totalAmount,
+      email: customer.email,
+      key: process.env.KORA_SECRET_KEY?.slice(0, 10) + "..."
+    });
     const paymentResponse = await axios.post(
       "https://api.korapay.com/merchant/api/v1/charges/initialize",
       {
@@ -331,11 +331,11 @@ console.log({
       message: "Failed to initialize payment",
     });
     console.log(error.response?.status);
-console.log(error.response?.data);
+    console.log(error.response?.data);
   }
 };
 
-exports.verifyPayment =  async (req, res, next) => {
+exports.verifyPayment = async (req, res, next) => {
   try {
     const { reference } = req.params;
 
@@ -382,68 +382,68 @@ exports.verifyPayment =  async (req, res, next) => {
   }
 },
 
-exports.korapayWebhook = async (req, res) => {
-  try {
-    const webhookSecret = getKorapayWebhookSecret();
-    const signature = req.headers["x-korapay-signature"];
-    if (!webhookSecret || !signature) {
-      return res.status(200).json({ received: true });
-    }
-
-    const raw = req.rawBody ? req.rawBody.toString("utf8") : null;
-    const payload = raw ? JSON.parse(raw) : req.body;
-    const data = payload?.data;
-    if (!data) {
-      return res.status(200).json({ received: true });
-    }
-
-    const expected = crypto
-      .createHmac("sha256", webhookSecret)
-      .update(JSON.stringify(data))
-      .digest("hex");
-
-    if (!safeTimingEqualHex(expected, signature)) {
-      return res.status(200).json({ received: true });
-    }
-
-    const reference =
-      data.reference ||
-      data.transaction_reference ||
-      data.transactionReference;
-
-    if (!reference) {
-      return res.status(200).json({ received: true });
-    }
-
-    const payment = await Payment.findOne({
-      where: { transactionReference: reference },
-    });
-    if (!payment) {
-      return res.status(200).json({ received: true });
-    }
-
-    if (data.status !== "success") {
-      if (payment.status !== "failed") {
-        await payment.update({ status: "failed" });
+  exports.korapayWebhook = async (req, res) => {
+    try {
+      const webhookSecret = getKorapayWebhookSecret();
+      const signature = req.headers["x-korapay-signature"];
+      if (!webhookSecret || !signature) {
+        return res.status(200).json({ received: true });
       }
-      return res.status(200).json({ received: true });
-    }
 
-    if (payment.status === "success" && payment.pickupShipmentCreated) {
-      return res.status(200).json({ received: true });
-    }
+      const raw = req.rawBody ? req.rawBody.toString("utf8") : null;
+      const payload = raw ? JSON.parse(raw) : req.body;
+      const data = payload?.data;
+      if (!data) {
+        return res.status(200).json({ received: true });
+      }
 
-    await processSuccessfulPayment(payment);
-    return res.status(200).json({ received: true });
-  } catch (error) {
-    console.log("Korapay webhook error:", error.message);
-    return res.status(500).json({ received: true });
-  }
-};
-exports.createDeliveryShipment= async (req, res) => {
+      const expected = crypto
+        .createHmac("sha256", webhookSecret)
+        .update(JSON.stringify(data))
+        .digest("hex");
+
+      if (!safeTimingEqualHex(expected, signature)) {
+        return res.status(200).json({ received: true });
+      }
+
+      const reference =
+        data.reference ||
+        data.transaction_reference ||
+        data.transactionReference;
+
+      if (!reference) {
+        return res.status(200).json({ received: true });
+      }
+
+      const payment = await Payment.findOne({
+        where: { transactionReference: reference },
+      });
+      if (!payment) {
+        return res.status(200).json({ received: true });
+      }
+
+      if (data.status !== "success") {
+        if (payment.status !== "failed") {
+          await payment.update({ status: "failed" });
+        }
+        return res.status(200).json({ received: true });
+      }
+
+      if (payment.status === "success" && payment.pickupShipmentCreated) {
+        return res.status(200).json({ received: true });
+      }
+
+      await processSuccessfulPayment(payment);
+      return res.status(200).json({ received: true });
+    } catch (error) {
+      console.log("Korapay webhook error:", error.message);
+      return res.status(500).json({ received: true });
+    }
+  };
+exports.createDeliveryShipment = async (req, res) => {
   try {
     const { orderId } = req.params;
-    const designerId = req.user.id; 
+    const designerId = req.user.id;
 
     const foundOrder = await Order.findByPk(orderId);
     if (!foundOrder) {
@@ -453,7 +453,7 @@ exports.createDeliveryShipment= async (req, res) => {
       });
     }
 
-   
+
     if (foundOrder.designerId !== designerId) {
       return res.status(403).json({
         success: false,
@@ -522,15 +522,15 @@ exports.createDeliveryShipment= async (req, res) => {
     });
   }
 },
-exports.fundWallet = async (req, res) => {
-  try {
-    const { amount } = req.body;
-    const result = await fundWallet(amount);
-    res.json(result);
-  } catch (error) {
-    console.log(error.message);
-    return res.status(500).json({
-      message: 'Failed to fund wallet'
-    });
-  }
-};
+  exports.fundWallet = async (req, res) => {
+    try {
+      const { amount } = req.body;
+      const result = await fundWallet(amount);
+      res.json(result);
+    } catch (error) {
+      console.log(error.message);
+      return res.status(500).json({
+        message: 'Failed to fund wallet'
+      });
+    }
+  };
