@@ -53,12 +53,25 @@ exports.fetchRates = async (req, res) => {
 exports.createOrder = async (req, res) => {
   try {
     const result = await createShipment(req.body);
-    console.log('createShipment result:', JSON.stringify(result, null, 2));
 
-const courier = result.data?.courier;
+    console.log(
+      "createShipment result:",
+      JSON.stringify(result, null, 2)
+    );
 
-const shipmentData = {
-  orderId: result.data?.order_id,
+    if (result.status === "failed") {
+      return res.status(400).json({
+        success: false,
+        message: result.message,
+        errors: result.errors || [],
+      });
+    }
+
+    const courier = result.data?.courier;
+
+   const shipmentData = {
+  orderId: req.body.orderId,
+  shipbubbleOrderId: result.data?.order_id, 
   trackingCode: result.data?.order_id,
   trackingUrl: result.data?.tracking_url,
   courier: courier?.name,
@@ -67,13 +80,27 @@ const shipmentData = {
   currency: result.data?.payment?.currency,
 };
 
-console.log('Shipment data to save:', JSON.stringify(shipmentData, null, 2));
+    console.log(
+      "Shipment data to save:",
+      JSON.stringify(shipmentData, null, 2)
+    );
 
-const shipment = await Shipment.create(shipmentData);
+    const shipment = await Shipment.create(shipmentData);
+
+    return res.status(201).json({
+      success: true,
+      message: "Shipment created successfully",
+      shipment,
+      data: result.data,
+    });
+
   } catch (error) {
-    console.log(error.message);
+    console.log(error.response?.data || error.message);
+
     return res.status(500).json({
-      message: 'Failed to create shipment'
+      success: false,
+      message: "Failed to create shipment",
+      error: error.response?.data || error.message,
     });
   }
 };
@@ -309,7 +336,6 @@ const payment = await Payment.create({
     request_token: pickupRates.data.request_token,
     courier_id: cheapestPickup.courier_id,
     service_code: cheapestPickup.service_code,
-    insurance_code: cheapestPickup.insurance_code ?? null,
     is_cod_label: cheapestPickup.is_cod_label ?? false,
   },
 
@@ -317,7 +343,6 @@ const payment = await Payment.create({
     request_token: deliveryRates.data.request_token,
     courier_id: cheapestDelivery.courier_id,
     service_code: cheapestDelivery.service_code,
-    insurance_code: cheapestDelivery.insurance_code ?? null,
     is_cod_label: cheapestDelivery.is_cod_label ?? false,
   },
 });
