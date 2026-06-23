@@ -49,6 +49,7 @@ app.use(express_session({
 app.use(passport.initialize());
 app.use(passport.session());
 console.log('secret key:', process.env.KORA_SECRET_KEY);
+console.log(process.env.KORA_SECRET_KEY?.slice(0, 10));
 app.use('/apiDocs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 app.use('/api/v1/customer', customerRoutes);
