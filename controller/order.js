@@ -67,7 +67,7 @@ const buildOrderWhere = (req) => {
 const buildVerifiedPaymentInclude = () => ({
   model: Payment,
   as: "payment",
-  required: true,
+  required: false,
   where: { status: "success" },
   attributes: [
     "id",
@@ -79,6 +79,8 @@ const buildVerifiedPaymentInclude = () => ({
     "transactionReference",
   ],
 });
+
+exports.buildVerifiedPaymentInclude = buildVerifiedPaymentInclude;
 
 exports.createOrder = async (req, res, next) => {
   try {
