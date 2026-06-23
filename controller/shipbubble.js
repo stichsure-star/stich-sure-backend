@@ -155,7 +155,7 @@ const customerAddressCode = customerAddressResult.data.address_code;
 const designerAddressCode = designerAddressResult.data.address_code;
 
     const pickup_date = getTomorrowDate();
-
+console.log('pickup_date:', pickup_date);
    const packagePayload = (sender, receiver) => ({
   sender_address_code: sender,
   reciever_address_code: receiver,
@@ -185,6 +185,8 @@ console.log(
 );
 
  console.log("Step 2: Fetching pickup rates...");
+ const payload = packagePayload(customerAddressCode, designerAddressCode);
+console.log('pickup payload:', JSON.stringify(payload, null, 2));
     const pickupRates = await getShippingRates(
       packagePayload(customerAddressCode, designerAddressCode)
     );
@@ -227,55 +229,96 @@ console.log({
   email: customer.email,
   key: process.env.KORA_SECRET_KEY?.slice(0, 10) + "..."
 });
-    const paymentResponse = await axios.post(
-      "https://api.korapay.com/merchant/api/v1/charges/initialize",
-      {
-        amount: totalAmount,
-        currency: "NGN",
-        customer: { email },
-        reference: `PAY_${Date.now()}`,
-      },
-      {
-        headers: {
-          Authorization: `Bearer ${process.env.KORA_SECRET_KEY}`,
-          "Content-Type": "application/json",
-        },
-      }
-    );
+   console.log("Step 4: Initializing payment...");
 
-    const payment = await Payment.create({
-      orderId: foundOrder.id,
-      customerId: foundOrder.customerId,
-      designerId: foundOrder.designerId,
-      amount: totalAmount,
-      shippingFee,
-      currency: "NGN",
-      paymentProvider: "korapay",
-      transactionReference: paymentResponse.data.data.reference,
-      status: "pending",
+const reference = `PAY_${Date.now()}`;
 
-      pickupRequestToken: pickupRates.data.request_token,
-      pickupCourierId: String(cheapestPickup.courier_id),
-      pickupServiceCode: cheapestPickup.service_code,
-      pickupFee,
+const paymentResponse = await axios.post(
+  "https://api.korapay.com/merchant/api/v1/charges/initialize",
+  {
+    amount: totalAmount,
+    currency: "NGN",
+    customer: { email },
 
-      deliveryRequestToken: deliveryRates.data.request_token,
-      deliveryCourierId: String(cheapestDelivery.courier_id),
-      deliveryServiceCode: cheapestDelivery.service_code,
-      deliveryFee,
-    });
+    reference,
+
+    redirect_url: "https://your-frontend.com/payment-success",
+  },
+  {
+    headers: {
+      Authorization: `Bearer ${process.env.KORA_SECRET_KEY}`,
+      "Content-Type": "application/json",
+    },
+  }
+);
+
+const payment = await Payment.create({
+  orderId: foundOrder.id,
+  customerId: foundOrder.customerId,
+  designerId: foundOrder.designerId,
+
+  amount: totalAmount,
+  shippingFee,
+
+  reference,
+  transactionReference: reference,
+
+  currency: "NGN",
+  paymentProvider: "korapay",
+  status: "pending",
+  escrowStatus: null,
+
+  pickupRequestToken: pickupRates.data.request_token,
+  pickupCourierId: String(cheapestPickup.courier_id),
+  pickupServiceCode: cheapestPickup.service_code,
+  pickupFee,
+
+  deliveryRequestToken: deliveryRates.data.request_token,
+  deliveryCourierId: String(cheapestDelivery.courier_id),
+  deliveryServiceCode: cheapestDelivery.service_code,
+  deliveryFee,
+});
 
     return res.status(200).json({
-      success: true,
-      message: "Payment initialized successfully",
-      orderAmount,
-      pickupFee,
-      deliveryFee,
-      shippingFee,
-      totalAmount,
-      checkoutUrl: paymentResponse.data.data.checkout_url,
-      payment,
-    });
+  success: true,
+  message: "Payment initialized successfully",
+
+  checkoutUrl: paymentResponse.data.data.checkout_url,
+
+  payment: {
+    id: payment.id,
+    reference: payment.reference,
+    transactionReference: payment.transactionReference,
+    status: payment.status,
+    escrowStatus: payment.escrowStatus,
+    currency: payment.currency,
+    paymentProvider: payment.paymentProvider,
+  },
+
+  charges: {
+    orderAmount,
+    pickupFee,
+    deliveryFee,
+    shippingFee,
+    totalAmount,
+  },
+
+  pickup: {
+    request_token: pickupRates.data.request_token,
+    courier_id: cheapestPickup.courier_id,
+    service_code: cheapestPickup.service_code,
+    insurance_code: cheapestPickup.insurance_code ?? null,
+    is_cod_label: cheapestPickup.is_cod_label ?? false,
+  },
+
+  delivery: {
+    request_token: deliveryRates.data.request_token,
+    courier_id: cheapestDelivery.courier_id,
+    service_code: cheapestDelivery.service_code,
+    insurance_code: cheapestDelivery.insurance_code ?? null,
+    is_cod_label: cheapestDelivery.is_cod_label ?? false,
+  },
+});
   } catch (error) {
     console.log("Initialize Payment Error:", error.response?.data || error.message);
     return res.status(500).json({
@@ -438,6 +481,57 @@ exports.createDeliveryShipment= async (req, res) => {
     });
   }
 },
+exports.releaseEscrow = async (req, res) => {
+
+    try {
+
+        const { paymentId } = req.params;
+
+        const payment = await Payment.findByPk(paymentId);
+
+        if (!payment) {
+            return res.status(404).json({
+                success: false,
+                message: "Payment not found"
+            });
+        }
+
+        if (payment.escrowStatus === "released") {
+            return res.status(400).json({
+                success: false,
+                message: "Escrow already released"
+            });
+        }
+
+        const platformFee = payment.amount * 0.1 ;
+
+        const designerAmount = payment.amount - platformFee;
+
+
+        await payment.update({
+            escrowStatus: "released",
+            releasedAt: new Date(),
+            platformFee,
+            designerAmount,
+            releasedBy: "system"
+        });
+
+        return res.json({
+            success: true,
+            message: "Escrow released successfully",
+            data: payment
+        });
+
+    } catch (error) {
+
+        return res.status(500).json({
+            success: false,
+            message: error.message
+        });
+
+    }
+
+};
 exports.fundWallet = async (req, res) => {
   try {
     const { amount } = req.body;
