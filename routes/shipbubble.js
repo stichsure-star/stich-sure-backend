@@ -10,6 +10,7 @@ const {
   trackOrder,
   initializePayment,
   verifyPayment,
+  korapayWebhook,
   fundWallet
 } = require('../controller/shipbubble');
 const {
@@ -26,6 +27,7 @@ router.post('/shipment', createShipmentValidator, createOrder);
 router.get('/track/:orderId', trackOrder);
 router.post('/payment/initialize', initializeShipmentPaymentValidator, initializePayment);
 router.get('/payment/verify/:reference', verifyPayment);
+router.post('/payment/webhook', korapayWebhook);
 router.post('/wallet/fund', fundWallet);
 
 module.exports = router;
