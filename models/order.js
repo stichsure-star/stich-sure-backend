@@ -77,6 +77,10 @@ module.exports = (sequelize, DataTypes) => {
     address: {
         type: DataTypes.STRING,
       },
+      pickupDate: {
+  type: DataTypes.DATEONLY,
+  allowNull: true,
+},
     completedAt: DataTypes.DATE,
   }, {
     sequelize,

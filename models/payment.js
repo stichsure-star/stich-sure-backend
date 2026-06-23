@@ -100,6 +100,10 @@ totalAmount: {
   type: DataTypes.DECIMAL(10, 2),
   allowNull: false,
 },
+pickupDate: {
+  type: DataTypes.DATEONLY,
+  allowNull: true,
+},
   }, 
 {
     sequelize,
