@@ -19,17 +19,22 @@ paths:
               required:
                 - bankName
                 - accountNumber
-                - accountName
               properties:
                 bankName:
                   type: string
                   example: "GTBank"
+                  description: "Bank name only is enough. bankCode is looked up automatically."
+                bankCode:
+                  type: string
+                  example: "058"
+                  description: "Optional. Only pass this if you already have the Korapay bank code."
                 accountNumber:
                   type: string
                   example: "0123456789"
                 accountName:
                   type: string
                   example: "Faith E"
+                  description: "Optional. If omitted, account name is resolved automatically from Korapay."
       responses:
         '201':
           description: Wallet created successfully
@@ -51,6 +56,9 @@ paths:
                 bankName:
                   type: string
                   example: "Access Bank"
+                bankCode:
+                  type: string
+                  example: "044"
                 accountNumber:
                   type: string
                   example: "9876543210"
@@ -94,10 +102,55 @@ paths:
           example: 10
       responses:
         '200':
-          description: Transaction history loaded successfully. Returns designerName, date, orderId/orderNumber, itemName, amount, and status.
+          description: Transaction history loaded successfully. Returns designerName, date, transactionType, payoutReference, orderId/orderNumber, itemName, amount, and status.
+  /api/v1/designerWallet/banks:
+    get:
+      summary: Get Nigerian banks and Korapay bank codes
+      tags: [designerWallet]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: countryCode
+          schema:
+            type: string
+            default: NG
+          example: NG
+      responses:
+        '200':
+          description: Banks retrieved successfully
+  /api/v1/designerWallet/banks/resolve:
+    post:
+      summary: Resolve bank account name before saving wallet details
+      tags: [designerWallet]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - accountNumber
+              properties:
+                bankName:
+                  type: string
+                  example: "GTBank"
+                  description: "Pass bankName or bankCode"
+                bankCode:
+                  type: string
+                  example: "058"
+                  description: "Optional if bankName is provided"
+                accountNumber:
+                  type: string
+                  example: "0123456789"
+      responses:
+        '200':
+          description: Bank account resolved successfully
   /api/v1/designerWallet/withdraw:
     post:
-      summary: Withdraw funds from designer wallet
+      summary: Withdraw funds to designer bank account via Korapay
       tags: [designerWallet]
       security:
         - bearerAuth: []
@@ -113,10 +166,12 @@ paths:
                 amount:
                   type: integer
                   example: 50000
-                  description: "The amount to withdraw in Naira"
+                  description: "Gross amount to withdraw in Naira. A NGN 100 platform fee is deducted before payout."
       responses:
         '200':
-          description: Withdrawal completed successfully
+          description: Withdrawal initiated successfully
+        '202':
+          description: Withdrawal is processing. Final status comes via Korapay webhook.
         '400':
           description: Insufficient funds or missing bank details
         '403':
@@ -132,3 +187,9 @@ paths:
       responses:
         '200':
           description: Wallets retrieved successfully
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT

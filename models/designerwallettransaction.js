@@ -39,7 +39,16 @@ module.exports = (sequelize, DataTypes) => {
     },
     orderId: {
       type: DataTypes.UUID,
+      allowNull: true,
+    },
+    transactionType: {
+      type: DataTypes.ENUM('order_credit', 'withdrawal'),
       allowNull: false,
+      defaultValue: 'order_credit',
+    },
+    payoutReference: {
+      type: DataTypes.STRING,
+      allowNull: true,
       unique: true,
     },
     amount: {
