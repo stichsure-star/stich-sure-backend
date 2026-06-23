@@ -269,7 +269,7 @@ const paymentResponse = await axios.post(
 
     reference,
 
-    redirect_url: "https://your-frontend.com/payment-success",
+    redirect_url: "http://localhost:5713/user/dashboard",
   },
   {
     headers: {
