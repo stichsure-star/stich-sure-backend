@@ -67,7 +67,43 @@ pickupShipmentCreated: {
 deliveryShipmentCreated: 
 { type: DataTypes.BOOLEAN, 
   defaultValue: false 
-}
+},
+escrowStatus: {
+  type: DataTypes.ENUM("holding", "released", "refunded"),
+  defaultValue: "holding",
+},
+
+designAmount: {
+  type: DataTypes.DECIMAL(10, 2),
+  allowNull: false,
+},
+
+releasedAt: {
+  type: DataTypes.DATE,
+},
+
+platformFee: {
+  type: DataTypes.DECIMAL(10, 2),
+  defaultValue: 0,
+},
+
+designerAmount: {
+  type: DataTypes.DECIMAL(10, 2),
+  defaultValue: 0,
+},
+
+releasedBy: {
+  type: DataTypes.ENUM("system", "admin"),
+  allowNull: true,
+},
+totalAmount: {
+  type: DataTypes.DECIMAL(10, 2),
+  allowNull: false,
+},
+pickupDate: {
+  type: DataTypes.DATEONLY,
+  allowNull: true,
+},
   }, 
 {
     sequelize,
