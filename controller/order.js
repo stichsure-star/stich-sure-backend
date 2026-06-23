@@ -4,7 +4,6 @@ const {
   Customer,
   Designer,
   Designs,
-  Payment,
   request,
   Payment
 } = require("../models");

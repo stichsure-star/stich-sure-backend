@@ -110,14 +110,16 @@ const resolveWalletBankDetails = async ({
   };
 };
 
+const resolveBankAccount = async ({ bank, account, currency }) => { 
   const response = await axios.post(
     `${getKoraBaseUrl()}/misc/banks/resolve`,
-    { bank, account, currency },
+    { bank, account, currency },                
     { headers: getKoraHeaders() }
   );
 
   return response.data;
-};
+};                                             
+
 
 const initiateBankPayout = async ({
   reference,
