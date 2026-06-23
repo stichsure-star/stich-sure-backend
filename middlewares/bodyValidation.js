@@ -131,7 +131,6 @@ exports.createRequestValidator = validateBody(
       "any.required": "Deadline is required",
       "date.format": "Deadline must be a valid ISO date",
     }),
-    measurement: requiredString("Measurement", 1000),
     description: requiredString("Description", 2000),
   })
 );
