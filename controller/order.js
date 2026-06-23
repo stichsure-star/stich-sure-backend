@@ -4,6 +4,7 @@ const {
   Customer,
   Designer,
   Designs,
+  Payment,
   request,
 } = require("../models");
 const { AppError } = require('../utils/errorHandler');
@@ -63,12 +64,28 @@ const buildOrderWhere = (req) => {
   return where;
 };
 
+const buildVerifiedPaymentInclude = () => ({
+  model: Payment,
+  as: "payment",
+  required: true,
+  where: { status: "success" },
+  attributes: [
+    "id",
+    "status",
+    "paidAt",
+    "amount",
+    "currency",
+    "paymentProvider",
+    "transactionReference",
+  ],
+});
+
 exports.createOrder = async (req, res, next) => {
   try {
     const customerId = req.user.id;
     const { requestId, designerId, designId, itemName, amount, } = req.body;
 
-    if (!itemName || !amount ) {
+    if (!itemName || !amount) {
       return res.status(400).json({
         success: false,
         message: "itemName, amount, and address are required",
@@ -135,7 +152,9 @@ exports.getDesignerOrders = async (req, res, next) => {
 
     const { count, rows } = await Order.findAndCountAll({
       where,
+      distinct: true,
       include: [
+        buildVerifiedPaymentInclude(),
         {
           model: Customer,
           as: "customer",
@@ -181,7 +200,9 @@ exports.getCustomerOrders = async (req, res, next) => {
 
     const { count, rows } = await Order.findAndCountAll({
       where,
+      distinct: true,
       include: [
+        buildVerifiedPaymentInclude(),
         {
           model: Designer,
           as: "designer",
@@ -222,6 +243,7 @@ exports.getOrderById = async (req, res, next) => {
 
     const order = await Order.findByPk(id, {
       include: [
+        buildVerifiedPaymentInclude(),
         {
           model: Customer,
           as: "customer",
@@ -271,6 +293,7 @@ exports.getDesignerOrderById = async (req, res, next) => {
     const order = await Order.findOne({
       where: { id, designerId },
       include: [
+        buildVerifiedPaymentInclude(),
         {
           model: Customer,
           as: "customer",
@@ -315,6 +338,7 @@ exports.getCustomerOrderById = async (req, res, next) => {
     const order = await Order.findOne({
       where: { id, customerId },
       include: [
+        buildVerifiedPaymentInclude(),
         {
           model: Designer,
           as: "designer",
@@ -420,6 +444,8 @@ const updateDesignerStatsFromOrders = async (designerId) => {
 
   const totalOrders = await Order.count({
     where: { designerId },
+    distinct: true,
+    include: [buildVerifiedPaymentInclude()],
   });
 
   const completedOrders = await Order.count({
@@ -427,6 +453,8 @@ const updateDesignerStatsFromOrders = async (designerId) => {
       designerId,
       status: "completed",
     },
+    distinct: true,
+    include: [buildVerifiedPaymentInclude()],
   });
 
   const reliabilityScore =
@@ -447,7 +475,9 @@ exports.getAllOrders = async (req, res, next) => {
 
     const { count, rows } = await Order.findAndCountAll({
       where,
+      distinct: true,
       include: [
+        buildVerifiedPaymentInclude(),
         {
           model: Customer,
           as: "customer",
@@ -508,7 +538,9 @@ exports.getOrdersByDesignerAndCustomer = async (req, res, next) => {
 
     const { count, rows } = await Order.findAndCountAll({
       where,
+      distinct: true,
       include: [
+        buildVerifiedPaymentInclude(),
         {
           model: Customer,
           as: "customer",
@@ -555,7 +587,9 @@ exports.getOrdersByDesignerId = async (req, res, next) => {
 
     const { count, rows } = await Order.findAndCountAll({
       where: { designerId, ...buildOrderWhere(req) },
+      distinct: true,
       include: [
+        buildVerifiedPaymentInclude(),
         {
           model: Customer,
           as: "customer",
@@ -597,7 +631,9 @@ exports.getOrdersByCustomerId = async (req, res, next) => {
 
     const { count, rows } = await Order.findAndCountAll({
       where: { customerId, ...buildOrderWhere(req) },
+      distinct: true,
       include: [
+        buildVerifiedPaymentInclude(),
         {
           model: Designer,
           as: "designer",

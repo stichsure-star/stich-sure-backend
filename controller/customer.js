@@ -4,6 +4,7 @@ const {
   Designer,
   DesignerProfile,
   Order,
+  Payment,
   SavedDesigner,
 } = require("../models");
 const bcrypt = require("bcrypt");
@@ -494,12 +495,32 @@ exports.getCustomerDashboardStats = async (req, res, next) => {
             [Op.in]: ["pending", "active", "delivered"],
           },
         },
+        distinct: true,
+        include: [
+          {
+            model: Payment,
+            as: "payment",
+            required: true,
+            where: { status: "success" },
+            attributes: [],
+          },
+        ],
       }),
       Order.count({
         where: {
           customerId,
           status: "completed",
         },
+        distinct: true,
+        include: [
+          {
+            model: Payment,
+            as: "payment",
+            required: true,
+            where: { status: "success" },
+            attributes: [],
+          },
+        ],
       }),
       SavedDesigner.count({
         where: { customerId },
