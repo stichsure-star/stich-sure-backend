@@ -1,4 +1,5 @@
 const {
+  sequelize,
   DesignerWallet,
   DesignerWalletTransaction,
   DesignerProfile,
@@ -6,6 +7,17 @@ const {
   Order,
 } = require("../models");
 const { AppError } = require('../utils/errorHandler');
+const {
+  getBanks,
+  resolveWalletBankDetails,
+  initiateBankPayout,
+  getKoraSecretKey,
+} = require("../services/korapay.service");
+const {
+  WITHDRAWAL_PLATFORM_FEE,
+  generateWithdrawalReference,
+  rollbackFailedWithdrawal,
+} = require("../utils/withdrawal");
 
 const getPagination = (query) => {
   const page = Math.max(Number(query.page) || 1, 1);
@@ -18,12 +30,19 @@ const getPagination = (query) => {
 exports.createDesignerWallet = async (req, res, next) => {
   try {
     const designerId = req.user.id;
-    const { bankName, accountNumber, accountName } = req.body;
+    const { bankName, bankCode, accountNumber, accountName } = req.body;
 
-    if (!bankName || !accountNumber || !accountName) {
+    if (!bankName || !accountNumber) {
       return res.status(400).json({
         success: false,
-        message: "Bank name, account number, and account name are required.",
+        message: "Bank name and account number are required.",
+      });
+    }
+
+    if (!getKoraSecretKey()) {
+      return res.status(500).json({
+        success: false,
+        message: "Korapay secret key is not configured.",
       });
     }
 
@@ -38,11 +57,27 @@ exports.createDesignerWallet = async (req, res, next) => {
       });
     }
 
+    let resolvedBankDetails;
+    try {
+      resolvedBankDetails = await resolveWalletBankDetails({
+        bankName,
+        bankCode,
+        accountNumber,
+        accountName,
+      });
+    } catch (error) {
+      return res.status(400).json({
+        success: false,
+        message: error.message,
+      });
+    }
+
     const wallet = await DesignerWallet.create({
       designerId,
-      bankName,
-      accountNumber,
-      accountName,
+      bankName: resolvedBankDetails.bankName,
+      bankCode: resolvedBankDetails.bankCode,
+      accountNumber: resolvedBankDetails.accountNumber,
+      accountName: resolvedBankDetails.accountName,
       totalEarnings: 0,
       availableBalance: 0,
       withdrawn: 0,
@@ -54,9 +89,9 @@ exports.createDesignerWallet = async (req, res, next) => {
 
     if (profile) {
       await profile.update({
-        bankName,
-        accountNumber,
-        accountName,
+        bankName: resolvedBankDetails.bankName,
+        accountNumber: resolvedBankDetails.accountNumber,
+        accountName: resolvedBankDetails.accountName,
       });
     }
 
@@ -73,7 +108,7 @@ exports.createDesignerWallet = async (req, res, next) => {
 exports.updateDesignerWallet = async (req, res, next) => {
   try {
     const designerId = req.user.id;
-    const { bankName, accountNumber, accountName } = req.body;
+    const { bankName, bankCode, accountNumber, accountName } = req.body;
 
     const wallet = await DesignerWallet.findOne({
       where: { designerId },
@@ -86,10 +121,45 @@ exports.updateDesignerWallet = async (req, res, next) => {
       });
     }
 
+    const nextBankName = bankName || wallet.bankName;
+    const nextBankCode = bankCode || wallet.bankCode;
+    const nextAccountNumber = accountNumber || wallet.accountNumber;
+    const nextAccountName = accountName || wallet.accountName;
+    const bankDetailsChanged =
+      bankName ||
+      bankCode ||
+      accountNumber ||
+      !wallet.bankCode ||
+      !wallet.accountName;
+
+    let resolvedBankDetails = {
+      bankName: nextBankName,
+      bankCode: nextBankCode,
+      accountNumber: nextAccountNumber,
+      accountName: nextAccountName,
+    };
+
+    if (bankDetailsChanged && getKoraSecretKey()) {
+      try {
+        resolvedBankDetails = await resolveWalletBankDetails({
+          bankName: nextBankName,
+          bankCode: nextBankCode,
+          accountNumber: nextAccountNumber,
+          accountName: nextAccountName,
+        });
+      } catch (error) {
+        return res.status(400).json({
+          success: false,
+          message: error.message,
+        });
+      }
+    }
+
     await wallet.update({
-      bankName: bankName || wallet.bankName,
-      accountNumber: accountNumber || wallet.accountNumber,
-      accountName: accountName || wallet.accountName,
+      bankName: resolvedBankDetails.bankName,
+      bankCode: resolvedBankDetails.bankCode,
+      accountNumber: resolvedBankDetails.accountNumber,
+      accountName: resolvedBankDetails.accountName,
     });
 
     const profile = await DesignerProfile.findOne({
@@ -98,9 +168,9 @@ exports.updateDesignerWallet = async (req, res, next) => {
 
     if (profile) {
       await profile.update({
-        bankName: bankName || profile.bankName,
-        accountNumber: accountNumber || profile.accountNumber,
-        accountName: accountName || profile.accountName,
+        bankName: resolvedBankDetails.bankName,
+        accountNumber: resolvedBankDetails.accountNumber,
+        accountName: resolvedBankDetails.accountName,
       });
     }
 
@@ -174,9 +244,14 @@ exports.getTransactionHistory = async (req, res, next) => {
           ? `${designer.firstName} ${designer.lastName}`
           : null,
         date: plainTransaction.transactionDate,
+        transactionType: plainTransaction.transactionType,
+        payoutReference: plainTransaction.payoutReference || null,
         orderId: order?.orderNumber || null,
         orderDbId: order?.id || null,
-        itemName: order?.itemName || null,
+        itemName:
+          plainTransaction.transactionType === "withdrawal"
+            ? "Wallet withdrawal"
+            : order?.itemName || null,
         amount: plainTransaction.amount,
         status: plainTransaction.status,
       };
@@ -227,11 +302,73 @@ exports.getAllWallets = async (req, res, next) => {
   }
 };
 
+exports.getBanks = async (req, res, next) => {
+  try {
+    if (!getKoraSecretKey()) {
+      return res.status(500).json({
+        success: false,
+        message: "Korapay secret key is not configured.",
+      });
+    }
+
+    const result = await getBanks(req.query.countryCode || "NG");
+
+    return res.status(200).json({
+      success: true,
+      message: "Banks retrieved successfully.",
+      data: result.data || [],
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+exports.resolveBankAccountDetails = async (req, res, next) => {
+  try {
+    if (!getKoraSecretKey()) {
+      return res.status(500).json({
+        success: false,
+        message: "Korapay secret key is not configured.",
+      });
+    }
+
+    const { bankName, bankCode, accountNumber } = req.body;
+
+    let resolvedBankDetails;
+    try {
+      resolvedBankDetails = await resolveWalletBankDetails({
+        bankName,
+        bankCode,
+        accountNumber,
+      });
+    } catch (error) {
+      return res.status(400).json({
+        success: false,
+        message: error.message,
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Bank account resolved successfully.",
+      data: {
+        bankName: resolvedBankDetails.bankName,
+        bankCode: resolvedBankDetails.bankCode,
+        accountNumber: resolvedBankDetails.accountNumber,
+        accountName: resolvedBankDetails.accountName,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 exports.withdrawFunds = async (req, res, next) => {
   try {
     const designerId = req.user.id;
-    const { amount } = req.body;
-    const withdrawAmount = Number(amount);
+    const withdrawAmount = Number(req.body.amount);
+    const fee = WITHDRAWAL_PLATFORM_FEE;
+    const netReceiveAmount = withdrawAmount - fee;
 
     if (req.user.role !== "designer") {
       return res.status(403).json({
@@ -240,68 +377,141 @@ exports.withdrawFunds = async (req, res, next) => {
       });
     }
 
-    const wallet = await DesignerWallet.findOne({
-      where: { designerId },
-    });
+    if (!getKoraSecretKey()) {
+      return res.status(500).json({
+        success: false,
+        message: "Korapay secret key is not configured.",
+      });
+    }
 
-    if (!wallet) {
+    if (withdrawAmount <= fee) {
+      return res.status(400).json({
+        success: false,
+        message: `Withdrawal amount must be greater than the platform fee of NGN ${fee}.`,
+      });
+    }
+
+    const designer = await Designer.findByPk(designerId);
+    if (!designer) {
       return res.status(404).json({
         success: false,
-        message: "Designer wallet not found. Please set up your wallet first.",
+        message: "Designer not found",
       });
     }
 
-    if (!wallet.bankName || !wallet.accountNumber) {
-      return res.status(400).json({
-        success: false,
-        message: "Please update your bank details in your wallet before withdrawing.",
+    const payoutReference = generateWithdrawalReference(designerId);
+    let walletSnapshot = null;
+    let walletTransaction = null;
+
+    await sequelize.transaction(async (dbTransaction) => {
+      const wallet = await DesignerWallet.findOne({
+        where: { designerId },
+        transaction: dbTransaction,
+        lock: dbTransaction.LOCK.UPDATE,
+      });
+
+      if (!wallet) {
+        throw new AppError("Designer wallet not found. Please set up your wallet first.", 404);
+      }
+
+      if (!wallet.bankCode || !wallet.accountNumber || !wallet.accountName) {
+        throw new AppError(
+          "Please update your bank code, account number, and account name before withdrawing.",
+          400
+        );
+      }
+
+      const availableBalance = Number(wallet.availableBalance || 0);
+      if (availableBalance < withdrawAmount) {
+        throw new AppError(
+          "Insufficient funds. Available balance is lower than the requested withdrawal amount.",
+          400
+        );
+      }
+
+      await wallet.update(
+        {
+          availableBalance: availableBalance - withdrawAmount,
+          withdrawn: Number(wallet.withdrawn || 0) + withdrawAmount,
+        },
+        { transaction: dbTransaction }
+      );
+
+      walletTransaction = await DesignerWalletTransaction.create(
+        {
+          designerWalletId: wallet.id,
+          designerId,
+          orderId: null,
+          transactionType: "withdrawal",
+          payoutReference,
+          amount: -withdrawAmount,
+          status: "pending",
+          transactionDate: new Date(),
+        },
+        { transaction: dbTransaction }
+      );
+
+      walletSnapshot = wallet;
+    });
+
+    try {
+      const payoutResult = await initiateBankPayout({
+        reference: payoutReference,
+        amount: netReceiveAmount,
+        bankCode: walletSnapshot.bankCode,
+        accountNumber: walletSnapshot.accountNumber,
+        customerName: walletSnapshot.accountName,
+        customerEmail: designer.email,
+        narration: "StitchSure designer withdrawal",
+      });
+
+      if (!payoutResult?.status) {
+        await rollbackFailedWithdrawal(walletTransaction);
+        return res.status(400).json({
+          success: false,
+          message: payoutResult?.message || "Withdrawal could not be initiated.",
+        });
+      }
+
+      return res.status(200).json({
+        success: true,
+        message:
+          "Withdrawal initiated successfully. Funds will be sent to your bank account shortly.",
+        data: {
+          withdrawalAmount: withdrawAmount,
+          fee,
+          netReceiveAmount,
+          payoutReference,
+          payoutStatus: payoutResult.data?.status || "processing",
+          transaction: walletTransaction,
+        },
+      });
+    } catch (error) {
+      const statusCode = error.response?.status;
+
+      if (statusCode && statusCode >= 400 && statusCode < 500) {
+        await rollbackFailedWithdrawal(walletTransaction);
+        return res.status(400).json({
+          success: false,
+          message:
+            error.response?.data?.message || "Withdrawal could not be completed.",
+        });
+      }
+
+      return res.status(202).json({
+        success: true,
+        message:
+          "Withdrawal is being processed. Check your transaction history for the final status.",
+        data: {
+          withdrawalAmount: withdrawAmount,
+          fee,
+          netReceiveAmount,
+          payoutReference,
+          payoutStatus: "processing",
+          transaction: walletTransaction,
+        },
       });
     }
-
-    const availableBalance = Number(wallet.availableBalance || 0);
-
-    if (availableBalance < withdrawAmount) {
-      return res.status(400).json({
-        success: false,
-        message: "Insufficient funds. Available balance is lower than the requested withdrawal amount.",
-      });
-    }
-
-    
-    const fee = 100; // Plartform FEE
-    const netReceiveAmount = withdrawAmount - fee;
-
-    
-    const updatedWallet = await wallet.update({
-      availableBalance: availableBalance - withdrawAmount,
-      withdrawn: Number(wallet.withdrawn || 0) + withdrawAmount,
-    });
-
-    
-    const crypto = require("crypto");
-    const placeholderOrderId = crypto.randomUUID(); 
-
-     
-    const transaction = await DesignerWalletTransaction.create({
-      designerWalletId: wallet.id,
-      designerId,
-      orderId: placeholderOrderId, 
-      amount: -withdrawAmount,      
-      status: "completed",
-      transactionDate: new Date(),
-    });
-
-    return res.status(200).json({
-      success: true,
-      message: "Withdrawal completed successfully.",
-      data: {
-        wallet: updatedWallet,
-        withdrawalAmount: withdrawAmount,
-        fee,
-        netReceiveAmount,
-        transaction,
-      },
-    });
   } catch (error) {
     next(error);
   }

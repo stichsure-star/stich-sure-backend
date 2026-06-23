@@ -1,7 +1,7 @@
 const axios = require("axios");
 const crypto = require("crypto");
 const { Payment, Order, Designer, Shipment, Customer } = require("../models");
-const { getShippingRates, validateAddress, getPackageCategories, trackShipment,createShipment, fundWallet} = require("../services/shipbubble.service");
+const { handleTransferWebhook } = require("../utils/withdrawal");
 
 const getCheapestCourier = (couriers) =>
   couriers.reduce((prev, curr) =>
@@ -403,6 +403,12 @@ exports.korapayWebhook = async (req, res) => {
       .digest("hex");
 
     if (!safeTimingEqualHex(expected, signature)) {
+      return res.status(200).json({ received: true });
+    }
+
+    const event = payload?.event;
+    if (event === "transfer.success" || event === "transfer.failed") {
+      await handleTransferWebhook(data, event);
       return res.status(200).json({ received: true });
     }
 

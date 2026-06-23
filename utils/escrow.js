@@ -74,6 +74,7 @@ const releaseOrderEscrowToDesigner = async (orderId) => {
     designerWalletId: wallet.id,
     designerId: order.designerId,
     orderId: order.id,
+    transactionType: "order_credit",
     amount: netAmount,
     status: "completed",
     transactionDate: order.completedAt || new Date(),

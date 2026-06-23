@@ -49,22 +49,34 @@ const requiredString = (label, max = 1000) => textRule(label, max).required();
 
 const walletSchema = Joi.object({
   bankName: requiredString("Bank name", 100),
+  bankCode: optionalString("Bank code", 20),
   accountNumber: Joi.string().trim().pattern(/^\d{10}$/).required().messages({
     "any.required": "Account number is required",
     "string.empty": "Account number cannot be empty",
     "string.pattern.base": "Account number must be 10 digits",
   }),
-  accountName: requiredString("Account name", 100),
+  accountName: optionalString("Account name", 100),
 });
 
 const walletUpdateSchema = Joi.object({
   bankName: optionalString("Bank name", 100),
+  bankCode: optionalString("Bank code", 20),
   accountNumber: Joi.string().trim().pattern(/^\d{10}$/).optional().messages({
     "string.empty": "Account number cannot be empty",
     "string.pattern.base": "Account number must be 10 digits",
   }),
   accountName: optionalString("Account name", 100),
-}).or("bankName", "accountNumber", "accountName");
+}).or("bankName", "bankCode", "accountNumber", "accountName");
+
+const resolveBankAccountSchema = Joi.object({
+  bankName: optionalString("Bank name", 100),
+  bankCode: optionalString("Bank code", 20),
+  accountNumber: Joi.string().trim().pattern(/^\d{10}$/).required().messages({
+    "any.required": "Account number is required",
+    "string.empty": "Account number cannot be empty",
+    "string.pattern.base": "Account number must be 10 digits",
+  }),
+}).or("bankName", "bankCode");
 
 const profileFields = {
   businessName: optionalString("Business name", 100),
@@ -355,3 +367,4 @@ const withdrawalSchema = Joi.object({
 });
 
 exports.withdrawalValidator = validateBody(withdrawalSchema);
+exports.resolveBankAccountValidator = validateBody(resolveBankAccountSchema);
