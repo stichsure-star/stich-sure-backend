@@ -5,6 +5,7 @@ const {
   Designer,
   Designs,
   request,
+  Payment
 } = require("../models");
 const { AppError } = require('../utils/errorHandler');
 const { releaseOrderEscrowToDesigner } = require("../utils/escrow");
@@ -52,7 +53,6 @@ exports.createOrder = async (req, res, next) => {
   try {
     const customerId = req.user.id;
     const { requestId, designerId, designId, itemName, amount, } = req.body;
-
     if (!itemName || !amount ) {
       return res.status(400).json({
         success: false,

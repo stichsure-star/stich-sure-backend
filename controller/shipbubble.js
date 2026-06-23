@@ -395,32 +395,62 @@ exports.verifyPayment =  async (req, res, next) => {
       service_code: payment.pickupServiceCode,
     });
 
-    await payment.update({
-      status: "success",
-      paidAt: new Date(),
-      pickupShipmentCreated: true,
-    });
+const pickupDate =
+  pickupShipmentResult.data?.pickup_date ||
+  pickupShipmentResult.data?.scheduled_date ||
+  getTomorrowDate();
 
-    await Order.update({ status: "paid" }, { where: { id: payment.orderId } });
+await payment.update({
+  status: "success",
+  paidAt: new Date(),
+  pickupShipmentCreated: true,
+  pickupDate,
+  escrowStatus: "holding",
+});
 
-    const courier = pickupShipmentResult.data?.courier;
-    await Shipment.create({
-      orderId: payment.orderId,
-      type: "pickup",
-      trackingCode: pickupShipmentResult.data?.order_id,
-      trackingUrl: pickupShipmentResult.data?.tracking_url,
-      courier: courier?.name,
-      status: pickupShipmentResult.data?.status,
-      shippingFee: pickupShipmentResult.data?.payment?.shipping_fee,
-      currency: pickupShipmentResult.data?.payment?.currency,
-    });
+await Order.update(
+  {
+    status: "paid",
+    pickupDate,
+  },
+  {
+    where: {
+      id: payment.orderId,
+    },
+  }
+);
 
-    return res.status(200).json({
-      success: true,
-      message: "Payment verified and pickup shipment created successfully",
-      payment,
-      pickupShipment: pickupShipmentResult.data,
-    });
+const courier = pickupShipmentResult.data?.courier;
+
+const shipment = await Shipment.create({
+  orderId: payment.orderId,
+  type: "pickup",
+  trackingCode: pickupShipmentResult.data?.order_id,
+  trackingUrl: pickupShipmentResult.data?.tracking_url,
+  courier: courier?.name,
+  status: pickupShipmentResult.data?.status,
+  shippingFee: pickupShipmentResult.data?.payment?.shipping_fee,
+  currency: pickupShipmentResult.data?.payment?.currency,
+});
+
+await payment.reload();
+
+const order = await Order.findByPk(payment.orderId);
+
+return res.status(200).json({
+  success: true,
+  message: "Payment verified successfully. Pickup has been scheduled.",
+
+  order,
+
+  payment,
+
+  shipment,
+
+  pickupDate,
+
+  pickupShipment: pickupShipmentResult.data,
+});
   } catch (error) {
     console.log(error.message);
     return res.status(500).json({ message: "Verification failed" });
