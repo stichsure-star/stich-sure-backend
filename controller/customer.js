@@ -236,7 +236,7 @@ exports.forgetPassword = async (req, res, next) => {
 exports.resetPassword = async (req, res, next) => {
   try {
     const { password } = req.body;
-    const customer = await Customer.findByPk(req.user.id);
+    const customer = await Customer.findOne({ where: { email } });
     if (!customer) {
       return res.status(404).json({
         success: false,
