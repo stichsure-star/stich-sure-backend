@@ -199,6 +199,8 @@ paths:
     post:
       summary: Initialize payment for an order including shipping fee
       tags: [payment]
+      security: 
+       - bearerAuth: [] 
       description: >
         Validates sender and receiver addresses, fetches shipping rates,
         selects the cheapest courier, calculates total amount (order amount + shipping fee),
@@ -262,6 +264,33 @@ paths:
           description: Payment record not found
         '500':
           description: Verification failed
+  api/v1/payment/webhook
+    post:
+      summary: Webhook endpoint
+      tags: [payment]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - transactionId
+                - reference
+              properties:
+                transactionId:
+                  type: string
+                  example: "123456789"
+                  description: "Transaction ID"
+                reference:
+                  type: string
+                  example: "PAY_123456789"
+                  description: "Transaction reference"
+      responses:
+        '200':
+          description: Webhook received successfully
+        '500':
+          description: Failed to receive webhook
 
 components:
   securitySchemes:

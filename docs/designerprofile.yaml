@@ -283,6 +283,143 @@ paths:
                                 type: string
                               price:
                                 type: number
+  /api/v1/designerProfile/featured:
+    get:
+      summary: Get top three featured designers
+      tags: [designerProfile]
+      responses:
+        '200':
+          description: Top three featured designers retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Top three featured designers retrieved."
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                        firstName:
+                          type: string
+                        lastName:
+                          type: string
+                        email:
+                          type: string
+                        profile:
+                          type: object
+                          properties:
+                            id:
+                              type: string
+                              format: uuid
+                            designerId:
+                              type: string
+                              format: uuid
+                            businessName:
+                              type: string
+                            currentHouseAddress:
+                              type: string
+                            state:
+                              type: string
+                            country:
+                              type: string
+                            profilePhoto:
+                              type: string
+                            specialization:
+                              type: array
+                              items:
+                                type: string
+                            phoneNumber:
+                              type: string
+                            bankName:
+                              type: string
+                            accountNumber:
+                              type: string
+                            accountName:
+                              type: string
+                            yearsOfExperience:
+                              type: integer
+                            shortBio:
+                              type: string
+                            completedOrders:
+                              type: integer
+                            ratingAverage:
+                              type: number
+                            ratingCount:
+                              type: integer
+                            reliabilityScore:
+                              type: integer
+                            isProfileCompleted:
+                              type: boolean
+                            currentReliabilityTier:
+                              type: string
+                            nextReliabilityTier:
+                              type: string
+                              nullable: true
+                            nextReliabilityTierThreshold:
+                              type: integer
+                            nextReliabilityTierProgress:
+                              type: integer
+                            nextReliabilityTierLabel:
+                              type: string
+                            totalEarnings:
+                              type: integer
+                              description: "Total earnings from the designer's wallet"
+                            availableBalance:
+                              type: integer
+                              description: "Available balance from the designer's wallet"
+                            withdrawn:
+                              type: integer
+                              description: "Total withdrawn amount from the designer's wallet"
+                        wallet:
+                          type: object
+                          properties:
+                            id:
+                              type: string
+                              format: uuid
+                            designerId:
+                              type: string
+                              format: uuid
+                            bankName:
+                              type: string
+                            accountNumber:
+                              type: string
+                            accountName:
+                              type: string
+                            totalEarnings:
+                              type: integer
+                            availableBalance:
+                              type: integer
+                            withdrawn:
+                              type: integer
+                        designs:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              id:
+                                type: string
+                                format: uuid
+                              designerId:
+                                type: string
+                                format: uuid
+                              image:
+                                type: string
+                              title:
+                                type: string
+                              description:
+                                type: string
+                              price:
+                                type: number
   /api/v1/designerProfile/getByDesigner/{designerId}:
     get:
       summary: Get a designer profile by designer id

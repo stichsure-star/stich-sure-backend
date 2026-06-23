@@ -4,19 +4,22 @@ const {
   Customer,
   Designer,
   Designs,
+  Payment,
   request,
   Payment
 } = require("../models");
 const { AppError } = require('../utils/errorHandler');
 const { releaseOrderEscrowToDesigner } = require("../utils/escrow");
 
-const allowedStatuses = ["new", "preparing", "ready", "completed", "cancelled"];
+const allowedStatuses = ["pending", "active", "delivered", "completed", "cancelled"];
 const statusAliases = {
-  picked_up: "preparing",
-  pickedUp: "preparing",
-  "picked-up": "preparing",
-  in_production: "preparing",
-  delivered: "completed",
+  new: "pending",
+  preparing: "active",
+  ready: "delivered",
+  picked_up: "active",
+  pickedUp: "active",
+  "picked-up": "active",
+  in_production: "active",
 };
 
 const generateOrderNumber = () => {
@@ -35,8 +38,21 @@ const getPagination = (query) => {
 const buildOrderWhere = (req) => {
   const where = {};
 
+  if (req.query.id) {
+    where.id = req.query.id;
+  }
+
+  if (req.query.designerId) {
+    where.designerId = req.query.designerId;
+  }
+
+  if (req.query.customerId) {
+    where.customerId = req.query.customerId;
+  }
+
   if (req.query.status) {
-    where.status = req.query.status;
+    const requestedStatus = req.query.status.toLowerCase();
+    where.status = statusAliases[requestedStatus] || requestedStatus;
   }
 
   if (req.query.search) {
@@ -48,6 +64,22 @@ const buildOrderWhere = (req) => {
 
   return where;
 };
+
+const buildVerifiedPaymentInclude = () => ({
+  model: Payment,
+  as: "payment",
+  required: true,
+  where: { status: "success" },
+  attributes: [
+    "id",
+    "status",
+    "paidAt",
+    "amount",
+    "currency",
+    "paymentProvider",
+    "transactionReference",
+  ],
+});
 
 exports.createOrder = async (req, res, next) => {
   try {
@@ -95,7 +127,7 @@ exports.createOrder = async (req, res, next) => {
       designId: designId || null,
       itemName,
       amount,
-      status: "new",
+      status: "pending",
       placedAt: new Date(),
     });
 
@@ -120,7 +152,9 @@ exports.getDesignerOrders = async (req, res, next) => {
 
     const { count, rows } = await Order.findAndCountAll({
       where,
+      distinct: true,
       include: [
+        buildVerifiedPaymentInclude(),
         {
           model: Customer,
           as: "customer",
@@ -166,7 +200,9 @@ exports.getCustomerOrders = async (req, res, next) => {
 
     const { count, rows } = await Order.findAndCountAll({
       where,
+      distinct: true,
       include: [
+        buildVerifiedPaymentInclude(),
         {
           model: Designer,
           as: "designer",
@@ -207,15 +243,16 @@ exports.getOrderById = async (req, res, next) => {
 
     const order = await Order.findByPk(id, {
       include: [
+        buildVerifiedPaymentInclude(),
         {
           model: Customer,
           as: "customer",
-          attributes: ["id", "firstName", "lastName", "email"],
+          attributes: ["id", "firstName", "lastName", "email", "phone", "address"],
         },
         {
           model: Designer,
           as: "designer",
-          attributes: ["id", "firstName", "lastName", "email"],
+          attributes: ["id", "firstName", "lastName", "email", "phone", "address"],
         },
         {
           model: Designs,
@@ -234,6 +271,96 @@ exports.getOrderById = async (req, res, next) => {
     return res.status(200).json({
       success: true,
       message: "Order details retrieved.",
+      data: order,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+exports.getDesignerOrderById = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const designerId = req.user.id;
+
+    if (req.user.role !== "designer") {
+      return res.status(403).json({
+        success: false,
+        message: "Unauthorized. Only designers can fetch designer orders.",
+      });
+    }
+
+    const order = await Order.findOne({
+      where: { id, designerId },
+      include: [
+        buildVerifiedPaymentInclude(),
+        {
+          model: Customer,
+          as: "customer",
+          attributes: ["id", "firstName", "lastName", "email"],
+        },
+        {
+          model: Designs,
+          as: "design",
+        },
+      ],
+    });
+
+    if (!order) {
+      return res.status(404).json({
+        success: false,
+        message: "Order not found or not assigned to you",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Order details retrieved successfully.",
+      data: order,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+exports.getCustomerOrderById = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const customerId = req.user.id;
+
+    if (req.user.role !== "customer") {
+      return res.status(403).json({
+        success: false,
+        message: "Unauthorized. Only customers can fetch customer orders.",
+      });
+    }
+
+    const order = await Order.findOne({
+      where: { id, customerId },
+      include: [
+        buildVerifiedPaymentInclude(),
+        {
+          model: Designer,
+          as: "designer",
+          attributes: ["id", "firstName", "lastName", "email"],
+        },
+        {
+          model: Designs,
+          as: "design",
+        },
+      ],
+    });
+
+    if (!order) {
+      return res.status(404).json({
+        success: false,
+        message: "Order not found or does not belong to you",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Order details retrieved successfully.",
       data: order,
     });
   } catch (error) {
@@ -272,12 +399,12 @@ exports.updateOrderStatus = async (req, res, next) => {
 
     const updateData = { status };
 
-    if (status === "preparing" && !order.preparingAt) {
-      updateData.preparingAt = new Date();
+    if (status === "active" && !order.activeAt) {
+      updateData.activeAt = new Date();
     }
 
-    if (status === "ready" && !order.readyAt) {
-      updateData.readyAt = new Date();
+    if (status === "delivered" && !order.deliveredAt) {
+      updateData.deliveredAt = new Date();
     }
 
     if (status === "completed" && !order.completedAt) {
@@ -317,6 +444,8 @@ const updateDesignerStatsFromOrders = async (designerId) => {
 
   const totalOrders = await Order.count({
     where: { designerId },
+    distinct: true,
+    include: [buildVerifiedPaymentInclude()],
   });
 
   const completedOrders = await Order.count({
@@ -324,6 +453,8 @@ const updateDesignerStatsFromOrders = async (designerId) => {
       designerId,
       status: "completed",
     },
+    distinct: true,
+    include: [buildVerifiedPaymentInclude()],
   });
 
   const reliabilityScore =
@@ -344,7 +475,9 @@ exports.getAllOrders = async (req, res, next) => {
 
     const { count, rows } = await Order.findAndCountAll({
       where,
+      distinct: true,
       include: [
+        buildVerifiedPaymentInclude(),
         {
           model: Customer,
           as: "customer",
@@ -369,6 +502,157 @@ exports.getAllOrders = async (req, res, next) => {
     return res.status(200).json({
       success: true,
       message: "List of all orders retrieved.",
+      data: rows,
+      pagination: {
+        totalItems: count,
+        totalPages: Math.ceil(count / limit),
+        currentPage: page,
+        pageSize: limit,
+        hasNextPage: page < Math.ceil(count / limit),
+        hasPreviousPage: page > 1,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+
+exports.getOrdersByDesignerAndCustomer = async (req, res, next) => {
+  try {
+    const { designerId, customerId } = req.params;
+    const { page, limit, offset } = getPagination(req.query);
+
+    if (!designerId || !customerId) {
+      return res.status(400).json({
+        success: false,
+        message: "Both designerId and customerId are required",
+      });
+    }
+
+    const where = {
+      designerId,
+      customerId,
+      ...buildOrderWhere(req),
+    };
+
+    const { count, rows } = await Order.findAndCountAll({
+      where,
+      distinct: true,
+      include: [
+        buildVerifiedPaymentInclude(),
+        {
+          model: Customer,
+          as: "customer",
+          attributes: ["id", "firstName", "lastName", "email", "phone"],
+        },
+        {
+          model: Designer,
+          as: "designer",
+          attributes: ["id", "firstName", "lastName", "email", "phone"],
+        },
+        {
+          model: Designs,
+          as: "design",
+          attributes: ["id", "designTitle", "category", "designImage"],
+        },
+      ],
+      order: [["placedAt", "DESC"]],
+      limit,
+      offset,
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "Orders between the designer and customer have been retrieved.",
+      data: rows,
+      pagination: {
+        totalItems: count,
+        totalPages: Math.ceil(count / limit),
+        currentPage: page,
+        pageSize: limit,
+        hasNextPage: page < Math.ceil(count / limit),
+        hasPreviousPage: page > 1,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+exports.getOrdersByDesignerId = async (req, res, next) => {
+  try {
+    const { designerId } = req.params;
+    const { page, limit, offset } = getPagination(req.query);
+
+    const { count, rows } = await Order.findAndCountAll({
+      where: { designerId, ...buildOrderWhere(req) },
+      distinct: true,
+      include: [
+        buildVerifiedPaymentInclude(),
+        {
+          model: Customer,
+          as: "customer",
+          attributes: ["id", "firstName", "lastName", "email"],
+        },
+        {
+          model: Designs,
+          as: "design",
+          attributes: ["id", "designTitle", "category", "designImage"],
+        },
+      ],
+      order: [["placedAt", "DESC"]],
+      limit,
+      offset,
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "Orders for the designer retrieved.",
+      data: rows,
+      pagination: {
+        totalItems: count,
+        totalPages: Math.ceil(count / limit),
+        currentPage: page,
+        pageSize: limit,
+        hasNextPage: page < Math.ceil(count / limit),
+        hasPreviousPage: page > 1,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+exports.getOrdersByCustomerId = async (req, res, next) => {
+  try {
+    const { customerId } = req.params;
+    const { page, limit, offset } = getPagination(req.query);
+
+    const { count, rows } = await Order.findAndCountAll({
+      where: { customerId, ...buildOrderWhere(req) },
+      distinct: true,
+      include: [
+        buildVerifiedPaymentInclude(),
+        {
+          model: Designer,
+          as: "designer",
+          attributes: ["id", "firstName", "lastName", "email"],
+        },
+        {
+          model: Designs,
+          as: "design",
+          attributes: ["id", "designTitle", "category", "designImage"],
+        },
+      ],
+      order: [["placedAt", "DESC"]],
+      limit,
+      offset,
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "Orders for the customer retrieved.",
       data: rows,
       pagination: {
         totalItems: count,

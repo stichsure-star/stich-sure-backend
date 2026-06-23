@@ -4,6 +4,7 @@ const {
   Designer,
   DesignerProfile,
   Order,
+  Payment,
   SavedDesigner,
 } = require("../models");
 const bcrypt = require("bcrypt");
@@ -234,8 +235,8 @@ exports.forgetPassword = async (req, res, next) => {
 
 exports.resetPassword = async (req, res, next) => {
   try {
-    const { password } = req.body;
-    const customer = await Customer.findByPk(req.user.id);
+    const { email, password } = req.body;
+    const customer = await Customer.findOne({ where: { email } });
     if (!customer) {
       return res.status(404).json({
         success: false,
@@ -491,15 +492,35 @@ exports.getCustomerDashboardStats = async (req, res, next) => {
         where: {
           customerId,
           status: {
-            [Op.in]: ["new", "preparing", "ready"],
+            [Op.in]: ["pending", "active", "delivered"],
           },
         },
+        distinct: true,
+        include: [
+          {
+            model: Payment,
+            as: "payment",
+            required: true,
+            where: { status: "success" },
+            attributes: [],
+          },
+        ],
       }),
       Order.count({
         where: {
           customerId,
           status: "completed",
         },
+        distinct: true,
+        include: [
+          {
+            model: Payment,
+            as: "payment",
+            required: true,
+            where: { status: "success" },
+            attributes: [],
+          },
+        ],
       }),
       SavedDesigner.count({
         where: { customerId },

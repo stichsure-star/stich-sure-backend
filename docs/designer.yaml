@@ -331,8 +331,6 @@ paths:
     post:
       summary: Reset Password (requires bearer token from forget-password flow)
       tags: [designer]
-      security:
-        - bearerAuth: []
       requestBody:
         required: true
         content:

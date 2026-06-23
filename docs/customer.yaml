@@ -262,8 +262,6 @@ paths:
     post:
       summary: Customer reset password (requires bearer token from forget-password OTP verification)
       tags: [customer]
-      security:
-        - bearerAuth: []
       requestBody:
         required: true
         content:

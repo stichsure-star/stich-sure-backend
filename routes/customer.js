@@ -17,7 +17,7 @@ const {
   removeSavedDesigner,
   getAllCustomers,
   getOneCustomer,
-  updateProfile
+  updateProfile,
 } = require('../controller/customer')
 const { upload } = require('../middlewares/multer')
 const { authentication } = require('../middlewares/authentication')
@@ -37,7 +37,7 @@ router.post('/register', customerValidator, createCustomer);
 router.post('/verify', verifyEmailValidator, verifyEmail)
 router.post('/login', loginValidator, loginCustomer);
 router.post('/forget-password', forgetPasswordValidator, forgetPassword)
-router.post('/reset-password', authentication, resetPaswordValidator, resetPassword)
+router.post('/reset-password', resetPaswordValidator, resetPassword)
 router.post('/resend-otp', resendOtpValidator, resendOTP)
 router.post('/logout', authentication, logOut )
 router.get('/dashboard-stats', authentication, getCustomerDashboardStats);

@@ -9,7 +9,14 @@ const textRule = (label, max = 1000) =>
   });
 
 const amountRule = Joi.number().positive().precision(2);
-const phoneRule = Joi.string().trim().min(7).max(20);
+const phoneRule = Joi.string()
+  .trim()
+  .pattern(/^\+?\d{7,20}$/)
+  .min(7)
+  .max(20)
+  .messages({
+    "string.pattern.base": "Invalid phone number format. Only digits and an optional leading '+' are allowed.",
+  });
 const dateRule = Joi.date().iso();
 
 const validateBody = (schema, options = {}) => (req, res, next) => {
@@ -154,10 +161,14 @@ exports.createOrderValidator = validateBody(
 exports.updateOrderStatusValidator = validateBody(
   Joi.object({
     status: Joi.string()
-      .valid("new", "preparing", "ready", "completed", "cancelled", "picked_up", "pickedUp", "picked-up", "in_production", "delivered")
+      .valid(
+        "new", "preparing", "ready", "completed", "cancelled",
+        "picked_up", "pickedUp", "picked-up", "in_production", "delivered",
+        "pending", "active"
+      )
       .required()
       .messages({
-        "any.only": "Status must be new, preparing, ready, completed, cancelled, picked_up, or delivered",
+        "any.only": "Status must be pending, active, delivered, completed, cancelled, or legacy statuses (new, preparing, ready)",
         "any.required": "Status is required",
       }),
   })
@@ -333,3 +344,14 @@ exports.initializeShipmentPaymentValidator = validateBody(
     deliveryAddress: requiredString("Delivery address", 255),
   })
 );
+
+const withdrawalSchema = Joi.object({
+  amount: Joi.number().positive().integer().required().messages({
+    "any.required": "Withdrawal amount is required",
+    "number.base": "Withdrawal amount must be a number",
+    "number.positive": "Withdrawal amount must be greater than 0",
+    "number.integer": "Withdrawal amount must be an integer",
+  }),
+});
+
+exports.withdrawalValidator = validateBody(withdrawalSchema);

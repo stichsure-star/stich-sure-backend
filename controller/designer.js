@@ -314,15 +314,7 @@ exports.forgetPassword = async (req, res, next) => {
 exports.resetPassword = async (req, res, next) => {
   try {
     const { password } = req.body;
-
-    if (!req.user || !req.user.id) {
-      return res.status(401).json({
-         success: false,
-         message: 'Unauthorized' 
-        });
-    }
-
-    const designer = await Designer.findByPk(req.user.id);
+    const designer = await Designer.findOne({ where: { email } });
 
     if (!designer) {
       return res.status(404).json({

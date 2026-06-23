@@ -50,6 +50,52 @@ paths:
       responses:
         '201':
           description: Request created successfully
+  /api/v1/request/accept/{id}:
+    put:
+      summary: Accept a request from a customer
+      tags: [request]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: "The ID of the request to accept"
+      responses:
+        '200':
+          description: Request accepted successfully
+        '400':
+          description: Request is not in pending or proposal_sent status
+        '403':
+          description: Only the assigned designer can accept the request
+        '404':
+          description: Request not found
+  /api/v1/request/reject/{id}:
+    put:
+      summary: Reject a request from a customer
+      tags: [request]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: "The ID of the request to reject"
+      responses:
+        '200':
+          description: Request rejected successfully
+        '400':
+          description: Request is not in pending or proposal_sent status
+        '403':
+          description: Only the assigned designer can reject the request
+        '404':
+          description: Request not found
   /api/v1/request/complete/{id}:
     put:
       summary: Mark a request as completed

@@ -1,4 +1,5 @@
 const axios = require("axios");
+const crypto = require("crypto");
 const { Payment, Order, Designer, Shipment, Customer } = require("../models");
 const { getShippingRates, validateAddress, getPackageCategories, trackShipment,createShipment, fundWallet} = require("../services/shipbubble.service");
 
@@ -11,6 +12,54 @@ const getTomorrowDate = () => {
   const tomorrow = new Date();
   tomorrow.setDate(tomorrow.getDate() + 1);
   return `${tomorrow.getFullYear()}-${String(tomorrow.getMonth() + 1).padStart(2, '0')}-${String(tomorrow.getDate()).padStart(2, '0')}`;
+};
+
+const getKorapayWebhookSecret = () =>
+  process.env.KORAPAY_WEBHOOK_SECRET ||
+  process.env.KORA_WEBHOOK_SECRET ||
+  "";
+
+const safeTimingEqualHex = (aHex, bHex) => {
+  if (!aHex || !bHex) return false;
+  const a = Buffer.from(String(aHex), "utf8");
+  const b = Buffer.from(String(bHex), "utf8");
+  if (a.length !== b.length) return false;
+  return crypto.timingSafeEqual(a, b);
+};
+
+const processSuccessfulPayment = async (payment) => {
+  if (payment.pickupShipmentCreated && payment.status === "success") {
+    return { alreadyProcessed: true };
+  }
+
+  const pickupShipmentResult = await createShipment({
+    request_token: payment.pickupRequestToken,
+    courier_id: payment.pickupCourierId,
+    service_code: payment.pickupServiceCode,
+  });
+
+  await payment.update({
+    status: "success",
+    paidAt: payment.paidAt || new Date(),
+    pickupShipmentCreated: true,
+  });
+
+  const courier = pickupShipmentResult.data?.courier;
+  await Shipment.findOrCreate({
+    where: { orderId: payment.orderId, type: "pickup" },
+    defaults: {
+      orderId: payment.orderId,
+      type: "pickup",
+      trackingCode: pickupShipmentResult.data?.order_id,
+      trackingUrl: pickupShipmentResult.data?.tracking_url,
+      courier: courier?.name,
+      status: pickupShipmentResult.data?.status,
+      shippingFee: pickupShipmentResult.data?.payment?.shipping_fee,
+      currency: pickupShipmentResult.data?.payment?.currency,
+    },
+  });
+
+  return { alreadyProcessed: false, pickupShipmentResult };
 };
 
 exports.validateAddress = async (req, res) => {
@@ -456,6 +505,65 @@ return res.status(200).json({
     return res.status(500).json({ message: "Verification failed" });
   }
 },
+
+exports.korapayWebhook = async (req, res) => {
+  try {
+    const webhookSecret = getKorapayWebhookSecret();
+    const signature = req.headers["x-korapay-signature"];
+    if (!webhookSecret || !signature) {
+      return res.status(200).json({ received: true });
+    }
+
+    const raw = req.rawBody ? req.rawBody.toString("utf8") : null;
+    const payload = raw ? JSON.parse(raw) : req.body;
+    const data = payload?.data;
+    if (!data) {
+      return res.status(200).json({ received: true });
+    }
+
+    const expected = crypto
+      .createHmac("sha256", webhookSecret)
+      .update(JSON.stringify(data))
+      .digest("hex");
+
+    if (!safeTimingEqualHex(expected, signature)) {
+      return res.status(200).json({ received: true });
+    }
+
+    const reference =
+      data.reference ||
+      data.transaction_reference ||
+      data.transactionReference;
+
+    if (!reference) {
+      return res.status(200).json({ received: true });
+    }
+
+    const payment = await Payment.findOne({
+      where: { transactionReference: reference },
+    });
+    if (!payment) {
+      return res.status(200).json({ received: true });
+    }
+
+    if (data.status !== "success") {
+      if (payment.status !== "failed") {
+        await payment.update({ status: "failed" });
+      }
+      return res.status(200).json({ received: true });
+    }
+
+    if (payment.status === "success" && payment.pickupShipmentCreated) {
+      return res.status(200).json({ received: true });
+    }
+
+    await processSuccessfulPayment(payment);
+    return res.status(200).json({ received: true });
+  } catch (error) {
+    console.log("Korapay webhook error:", error.message);
+    return res.status(500).json({ received: true });
+  }
+};
 exports.createDeliveryShipment= async (req, res) => {
   try {
     const { orderId } = req.params;
