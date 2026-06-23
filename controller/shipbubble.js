@@ -2,7 +2,14 @@ const axios = require("axios");
 const crypto = require("crypto");
 const { Payment, Order, Designer, Shipment, Customer } = require("../models");
 const { handleTransferWebhook } = require("../utils/withdrawal");
-
+const {
+  getShippingRates,
+  validateAddress,
+  getPackageCategories,
+  trackShipment,
+  createShipment,
+  fundWallet
+} = require("../services/shipbubble.service");
 const getCheapestCourier = (couriers) =>
   couriers.reduce((prev, curr) =>
     Number(prev.total) < Number(curr.total) ? prev : curr
@@ -318,7 +325,7 @@ const paymentResponse = await axios.post(
 
     reference,
 
-    redirect_url: "http://localhost:5713/user/dashboard",
+    redirect_url: "https://stich-sure-frontend.vercel.app/checkoutpayment",
   },
   {
     headers: {
