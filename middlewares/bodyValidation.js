@@ -81,8 +81,6 @@ const resolveBankAccountSchema = Joi.object({
 const profileFields = {
   businessName: optionalString("Business name", 100),
   currentHouseAddress: optionalString("Current house address", 255),
-  state: optionalString("State", 100),
-  country: optionalString("Country", 100),
   phoneNumber: phoneRule.optional().messages({
     "string.empty": "Phone number cannot be empty",
     "string.min": "Phone number must be at least 7 characters",
@@ -124,6 +122,25 @@ const packageItemSchema = Joi.object({
   quantity: Joi.alternatives().try(Joi.number().integer().positive(), Joi.string().trim().min(1)).required(),
 });
 
+const measurementArrayRule = Joi.array()
+  .items(
+    Joi.object({
+      name: Joi.string().trim().required().messages({
+        "any.required": "Measurement name is required",
+        "string.empty": "Measurement name cannot be empty",
+      }),
+      value: Joi.string().trim().required().messages({
+        "any.required": "Measurement value is required",
+        "string.empty": "Measurement value cannot be empty",
+      }),
+    })
+  )
+  .min(1)
+  .required()
+  .messages({
+    "array.base": "Measurement must be an array",
+    "array.min": "At least one measurement is required",
+  });
 exports.createRequestValidator = validateBody(
   Joi.object({
     fullName: requiredString("Full name", 100),
@@ -131,7 +148,7 @@ exports.createRequestValidator = validateBody(
       "any.required": "Deadline is required",
       "date.format": "Deadline must be a valid ISO date",
     }),
-    measurement: requiredString("Measurement", 1000),
+    //measurement: measurementArrayRule.optional(),
     description: requiredString("Description", 2000),
   })
 );
@@ -186,17 +203,6 @@ exports.updateOrderStatusValidator = validateBody(
   })
 );
 
-const measurementArrayRule = Joi.alternatives()
-  .try(
-    Joi.array().items(textRule("Measurement item", 1000)),
-    Joi.string().trim().min(1).max(1000)
-  )
-  .messages({
-    "array.base": "Measurement must be an array",
-    "array.includes": "Measurement items must be strings",
-    "string.base": "Measurement must be a valid string or array",
-  });
-
 exports.createDesignValidator = validateBody(
   Joi.object({
     designerId: uuidRule.required().messages({
@@ -237,8 +243,6 @@ exports.designerProfileCreateValidator = validateBody(
     ...profileFields,
     businessName: requiredString("Business name", 100),
     currentHouseAddress: requiredString("Current house address", 255),
-    state: requiredString("State", 100),
-    country: requiredString("Country", 100),
     phoneNumber: phoneRule.required().messages({
       "any.required": "Phone number is required",
       "string.empty": "Phone number cannot be empty",
@@ -251,8 +255,6 @@ exports.designerOnboardingValidator = validateBody(
     ...profileFields,
     businessName: requiredString("Business name", 100),
     currentHouseAddress: requiredString("Current house address", 255),
-    state: requiredString("State", 100),
-    country: requiredString("Country", 100),
     phoneNumber: phoneRule.required().messages({
       "any.required": "Phone number is required",
       "string.empty": "Phone number cannot be empty",
@@ -270,8 +272,6 @@ exports.designerProfileUpdateValidator = validateBody(
   Joi.object(profileFields).or(
     "businessName",
     "currentHouseAddress",
-    "state",
-    "country",
     "phoneNumber",
     "bankName",
     "accountNumber",

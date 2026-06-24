@@ -215,8 +215,6 @@ exports.createOrUpdateDesignerOnboarding = async (req, res, next) => {
     const {
       businessName,
       currentHouseAddress,
-      state,
-      country,
       phoneNumber,
       specialization,
       yearsOfExperience,
@@ -228,11 +226,11 @@ exports.createOrUpdateDesignerOnboarding = async (req, res, next) => {
       lastName
     } = req.body;
 
-    if (!businessName || !currentHouseAddress || !state || !country || !phoneNumber) {
+    if (!businessName || !currentHouseAddress || !phoneNumber) {
       await transaction.rollback();
       return res.status(400).json({
         success: false,
-        message: "Business name, current house address, state, country, and phone number are required.",
+        message: "Business name, current house address, and phone number are required.",
       });
     }
 
@@ -262,8 +260,6 @@ exports.createOrUpdateDesignerOnboarding = async (req, res, next) => {
     const isProfileCompleted =
       businessName &&
       currentHouseAddress &&
-      state &&
-      country &&
       phoneNumber &&
       parsedSpecialization &&
       yearsOfExperience &&
@@ -276,8 +272,6 @@ exports.createOrUpdateDesignerOnboarding = async (req, res, next) => {
       designerId,
       businessName,
       currentHouseAddress,
-      state,
-      country,
       phoneNumber,
       bankName,
       accountNumber,
@@ -630,8 +624,6 @@ exports.updateDesignerProfile = async (req, res, next) => {
     const {
       businessName,
       currentHouseAddress,
-      state,
-      country,
       phoneNumber,
       bankName,
       accountNumber,
@@ -663,8 +655,6 @@ exports.updateDesignerProfile = async (req, res, next) => {
     const updatedBusinessName = businessName || profile.businessName;
     const updatedCurrentHouseAddress =
       currentHouseAddress || profile.currentHouseAddress;
-    const updatedState = state || profile.state;
-    const updatedCountry = country || profile.country;
     const updatedPhoneNumber = phoneNumber || profile.phoneNumber;
     const updatedBankName = bankName || profile.bankName;
     const updatedAccountNumber = accountNumber || profile.accountNumber;
@@ -679,8 +669,6 @@ exports.updateDesignerProfile = async (req, res, next) => {
     const isProfileCompleted =
       updatedBusinessName &&
       updatedCurrentHouseAddress &&
-      updatedState &&
-      updatedCountry &&
       updatedPhoneNumber &&
       updatedSpecialization &&
       updatedYearsOfExperience &&
@@ -690,8 +678,6 @@ exports.updateDesignerProfile = async (req, res, next) => {
     await profile.update({
       businessName: updatedBusinessName,
       currentHouseAddress: updatedCurrentHouseAddress,
-      state: updatedState,
-      country: updatedCountry,
       phoneNumber: updatedPhoneNumber,
       bankName: updatedBankName,
       accountNumber: updatedAccountNumber,
@@ -762,7 +748,7 @@ exports.updateDesignerProfileSettings = async (req, res) => {
       });
     }
 
-    const { bio, email, firstName, lastName, location } = req.body;
+    const { bio, email, firstName, lastName, location, phoneNumber, address } = req.body;
     let profile = await DesignerProfile.findOne({
       where: { id }
     });
@@ -776,21 +762,21 @@ exports.updateDesignerProfileSettings = async (req, res) => {
     }
 
    
-    if (!bio  || !email || !firstName || !lastName || !location ) {
-      return res.status(error).json({
+    if (!bio  || !email || !firstName || !lastName || !location || !phoneNumber || !address ) {
+      return res.status(400).json({
         message: 'All fields are required'
       });
     }
 
    
     await Designer.update(
-      { email, firstName, lastName },
+      { email, firstName, lastName, phoneNumber, address },
       { where: { id } }
     );
 
     
     const updatedProfileSetting = await DesignerProfile.update(
-      { bio, profilePhoto, email, firstName, lastName, location },
+      { bio, profilePhoto, email, firstName, lastName, location, phoneNumber, address },
       { where: { designerId: id } }
     );
 

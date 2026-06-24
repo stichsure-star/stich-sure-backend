@@ -46,7 +46,11 @@ module.exports = (sequelize, DataTypes) => {
     },
     deadLine: DataTypes.DATE,
     description: DataTypes.STRING,
-    measurement: DataTypes.STRING,
+   measurement: {
+      type: DataTypes.JSON,
+      allowNull: true,
+      defaultValue: []
+    },
     status: {
       type: DataTypes.ENUM('pending', 'proposal_sent', 'accepted', 'picked_up', 'ready', 'completed', 'rejected', 'cancelled'),
       defaultValue: 'pending'

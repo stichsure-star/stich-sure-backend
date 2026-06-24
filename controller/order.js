@@ -67,7 +67,7 @@ const buildOrderWhere = (req) => {
 const buildVerifiedPaymentInclude = () => ({
   model: Payment,
   as: "payment",
-  required: false,
+  required: true,
   where: { status: "success" },
   attributes: [
     "id",
@@ -85,7 +85,7 @@ exports.buildVerifiedPaymentInclude = buildVerifiedPaymentInclude;
 exports.createOrder = async (req, res, next) => {
   try {
     const customerId = req.user.id;
-    const { requestId, designerId, designId, itemName, amount, } = req.body;
+    const { requestId, designerId, designId, itemName, amount, pickupDate } = req.body;
     if (!itemName || !amount ) {
       return res.status(400).json({
         success: false,
@@ -120,7 +120,7 @@ exports.createOrder = async (req, res, next) => {
       });
     }
 
-    const order = await Order.create({
+   const order = await Order.create({
       orderNumber: generateOrderNumber(),
       requestId: requestId,
       customerId,
@@ -129,9 +129,9 @@ exports.createOrder = async (req, res, next) => {
       itemName,
       amount,
       status: "pending",
-      placedAt: new Date(),
-    });
-
+      placedAt: new Date(),     
+      pickupDate: pickupDate || null,  
+   });
     return res.status(201).json({
       success: true,
       message: "Your order has been placed successfully!",
@@ -243,6 +243,20 @@ exports.getOrderById = async (req, res, next) => {
     const { id } = req.params;
 
     const order = await Order.findByPk(id, {
+      attributes: [
+        'id',
+        'orderNumber',
+        'itemName',
+        'amount',
+        'status',  
+        'pickupDate',    
+        'placedAt',
+        'activeAt',
+        'deliveredAt',
+        'completedAt',
+        'createdAt',
+        'updatedAt',
+      ],
       include: [
         buildVerifiedPaymentInclude(),
         {
