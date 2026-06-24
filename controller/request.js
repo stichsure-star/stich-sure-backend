@@ -59,12 +59,6 @@ const updateDesignerStats = async (designerId) => {
 };
 
 exports.createRequest = async (req, res, next) => {
-
-
-  console.log(req.body);
-console.log(req.body.measurement);
-console.log(typeof req.body.measurement);
-console.log(Array.isArray(req.body.measurement));
   try {
     const customerId = req.user.id;
     const designerId = req.params.designerId 
@@ -75,7 +69,6 @@ console.log(Array.isArray(req.body.measurement));
       measurement,
       description,
     } = req.body;
-    console.log('req.bodyn kjsjsks', req.body)
     if (!designerId) {
       return res.status(400).json({
         success: false,
@@ -100,21 +93,10 @@ console.log(Array.isArray(req.body.measurement));
         message: "Designer not found",
       });
     }
-console.log("muiz onigbo")
     const normalizedMeasurement = normalizeMeasurementForStorage(measurement);
 
-    console.log("muiz onigbo2 ", normalizedMeasurement)
 
     const measurementValue = normalizedMeasurement === [] ? [] : JSON.parse(normalizedMeasurement);
-    console.log("muiz onigbo3 ", {
-      customerId,
-      designerId,
-      fullName,
-      deadLine,
-      measurement: measurementValue,
-      description,
-      status: "pending",
-    })
 
     const newRequest = await request.create({
       customerId,
