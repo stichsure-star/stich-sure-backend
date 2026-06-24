@@ -3,6 +3,7 @@ const crypto = require("crypto");
 const { Payment, Order, Designer, Shipment, Customer, DesignerProfile } = require("../models");
 const { handleTransferWebhook } = require("../utils/withdrawal");
 const { getDesignerContactDetails, normalizePhoneNumber } = require("../utils/designerContact");
+const { sanitizeAddressForShipbubble } = require("../utils/addressSanitizer");
 const {
   getShippingRates,
   validateAddress,
@@ -218,6 +219,8 @@ const normalizedDesignerPhone = designerContact.phone;
 const normalizedDesignerAddress = designerContact.address;
 const normalizedCustomerPhone = normalizePhoneNumber(customer.phone);
 const normalizedCustomerAddress = String(customer.address || "").trim();
+const cleanedDesignerAddress = sanitizeAddressForShipbubble(normalizedDesignerAddress);
+const cleanedCustomerAddress = sanitizeAddressForShipbubble(normalizedCustomerAddress);
 
 if (!normalizedDesignerPhone || !normalizedDesignerAddress) {
   return res.status(400).json({
@@ -243,20 +246,22 @@ if (!normalizedCustomerPhone || !normalizedCustomerAddress) {
   });
 }
 
+const fallbackAddress = cleanedCustomerAddress || cleanedDesignerAddress || normalizedCustomerAddress;
+
 console.log("Step 1: Order, customer and designer found");
 
 const designerAddressResult = await validateAddress({
   name: `${designer.firstName} ${designer.lastName}`,
   email: designer.email,
   phone: normalizedDesignerPhone,
-  address: normalizedDesignerAddress,
+  address: cleanedDesignerAddress || normalizedDesignerAddress,
 });
 
 const customerAddressResult = await validateAddress({
   name: `${customer.firstName} ${customer.lastName}`,
   email: customer.email,
   phone: normalizedCustomerPhone,
-  address: normalizedCustomerAddress,
+  address: cleanedCustomerAddress || fallbackAddress,
 });
 console.log('customerAddressResult:', JSON.stringify(customerAddressResult, null, 2));
 
@@ -274,10 +279,19 @@ console.log({
   address: normalizedCustomerAddress,
 });
 console.log('designerAddressResult:', JSON.stringify(designerAddressResult, null, 2));
-if (customerAddressResult.status === "failed") {
+const resolvedCustomerAddressResult = customerAddressResult.status === "failed"
+  ? await validateAddress({
+      name: `${customer.firstName} ${customer.lastName}`,
+      email: customer.email,
+      phone: normalizedCustomerPhone,
+      address: fallbackAddress,
+    })
+  : customerAddressResult;
+
+if (resolvedCustomerAddressResult.status === "failed") {
   return res.status(400).json({
     success: false,
-    message: customerAddressResult.message,
+    message: resolvedCustomerAddressResult.message || customerAddressResult.message,
   });
 }
 
@@ -288,7 +302,7 @@ if (designerAddressResult.status === "failed") {
   });
 }
  
-const customerAddressCode = customerAddressResult.data.address_code;
+const customerAddressCode = resolvedCustomerAddressResult.data.address_code;
 const designerAddressCode = designerAddressResult.data.address_code;
 
     const pickup_date = getTomorrowDate();
