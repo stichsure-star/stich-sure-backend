@@ -16,7 +16,7 @@ const normalizePhoneNumber = (phone) => {
 
 const getDesignerContactDetails = (designerProfile, designer) => {
   const profilePhone = designerProfile?.phoneNumber || designerProfile?.phone;
-  const profileAddress = designerProfile?.currentHouseAddress || designerProfile?.address;
+  const profileAddress = designerProfile?.address;
 
   return {
     phone: normalizePhoneNumber(profilePhone || designer?.phone || null),
