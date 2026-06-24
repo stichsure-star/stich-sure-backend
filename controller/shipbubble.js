@@ -269,17 +269,7 @@ if (!customer.phone || !customer.address) {
   });
 }
 
-if (!designerProfile.phone || !designerProfile.address) {
-  return res.status(400).json({
-    success: false,
-    message: "Designer profile incomplete",
-    missing: {
-      phone: !designerProfile.phone,
-      address: !designerProfile.address,
-    },
-    action: "Please ask the designer to update their profile with phone and address before payment",
-  });
-}
+
 const customerAddressCode = customerAddressResult.data.address_code;
 const designerAddressCode = designerAddressResult.data.address_code;
 
