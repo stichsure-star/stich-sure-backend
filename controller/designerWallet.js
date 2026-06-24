@@ -180,7 +180,9 @@ exports.updateDesignerWallet = async (req, res, next) => {
       data: wallet,
     });
   } catch (error) {
-    next(error);
+    return res.status(500).json({
+      message: error.message
+    })
   }
 };
 

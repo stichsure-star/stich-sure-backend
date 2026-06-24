@@ -1,6 +1,6 @@
 const axios = require("axios");
 const crypto = require("crypto");
-const { Payment, Order, Designer, Shipment, Customer } = require("../models");
+const { Payment, Order, Designer, Shipment, Customer, DesignerProfile } = require("../models");
 const { handleTransferWebhook } = require("../utils/withdrawal");
 const {
   getShippingRates,
@@ -192,6 +192,29 @@ exports.initializePayment  = async (req, res, next) => {
     if (!designer) {
       return res.status(404).json({ success: false, message: "Designer not found" });
     }
+
+const designerProfile = await DesignerProfile.findOne({
+  where: { designerId: foundOrder.designerId }
+});
+
+if (!designerProfile) {
+  return res.status(404).json({
+    success: false,
+    message: "Designer profile not found. Please complete your profile setup.",
+  });
+}
+
+if (!designerProfile.phone || !designerProfile.address) {
+  return res.status(400).json({
+    success: false,
+    message: "Designer profile incomplete",
+    missing: {
+      phone: !designerProfile.phone,
+      address: !designerProfile.address,
+    },
+    action: "Please ask the designer to update their profile with phone and address before payment",
+  });
+}
 console.log("Step 1: Order, customer and designer found");
 const customerAddressResult = await validateAddress({
   name: `${customer.firstName} ${customer.lastName}`,
@@ -204,8 +227,8 @@ console.log('customerAddressResult:', JSON.stringify(customerAddressResult, null
 const designerAddressResult = await validateAddress({
   name: `${designer.firstName} ${designer.lastName}`,
   email: designer.email,
-  phone: designer.phone,
-  address: designer.address,
+  phone: designerProfile.phone,
+  address: designerProfile.address,
 });
     console.log({
     customerPhone: customer.phone,
@@ -417,7 +440,8 @@ const payment = await Payment.create({
     service_code: cheapestPickup.service_code,
     is_cod_label: cheapestPickup.is_cod_label ?? false,
   },
-
+  
+  
   delivery: {
     request_token: deliveryRates.data.request_token,
     courier_id: cheapestDelivery.courier_id,
