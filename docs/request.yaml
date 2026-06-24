@@ -4,52 +4,58 @@ info:
   version: 1.0.0
   description: API documentation for request endpoints in the StitchSure application.
 paths:
-  /api/v1/request/create/{designerId}:
-    post:
-      summary: Create a new request
-      tags: [request]
-      parameters:
-        - in: path
-          name: designerId
-          required: true
-          schema:
-            type: string
-            format: uuid
-          description: "The ID of the designer receiving the request"
-      security:
-        - bearerAuth: []
-      requestBody:
+ /api/v1/request/create/{designerId}:
+  post:
+    summary: Create a new request
+    tags:
+      - request
+    security:
+      - bearerAuth: []
+
+    parameters:
+      - in: path
+        name: designerId
         required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required:
-                - fullName
-                - deadLine
-                - measurement
-                - description
-              properties:
-                fullName:
-                  type: string
-                  example: "Jane Doe"
-                  description: "The full name for the request reference"
-                deadLine:
-                  type: string
-                  format: date-time
-                  example: "2026-07-15T00:00:00.000Z"
-                  description: "The request deadline"
-                measurement:
-                  type: string
-                  example: "Bust: 34, Waist: 26, Hips: 36"
-                  description: "Measurement details for the request"
-                description:
-                  type: string
-                  example: "Need a bridal dress with lace sleeves and embroidery."
-                  description: "A description of the requested design"
-      responses:
-        '201':
-          description: Request created successfully
+        schema:
+          type: string
+          format: uuid
+        description: The ID of the designer receiving the request.
+
+    requestBody:
+      required: true
+      content:
+        multipart/form-data:
+          schema:
+            type: object
+            required:
+              - fullName
+              - deadLine
+              - measurement
+              - description
+            properties:
+              fullName:
+                type: string
+                example: Jane Doe
+              deadLine:
+                type: string
+                format: date-time
+                example: "2026-07-15T00:00:00.000Z"
+              measurement:
+                type: string
+                description: >
+                  JSON string containing an array of measurement objects.
+                example: >
+                  [{"name":"Bust","value":"34"},{"name":"Waist","value":"26"},{"name":"Hips","value":"36"}]
+              description:
+                type: string
+                example: Need a bridal dress with lace sleeves and embroidery.
+              designImage:
+                type: string
+                format: binary
+                description: Image of the requested design.
+    responses:
+      "201":
+        description: Request created successfully
   /api/v1/request/accept/{id}:
     put:
       summary: Accept a request from a customer

@@ -11,6 +11,7 @@ const {
   rejectRequest,
   acceptRequestFromCustomer
 } = require('../controller/request')
+const {upload} = require('../middlewares/multer')
 console.log({
   createRequest,
   rejectRequest,
@@ -28,10 +29,9 @@ const {
   rateDesignerValidator,
 } = require('../middlewares/bodyValidation')
 
-router.post('/create/:designerId', authentication, createRequestValidator, createRequest);
 router.get('/', authentication, getAllRequests);
 router.get('/:id', authentication, getOneRequest);
-router.post('/create', authentication, createRequestValidator, createRequest);
+router.post('/create/:designerId', authentication, upload.single('designImage'), createRequestValidator, createRequest);
 router.put('/complete/:id', authentication, completeRequest);
 router.put('/progress/:id', authentication, requestProgressValidator, updateRequestProgress);
 router.put('/accept/:id', authentication, acceptRequestFromCustomer);

@@ -2,6 +2,7 @@ const { Op } = require("sequelize");
 const { request, DesignerProfile, Customer, Designer } = require("../models");
 const { AppError } = require('../utils/errorHandler');
 const {createNotification} = require("../utils/createNotification");
+const { normalizeMeasurementForStorage, parseMeasurementValue } = require('../utils/measurement');
 
 const progressByStatus = {
   pending: 0,
@@ -60,15 +61,21 @@ const updateDesignerStats = async (designerId) => {
 exports.createRequest = async (req, res, next) => {
   try {
     const customerId = req.user.id;
-    const designerId = req.params.designerId || req.body.designerId;
-    const { fullName, deadLine, measurement, description } = req.body;
+    const designerId = req.params.designerId 
 
+    const {
+      fullName,
+      deadLine,
+      measurement,
+      description,
+    } = req.body;
     if (!designerId) {
       return res.status(400).json({
         success: false,
         message: "Designer ID is required",
       });
     }
+
 
     const customer = await Customer.findByPk(customerId);
     const designer = await Designer.findByPk(designerId);
@@ -86,13 +93,17 @@ exports.createRequest = async (req, res, next) => {
         message: "Designer not found",
       });
     }
+    const normalizedMeasurement = normalizeMeasurementForStorage(measurement);
+
+
+    const measurementValue = normalizedMeasurement === [] ? [] : JSON.parse(normalizedMeasurement);
 
     const newRequest = await request.create({
       customerId,
       designerId,
       fullName,
       deadLine,
-      measurement,
+      measurement: measurementValue,
       description,
       status: "pending",
     });
@@ -102,14 +113,18 @@ exports.createRequest = async (req, res, next) => {
       designerId,
       requestId: newRequest.id,
       title: "New Request Received",
-      message: "You have received a new request from a customer. Please review and respond.",
+      message:
+        "You have received a new request from a customer. Please review and respond.",
       type: "new_request",
     });
 
-    res.status(201).json({
+    return res.status(201).json({
       success: true,
       message: "Your request has been sent to the designer!",
-      data: newRequest,
+      data: {
+        ...newRequest.toJSON(),
+        measurement: parseMeasurementValue(newRequest.measurement),
+      },
     });
   } catch (error) {
     next(error);

@@ -30,14 +30,6 @@ module.exports = {
         type: Sequelize.STRING,
         allowNull: false
       },
-      state: {
-        type: Sequelize.STRING,
-        allowNull: true
-      },
-      country: {
-        type: Sequelize.STRING,
-        allowNull: true
-      },
       profilePhoto: {
         type: Sequelize.TEXT,
         allowNull: true
