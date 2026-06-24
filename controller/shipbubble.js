@@ -2,6 +2,7 @@ const axios = require("axios");
 const crypto = require("crypto");
 const { Payment, Order, Designer, Shipment, Customer, DesignerProfile } = require("../models");
 const { handleTransferWebhook } = require("../utils/withdrawal");
+const { getDesignerContactDetails, normalizePhoneNumber } = require("../utils/designerContact");
 const {
   getShippingRates,
   validateAddress,
@@ -192,7 +193,7 @@ exports.initializePayment  = async (req, res, next) => {
     if (!designer) {
       return res.status(404).json({ success: false, message: "Designer not found" });
     }
-
+ 
 const designerProfile = await DesignerProfile.findOne({
   where: { designerId: foundOrder.designerId }
 });
@@ -204,43 +205,73 @@ if (!designerProfile) {
   });
 }
 
-if (!designerProfile.phone || !designerProfile.address) {
+const designerContact = getDesignerContactDetails(designerProfile, designer);
+
+console.log('designerProfile details:', {
+  id: designerProfile.id,
+  designerId: designerProfile.designerId,
+  phone: designerContact.phone,
+  address: designerContact.address,
+});
+
+const normalizedDesignerPhone = designerContact.phone;
+const normalizedDesignerAddress = designerContact.address;
+const normalizedCustomerPhone = normalizePhoneNumber(customer.phone);
+const normalizedCustomerAddress = String(customer.address || "").trim();
+
+if (!normalizedDesignerPhone || !normalizedDesignerAddress) {
   return res.status(400).json({
     success: false,
     message: "Designer profile incomplete",
     missing: {
-      phone: !designerProfile.phone,
-      address: !designerProfile.address,
+      phone: !normalizedDesignerPhone,
+      address: !normalizedDesignerAddress,
     },
     action: "Please ask the designer to update their profile with phone and address before payment",
   });
 }
+
+if (!normalizedCustomerPhone || !normalizedCustomerAddress) {
+  return res.status(400).json({
+    success: false,
+    message: "Customer profile incomplete",
+    missing: {
+      phone: !normalizedCustomerPhone,
+      address: !normalizedCustomerAddress,
+    },
+    action: "Please ask the customer to update their profile with phone and address before payment",
+  });
+}
+
 console.log("Step 1: Order, customer and designer found");
-const customerAddressResult = await validateAddress({
-  name: `${customer.firstName} ${customer.lastName}`,
-  email: customer.email,
-  phone: customer.phone,
-  address: customer.address,
-});
-console.log('customerAddressResult:', JSON.stringify(customerAddressResult, null, 2));
 
 const designerAddressResult = await validateAddress({
   name: `${designer.firstName} ${designer.lastName}`,
   email: designer.email,
-  phone: designerProfile.phone,
-  address: designerProfile.address,
+  phone: normalizedDesignerPhone,
+  address: normalizedDesignerAddress,
 });
+
+const customerAddressResult = await validateAddress({
+  name: `${customer.firstName} ${customer.lastName}`,
+  email: customer.email,
+  phone: normalizedCustomerPhone,
+  address: normalizedCustomerAddress,
+});
+console.log('customerAddressResult:', JSON.stringify(customerAddressResult, null, 2));
+
+
     console.log({
-    customerPhone: customer.phone,
-    customerAddress: customer.address,
-    designerPhone: designer.phone,
-    designerAddress: designer.address,
+    customerPhone: normalizedCustomerPhone,
+    customerAddress: normalizedCustomerAddress,
+    designerPhone: normalizedDesignerPhone,
+    designerAddress: normalizedDesignerAddress,
 }); 
 console.log({
   name: `${customer.firstName} ${customer.lastName}`,
   email: customer.email,
-  phone: customer.phone,
-  address: customer.address,
+  phone: normalizedCustomerPhone,
+  address: normalizedCustomerAddress,
 });
 console.log('designerAddressResult:', JSON.stringify(designerAddressResult, null, 2));
 if (customerAddressResult.status === "failed") {
@@ -257,19 +288,6 @@ if (designerAddressResult.status === "failed") {
   });
 }
  
-if (!customer.phone || !customer.address) {
-  return res.status(400).json({
-    success: false,
-    message: "Customer profile incomplete",
-    missing: {
-      phone: !customer.phone,
-      address: !customer.address,
-    },
-    action: "Please ask the customer to update their profile with phone and address before payment",
-  });
-}
-
-
 const customerAddressCode = customerAddressResult.data.address_code;
 const designerAddressCode = designerAddressResult.data.address_code;
 
