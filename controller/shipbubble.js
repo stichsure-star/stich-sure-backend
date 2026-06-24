@@ -233,7 +233,30 @@ if (designerAddressResult.status === "failed") {
     message: designerAddressResult.message,
   });
 }
+ 
+if (!customer.phone || !customer.address) {
+  return res.status(400).json({
+    success: false,
+    message: "Customer profile incomplete",
+    missing: {
+      phone: !customer.phone,
+      address: !customer.address,
+    },
+    action: "Please ask the customer to update their profile with phone and address before payment",
+  });
+}
 
+if (!designer.phone || !designer.address) {
+  return res.status(400).json({
+    success: false,
+    message: "Designer profile incomplete",
+    missing: {
+      phone: !designer.phone,
+      address: !designer.address,
+    },
+    action: "Please ask the designer to update their profile with phone and address before payment",
+  });
+}
 const customerAddressCode = customerAddressResult.data.address_code;
 const designerAddressCode = designerAddressResult.data.address_code;
 
