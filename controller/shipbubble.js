@@ -269,13 +269,13 @@ if (!customer.phone || !customer.address) {
   });
 }
 
-if (!designer.phone || !designer.address) {
+if (!designerProfile.phone || !designerProfile.address) {
   return res.status(400).json({
     success: false,
     message: "Designer profile incomplete",
     missing: {
-      phone: !designer.phone,
-      address: !designer.address,
+      phone: !designerProfile.phone,
+      address: !designerProfile.address,
     },
     action: "Please ask the designer to update their profile with phone and address before payment",
   });
