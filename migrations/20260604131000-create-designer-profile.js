@@ -26,7 +26,7 @@ module.exports = {
         type: Sequelize.STRING,
         allowNull: false
       },
-      currentHouseAddress: {
+      address: {
         type: Sequelize.STRING,
         allowNull: false
       },

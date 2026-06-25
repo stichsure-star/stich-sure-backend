@@ -18,7 +18,7 @@ paths:
   #             type: object
   #             required:
   #               - businessName
-  #               - currentHouseAddress
+  #               - address
   #               - phoneNumber
   #               - specialization
   #               - yearsOfExperience
@@ -28,7 +28,7 @@ paths:
   #                 type: string
   #                 example: "Stitch Masters"
   #                 description: "The designer's business name"
-  #               currentHouseAddress:
+  #               address:
   #                 type: string
   #                 example: "123 Fashion Avenue"
   #                 description: "The designer's current work address"
@@ -89,7 +89,7 @@ paths:
               type: object
               required:
                 - businessName
-                - currentHouseAddress
+                - address
                 - phoneNumber
                 - bankName
                 - accountNumber
@@ -98,7 +98,7 @@ paths:
                 businessName:
                   type: string
                   example: "Stitch Masters"
-                currentHouseAddress:
+                address:
                   type: string
                   example: "123 Broad Street, Lagos Island, Lagos State, Nigeria"
                 phoneNumber:
@@ -179,7 +179,7 @@ paths:
                               format: uuid
                             businessName:
                               type: string
-                            currentHouseAddress:
+                            address:
                               type: string
                             profilePhoto:
                               type: string
@@ -312,7 +312,7 @@ paths:
                               format: uuid
                             businessName:
                               type: string
-                            currentHouseAddress:
+                            address:
                               type: string
                             profilePhoto:
                               type: string
@@ -451,7 +451,7 @@ paths:
                             format: uuid
                           businessName:
                             type: string
-                          currentHouseAddress:
+                          address:
                             type: string
                           profilePhoto:
                             type: string
@@ -528,7 +528,7 @@ paths:
                 businessName:
                   type: string
                   example: "Stitch Masters"
-                currentHouseAddress:
+                address:
                   type: string
                   example: "123 Fashion Avenue"
                 phoneNumber:

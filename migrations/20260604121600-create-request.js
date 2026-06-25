@@ -31,7 +31,7 @@ module.exports = {
         type: Sequelize.DATE
       },
       measurement: {
-        type: Sequelize.STRING
+        type: Sequelize.TEXT
       },
       description: {
         type: Sequelize.STRING
