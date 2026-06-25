@@ -1,0 +1,283 @@
+openapi: 3.0.0
+info:
+  title: StitchSure API Documentation
+  version: 1.0.0
+  description: API documentation for the StitchSure application, which connects customers with tailors and designers for custom clothing services.
+paths:  
+  /api/v1/withdrawal/banks:
+    get:
+      summary: Get list of banks
+      tags:
+        - withdrawal
+      security:
+        - bearerAuth: []
+      description: >
+        Retrieves the list of all supported banks in Nigeria from Korapay.
+        Use the bank code from this response when verifying an account or making a withdrawal.
+      responses:
+        "200":
+          description: Banks retrieved successfully
+        "500":
+          description: Failed to fetch banks
+
+  /api/v1/withdrawal/verify-account:
+    post:
+      summary: Verify a bank account number
+      tags:
+        - withdrawal
+      security:
+        - bearerAuth: []
+      description: >
+        Verifies a bank account number using Korapay before initiating a withdrawal.
+        Returns the account name if valid.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - accountNumber
+                - bankCode
+              properties:
+                accountNumber:
+                  type: string
+                  example: "0123456789"
+                  description: "The bank account number to verify"
+                bankCode:
+                  type: string
+                  example: "044"
+                  description: "Bank code gotten from the get banks endpoint"
+      responses:
+        "200":
+          description: Account verified successfully
+        "400":
+          description: Account number and bank code are required
+        "500":
+          description: Failed to verify account
+
+  /api/v1/withdrawal/withdraw:
+    post:
+      summary: Withdraw funds from designer wallet
+      tags:
+        - withdrawal
+      security:
+        - bearerAuth: []
+      description: >
+        Initiates a withdrawal from the designer's wallet to either their saved bank
+        account on the platform or a new bank account. If useNewAccount is false,
+        the saved account from the designer profile is used. If true, the provided
+        bank details are used instead.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - amount
+                - useNewAccount
+              properties:
+                amount:
+                  type: number
+                  example: 5000
+                  description: "Amount to withdraw in Naira. Must not exceed available balance."
+                useNewAccount:
+                  type: boolean
+                  example: false
+                  description: "Set to false to use saved account, true to provide new account details"
+                bankName:
+                  type: string
+                  example: "Access Bank"
+                  description: "Required only when useNewAccount is true"
+                accountNumber:
+                  type: string
+                  example: "0123456789"
+                  description: "Required only when useNewAccount is true"
+                accountName:
+                  type: string
+                  example: "John Doe"
+                  description: "Required only when useNewAccount is true"
+                bankCode:
+                  type: string
+                  example: "044"
+                  description: "Required when useNewAccount is true. Get from the banks endpoint."
+      responses:
+        "200":
+          description: Withdrawal initiated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Withdrawal initiated successfully. Funds will be transferred shortly.
+                  withdrawal:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        example: uuid
+                      reference:
+                        type: string
+                        example: WIT_abc12345_1718364000000
+                      amount:
+                        type: number
+                        example: 5000
+                      bankName:
+                        type: string
+                        example: Access Bank
+                      accountNumber:
+                        type: string
+                        example: "0123456789"
+                      accountName:
+                        type: string
+                        example: John Doe
+                      status:
+                        type: string
+                        enum:
+                          - pending
+                          - success
+                          - failed
+                        example: pending
+                  wallet:
+                    type: object
+                    properties:
+                      availableBalance:
+                        type: number
+                        example: 45000
+                      withdrawn:
+                        type: number
+                        example: 5000
+        "400":
+          description: Insufficient balance, missing fields, or no saved account found
+        "404":
+          description: Wallet not found
+        "500":
+          description: Withdrawal failed
+
+  /api/v1/withdrawal/history:
+    get:
+      summary: Get withdrawal history
+      tags:
+        - withdrawal
+      security:
+        - bearerAuth: []
+      description: >
+        Retrieves the full withdrawal history for the logged-in designer,
+        ordered from most recent to oldest.
+      responses:
+        "200":
+          description: Withdrawal history retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Withdrawal history retrieved
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          example: uuid
+                        designerId:
+                          type: string
+                          example: uuid
+                        amount:
+                          type: number
+                          example: 5000
+                        bankName:
+                          type: string
+                          example: Access Bank
+                        accountNumber:
+                          type: string
+                          example: "0123456789"
+                        accountName:
+                          type: string
+                          example: John Doe
+                        reference:
+                          type: string
+                          example: WIT_abc12345_1718364000000
+                        status:
+                          type: string
+                          enum:
+                            - pending
+                            - success
+                            - failed
+                          example: success
+                        korapayTransferId:
+                          type: string
+                          example: txn_abc123
+                        failureReason:
+                          type: string
+                          example: null
+                        createdAt:
+                          type: string
+                          format: date-time
+                          example: "2026-06-14T17:51:37.000Z"
+        "500":
+          description: Failed to get withdrawals
+
+  /api/v1/withdrawal/balance:
+    get:
+      summary: Get designer wallet balance
+      tags:
+        - withdrawal
+      security:
+        - bearerAuth: []
+      description: >
+        Retrieves the current wallet balance and bank details for the logged-in designer.
+      responses:
+        "200":
+          description: Wallet balance retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Wallet balance retrieved
+                  data:
+                    type: object
+                    properties:
+                      availableBalance:
+                        type: number
+                        example: 45000
+                      totalEarnings:
+                        type: number
+                        example: 50000
+                      withdrawn:
+                        type: number
+                        example: 5000
+                      pendingWithdrawal:
+                        type: number
+                        example: 0
+                      bankName:
+                        type: string
+                        example: Access Bank
+                      accountNumber:
+                        type: string
+                        example: "0123456789"
+                      accountName:
+                        type: string
+                        example: John Doe
+        "404":
+          description: Wallet not found
+        "500":
+          description: Failed to get wallet balance
