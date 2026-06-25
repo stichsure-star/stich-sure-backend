@@ -180,6 +180,14 @@ exports.getDesignerOrders = async (req, res, next) => {
       include: [
         buildVerifiedPaymentInclude(),
         {
+           model: Payment,
+          as: "payment",
+          required: true,        
+          where: { status: "success" },
+          attributes: [
+            "id", "status", "paidAt", "amount",
+            "currency", "paymentProvider", "transactionReference",
+          ],
           model: Customer,
           as: "customer",
           attributes: ["id", "firstName", "lastName", "email"],
@@ -195,7 +203,7 @@ exports.getDesignerOrders = async (req, res, next) => {
       offset,
     });
 
-    return res.status(200).json({
+     return res.status(200).json({
       success: true,
       message: "Your designer orders have been retrieved.",
       data: rows,
@@ -226,7 +234,16 @@ exports.getCustomerOrders = async (req, res, next) => {
       where,
       distinct: true,
       include: [
-        buildVerifiedPaymentInclude(),
+        {
+          model: Payment,
+          as: "payment",
+          required: true,       
+          where: { status: "success" },
+          attributes: [
+            "id", "status", "paidAt", "amount",
+            "currency", "paymentProvider", "transactionReference",
+          ],
+        },
         {
           model: Designer,
           as: "designer",
@@ -260,6 +277,7 @@ exports.getCustomerOrders = async (req, res, next) => {
     next(error);
   }
 };
+
 
 exports.getOrderById = async (req, res, next) => {
   try {
