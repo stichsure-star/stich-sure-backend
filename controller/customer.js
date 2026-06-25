@@ -486,7 +486,6 @@ exports.getCustomerDashboardStats = async (req, res, next) => {
         message: "Unauthorized. Only customers can perform this action",
       });
     }
-
     const [activeOrders, completedOrders, savedDesigners] = await Promise.all([
       Order.count({
         where: {

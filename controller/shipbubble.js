@@ -620,7 +620,17 @@ exports.korapayWebhook = async (req, res) => {
     if (!reference) {
       return res.status(200).json({ received: true });
     }
-
+    await Order.update(
+  {
+    status: "active",
+    pickupDate,
+  },
+  {
+    where: {
+      id: payment.orderId,
+    },
+  }
+);
     const payment = await Payment.findOne({
       where: { transactionReference: reference },
     });
@@ -640,7 +650,9 @@ exports.korapayWebhook = async (req, res) => {
     }
 
     await processSuccessfulPayment(payment);
-    return res.status(200).json({ received: true });
+    return res.status(200).json({ 
+      received: true 
+    });
   } catch (error) {
     console.log("Korapay webhook error:", error.message);
     return res.status(500).json({ received: true });
