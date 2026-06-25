@@ -96,7 +96,16 @@ exports.createRequest = async (req, res, next) => {
     const normalizedMeasurement = normalizeMeasurementForStorage(measurement);
 
 
-    const measurementValue = normalizedMeasurement === [] ? [] : JSON.parse(normalizedMeasurement);
+   let measurementValue = [];
+try {
+  if (measurement) {
+    const parsed = typeof measurement === 'string' ? JSON.parse(measurement) : measurement;
+    measurementValue = Array.isArray(parsed) ? parsed : [];
+  }
+} catch (err) {
+  console.log('measurement parse error:', err.message);
+  measurementValue = [];
+}
 
     const newRequest = await request.create({
       customerId,
@@ -107,7 +116,9 @@ exports.createRequest = async (req, res, next) => {
       description,
       status: "pending",
     });
-
+    console.log('measurement raw:', measurement);
+console.log('typeof measurement:', typeof measurement);
+console.log('normalizedMeasurement:', normalizedMeasurement);
     await createNotification({
       customerId,
       designerId,

@@ -3,63 +3,62 @@ info:
   title: StitchSure API Documentation
   version: 1.0.0
   description: API documentation for request endpoints in the StitchSure application.
+
 paths:
- /api/v1/request/create/{designerId}:
-  post:
-    summary: Create a new request
-    tags:
-      - request
-    security:
-      - bearerAuth: []
-
-    parameters:
-      - in: path
-        name: designerId
-        required: true
-        schema:
-          type: string
-          format: uuid
-        description: The ID of the designer receiving the request.
-
-    requestBody:
-      required: true
-      content:
-        multipart/form-data:
+  /api/v1/request/create/{designerId}:
+    post:
+      summary: Create a new request
+      tags:
+        - request
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: designerId
+          required: true
           schema:
-            type: object
-            required:
-              - fullName
-              - deadLine
-              - measurement
-              - description
-            properties:
-              fullName:
-                type: string
-                example: Jane Doe
-              deadLine:
-                type: string
-                format: date-time
-                example: "2026-07-15T00:00:00.000Z"
-              measurement:
-                type: string
-                description: >
-                  JSON string containing an array of measurement objects.
-                example: >
-                  [{"name":"Bust","value":"34"},{"name":"Waist","value":"26"},{"name":"Hips","value":"36"}]
-              description:
-                type: string
-                example: Need a bridal dress with lace sleeves and embroidery.
-              designImage:
-                type: string
-                format: binary
-                description: Image of the requested design.
-    responses:
-      "201":
-        description: Request created successfully
+            type: string
+            format: uuid
+          description: The ID of the designer receiving the request.
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - fullName
+                - deadLine
+                - measurement
+                - description
+              properties:
+                fullName:
+                  type: string
+                  example: Jane Doe
+                deadLine:
+                  type: string
+                  format: date-time
+                  example: "2026-07-15T00:00:00.000Z"
+                measurement:
+                  type: string
+                  description: JSON string containing an array of measurement objects.
+                  example: '[{"name":"Bust","value":"34"},{"name":"Waist","value":"26"},{"name":"Hips","value":"36"}]'
+                description:
+                  type: string
+                  example: Need a bridal dress with lace sleeves and embroidery.
+                designImage:
+                  type: string
+                  format: binary
+                  description: Image of the requested design.
+      responses:
+        "201":
+          description: Request created successfully
+
   /api/v1/request/accept/{id}:
     put:
       summary: Accept a request from a customer
-      tags: [request]
+      tags:
+        - request
       security:
         - bearerAuth: []
       parameters:
@@ -69,20 +68,22 @@ paths:
           schema:
             type: string
             format: uuid
-          description: "The ID of the request to accept"
+          description: The ID of the request to accept.
       responses:
-        '200':
+        "200":
           description: Request accepted successfully
-        '400':
+        "400":
           description: Request is not in pending or proposal_sent status
-        '403':
+        "403":
           description: Only the assigned designer can accept the request
-        '404':
+        "404":
           description: Request not found
+
   /api/v1/request/reject/{id}:
     put:
       summary: Reject a request from a customer
-      tags: [request]
+      tags:
+        - request
       security:
         - bearerAuth: []
       parameters:
@@ -92,20 +93,22 @@ paths:
           schema:
             type: string
             format: uuid
-          description: "The ID of the request to reject"
+          description: The ID of the request to reject.
       responses:
-        '200':
+        "200":
           description: Request rejected successfully
-        '400':
+        "400":
           description: Request is not in pending or proposal_sent status
-        '403':
+        "403":
           description: Only the assigned designer can reject the request
-        '404':
+        "404":
           description: Request not found
+
   /api/v1/request/complete/{id}:
     put:
       summary: Mark a request as completed
-      tags: [request]
+      tags:
+        - request
       security:
         - bearerAuth: []
       parameters:
@@ -115,18 +118,20 @@ paths:
           schema:
             type: string
             format: uuid
-          description: "The ID of the request to complete"
+          description: The ID of the request to complete.
       responses:
-        '200':
+        "200":
           description: Request completed successfully
-        '400':
+        "400":
           description: Only accepted requests can be completed
-        '404':
+        "404":
           description: Request not found
+
   /api/v1/request/progress/{id}:
     put:
       summary: Update request progress
-      tags: [request]
+      tags:
+        - request
       security:
         - bearerAuth: []
       parameters:
@@ -136,7 +141,7 @@ paths:
           schema:
             type: string
             format: uuid
-          description: "The ID of the accepted request"
+          description: The ID of the accepted request.
       requestBody:
         required: true
         content:
@@ -148,22 +153,27 @@ paths:
               properties:
                 status:
                   type: string
-                  enum: [picked_up, ready, delivered]
+                  enum:
+                    - picked_up
+                    - ready
+                    - delivered
                   example: picked_up
-                  description: "Progress step to apply. delivered is saved as completed."
+                  description: Progress step to apply. delivered is saved as completed.
       responses:
-        '200':
+        "200":
           description: Request progress updated successfully
-        '400':
+        "400":
           description: Invalid status or wrong progress order
-        '403':
+        "403":
           description: Only the assigned designer can update progress
-        '404':
+        "404":
           description: Request not found
+
   /api/v1/request/tracking/{id}:
     get:
       summary: Get request tracking details
-      tags: [request]
+      tags:
+        - request
       security:
         - bearerAuth: []
       parameters:
@@ -173,16 +183,18 @@ paths:
           schema:
             type: string
             format: uuid
-          description: "The ID of the request to track"
+          description: The ID of the request to track.
       responses:
-        '200':
+        "200":
           description: Request tracking loaded successfully
-        '404':
+        "404":
           description: Request not found
+
   /api/v1/request/rate/{id}:
     put:
       summary: Rate a completed request's designer
-      tags: [request]
+      tags:
+        - request
       security:
         - bearerAuth: []
       parameters:
@@ -192,7 +204,7 @@ paths:
           schema:
             type: string
             format: uuid
-          description: "The ID of the completed request to rate"
+          description: The ID of the completed request to rate.
       requestBody:
         required: true
         content:
@@ -205,39 +217,50 @@ paths:
                 rating:
                   type: integer
                   example: 5
-                  description: "Rating value between 1 and 5"
+                  description: Rating value between 1 and 5.
       responses:
-        '200':
+        "200":
           description: Designer rated successfully
-        '400':
+        "400":
           description: Rating must be between 1 and 5 or request is not completed
-        '404':
+        "404":
           description: Request not found
+
   /api/v1/request:
     get:
       summary: Get all requests
-      tags: [request]
+      tags:
+        - request
       security:
         - bearerAuth: []
       responses:
-        '200':
+        "200":
           description: Requests retrieved successfully
 
   /api/v1/request/{id}:
     get:
       summary: Get one request
-      tags: [request]
+      tags:
+        - request
       security:
         - bearerAuth: []
       parameters:
-        - name: id
-          in: path
+        - in: path
+          name: id
           required: true
           schema:
             type: string
             format: uuid
+          description: The ID of the request to retrieve.
       responses:
-        '200':
+        "200":
           description: Request retrieved successfully
-        '404':
+        "404":
           description: Request not found
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
