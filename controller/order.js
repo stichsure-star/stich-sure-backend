@@ -675,7 +675,7 @@ exports.getOrdersByDesignerId = async (req, res, next) => {
       where: { designerId, ...buildOrderWhere(req) },
       distinct: true,
       include: [
-        buildPaymentInclude(true),
+        buildPaymentInclude(false),
         {
           model: Customer,
           as: "customer",
@@ -717,7 +717,7 @@ exports.getOrdersByCustomerId = async (req, res, next) => {
       where: { customerId, ...buildOrderWhere(req) },
       distinct: true,
       include: [
-        buildPaymentInclude(true),
+        buildPaymentInclude(false),
         {
           model: Designer,
           as: "designer",
