@@ -1,6 +1,7 @@
 const axios = require("axios");
 const crypto = require("crypto");
-const { Payment, Order, Designer, Shipment, Customer, DesignerProfile } = require("../models");
+const { Payment, Order, Designer, Shipment, Customer, DesignerProfile, request, Designs } = require("../models");
+const { parseMeasurementValue } = require("../utils/measurement");
 const { handleTransferWebhook } = require("../utils/withdrawal");
 const { getDesignerContactDetails, normalizePhoneNumber } = require("../utils/designerContact");
 const { sanitizeAddressForShipbubble } = require("../utils/addressSanitizer");
@@ -560,13 +561,32 @@ const shipment = await Shipment.create({
 
 await payment.reload();
 
-const order = await Order.findByPk(payment.orderId);
+const order = await Order.findByPk(payment.orderId, {
+  include: [
+    {
+      model: request,
+      as: "request",
+      attributes: ["id", "measurement"],
+    },
+    {
+      model: Designs,
+      as: "design",
+      attributes: ["id", "designImage", "designTitle", "category"],
+    },
+  ],
+});
+
+const enrichedOrder = {
+  ...(order?.toJSON?.() || {}),
+  measurement: parseMeasurementValue(order?.request?.measurement),
+  designImage: order?.design?.designImage || null,
+};
 
 return res.status(200).json({
   success: true,
   message: "Payment verified successfully. Pickup has been scheduled.",
 
-  order,
+  order: enrichedOrder,
 
   payment,
 
@@ -620,7 +640,7 @@ exports.korapayWebhook = async (req, res) => {
     if (!reference) {
       return res.status(200).json({ received: true });
     }
-    await Order.update(
+    const  order = await Order.update(
   {
     status: "active",
     pickupDate,
@@ -651,7 +671,8 @@ exports.korapayWebhook = async (req, res) => {
 
     await processSuccessfulPayment(payment);
     return res.status(200).json({ 
-      received: true 
+      received: true,
+      order
     });
   } catch (error) {
     console.log("Korapay webhook error:", error.message);
