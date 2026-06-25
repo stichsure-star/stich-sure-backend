@@ -2,7 +2,6 @@ const { Op } = require("sequelize");
 const { request, DesignerProfile, Customer, Designer } = require("../models");
 const { AppError } = require('../utils/errorHandler');
 const {createNotification} = require("../utils/createNotification");
-const { normalizeMeasurementForStorage, parseMeasurementValue } = require('../utils/measurement');
 
 const progressByStatus = {
   pending: 0,
@@ -61,7 +60,7 @@ const updateDesignerStats = async (designerId) => {
 exports.createRequest = async (req, res, next) => {
   try {
     const customerId = req.user.id;
-    const designerId = req.params.designerId 
+    const designerId = req.params.designerId || req.body.designerId;
 
     const {
       fullName,
@@ -69,6 +68,7 @@ exports.createRequest = async (req, res, next) => {
       measurement,
       description,
     } = req.body;
+    console.log('req.body', req.body)
     if (!designerId) {
       return res.status(400).json({
         success: false,
@@ -93,32 +93,17 @@ exports.createRequest = async (req, res, next) => {
         message: "Designer not found",
       });
     }
-    const normalizedMeasurement = normalizeMeasurementForStorage(measurement);
-
-
-   let measurementValue = [];
-try {
-  if (measurement) {
-    const parsed = typeof measurement === 'string' ? JSON.parse(measurement) : measurement;
-    measurementValue = Array.isArray(parsed) ? parsed : [];
-  }
-} catch (err) {
-  console.log('measurement parse error:', err.message);
-  measurementValue = [];
-}
 
     const newRequest = await request.create({
       customerId,
       designerId,
       fullName,
       deadLine,
-      measurement: measurementValue,
+      measurement,
       description,
       status: "pending",
     });
-    console.log('measurement raw:', measurement);
-console.log('typeof measurement:', typeof measurement);
-console.log('normalizedMeasurement:', normalizedMeasurement);
+
     await createNotification({
       customerId,
       designerId,
@@ -132,10 +117,7 @@ console.log('normalizedMeasurement:', normalizedMeasurement);
     return res.status(201).json({
       success: true,
       message: "Your request has been sent to the designer!",
-      data: {
-        ...newRequest.toJSON(),
-        measurement: parseMeasurementValue(newRequest.measurement),
-      },
+      data: newRequest,
     });
   } catch (error) {
     next(error);

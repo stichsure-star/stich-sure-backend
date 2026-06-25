@@ -393,7 +393,7 @@ const paymentResponse = await axios.post(
 
     reference,
 
-    redirect_url: "https://stich-sure-frontend.vercel.app/checkoutpayment",
+    redirect_url: "https://stich-sure-frontend.vercel.app/user/checkoutpayment",
   },
   {
     headers: {

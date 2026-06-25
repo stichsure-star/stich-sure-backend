@@ -9,6 +9,7 @@ const {
 } = require("../models");
 const { AppError } = require('../utils/errorHandler');
 const { releaseOrderEscrowToDesigner } = require("../utils/escrow");
+const { parseMeasurementValue } = require("../utils/measurement");
 
 const allowedStatuses = ["pending", "active", "delivered", "completed", "cancelled"];
 const statusAliases = {
@@ -130,12 +131,34 @@ exports.createOrder = async (req, res, next) => {
       amount,
       status: "pending",
       placedAt: new Date(),     
-      pickupDate: pickupDate || null,  
+      pickupDate: pickupDate || null, 
    });
+
+    const orderWithDetails = await Order.findByPk(order.id, {
+      include: [
+        {
+          model: request,
+          as: "request",
+          attributes: ["id", "measurement"],
+        },
+        {
+          model: Designs,
+          as: "design",
+          attributes: ["id", "designImage", "designTitle", "category"],
+        },
+      ],
+    });
+
+    const responseData = {
+      ...(orderWithDetails?.toJSON?.() || {}),
+      measurement: parseMeasurementValue(orderWithDetails?.request?.measurement),
+      designImage: orderWithDetails?.design?.designImage || null,
+    };
+
     return res.status(201).json({
       success: true,
       message: "Your order has been placed successfully!",
-      data: order,
+      data: responseData,
     });
   } catch (error) {
     next(error);

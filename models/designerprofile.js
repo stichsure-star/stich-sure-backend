@@ -29,7 +29,7 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.STRING,
       allowNull: false
     },
-    currentHouseAddress: {
+    address: {
       type: DataTypes.STRING,
       allowNull: false
     },
