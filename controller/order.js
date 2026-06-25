@@ -311,8 +311,14 @@ exports.getOrderById = async (req, res, next) => {
           attributes: ["id", "firstName", "lastName", "email", "phone", "address"],
         },
         {
+          model: request,
+          as: "request",
+          attributes: ["id", "measurement"],
+        },
+        {
           model: Designs,
           as: "design",
+          attributes: ["id", "designImage", "designTitle", "category"],
         },
       ],
     });
@@ -324,10 +330,16 @@ exports.getOrderById = async (req, res, next) => {
       });
     }
 
+    const responseData = {
+      ...(order?.toJSON?.() || {}),
+      measurement: parseMeasurementValue(order?.request?.measurement),
+      designImage: order?.design?.designImage || null,
+    };
+
     return res.status(200).json({
       success: true,
       message: "Order details retrieved.",
-      data: order,
+      data: responseData,
     });
   } catch (error) {
     next(error);
@@ -356,8 +368,14 @@ exports.getDesignerOrderById = async (req, res, next) => {
           attributes: ["id", "firstName", "lastName", "email"],
         },
         {
+          model: request,
+          as: "request",
+          attributes: ["id", "measurement"],
+        },
+        {
           model: Designs,
           as: "design",
+          attributes: ["id", "designImage", "designTitle", "category"],
         },
       ],
     });
@@ -369,10 +387,16 @@ exports.getDesignerOrderById = async (req, res, next) => {
       });
     }
 
+    const responseData = {
+      ...(order?.toJSON?.() || {}),
+      measurement: parseMeasurementValue(order?.request?.measurement),
+      designImage: order?.design?.designImage || null,
+    };
+
     return res.status(200).json({
       success: true,
       message: "Order details retrieved successfully.",
-      data: order,
+      data: responseData,
     });
   } catch (error) {
     next(error);
@@ -401,8 +425,14 @@ exports.getCustomerOrderById = async (req, res, next) => {
           attributes: ["id", "firstName", "lastName", "email"],
         },
         {
+          model: request,
+          as: "request",
+          attributes: ["id", "measurement"],
+        },
+        {
           model: Designs,
           as: "design",
+          attributes: ["id", "designImage", "designTitle", "category"],
         },
       ],
     });
@@ -414,10 +444,16 @@ exports.getCustomerOrderById = async (req, res, next) => {
       });
     }
 
+    const responseData = {
+      ...(order?.toJSON?.() || {}),
+      measurement: parseMeasurementValue(order?.request?.measurement),
+      designImage: order?.design?.designImage || null,
+    };
+
     return res.status(200).json({
       success: true,
       message: "Order details retrieved successfully.",
-      data: order,
+      data: responseData,
     });
   } catch (error) {
     next(error);
