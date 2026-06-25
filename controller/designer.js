@@ -1,4 +1,4 @@
-const { Designer, DesignerProfile, DesignerWallet, Designs } = require("../models");
+const { Designer, DesignerProfile, DesignerWallet, Designs,Order } = require("../models");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const redisClient = require('../Redis/redisConnection')
@@ -515,6 +515,10 @@ exports.getOneDesigner = async (req, res, next) => {
         {
           model: Designs,
           as: "designs",
+        },
+        {
+          model: Order,
+          as: "orders",
         },
       ],
     });
