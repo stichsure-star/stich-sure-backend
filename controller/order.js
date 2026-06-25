@@ -5,8 +5,10 @@ const {
   Designer,
   Designs,
   request,
-  Payment
+  Payment,
+  Shipment
 } = require("../models");
+const { createShipment } = require('../services/shipbubble.service');
 const { AppError } = require('../utils/errorHandler');
 const { releaseOrderEscrowToDesigner } = require("../utils/escrow");
 const { parseMeasurementValue } = require("../utils/measurement");
@@ -22,6 +24,65 @@ const statusAliases = {
   in_production: "active",
 };
 
+
+const triggerDeliveryShipment = async (orderId, designerId) => {
+  try {
+    const payment = await Payment.findOne({
+      where: { orderId, status: "success" },
+    });
+
+    if (!payment) {
+      console.log(`No successful payment found for order ${orderId}`);
+      return { success: false, message: "No successful payment found" };
+    }
+
+    if (payment.deliveryShipmentCreated) {
+      console.log(`Delivery shipment already created for order ${orderId}`);
+      return { success: false, message: "Delivery shipment already created" };
+    }
+
+    if (!payment.deliveryRequestToken) {
+      console.log(`No delivery request token for order ${orderId}`);
+      return { success: false, message: "No delivery request token found" };
+    }
+
+    const deliveryResult = await createShipment({
+      request_token: payment.deliveryRequestToken,
+      courier_id: payment.deliveryCourierId,
+      service_code: payment.deliveryServiceCode,
+    });
+
+    console.log("triggerDeliveryShipment result:", JSON.stringify(deliveryResult, null, 2));
+
+    if (deliveryResult.status === "failed") {
+      console.log(`Delivery shipment failed for order ${orderId}:`, deliveryResult.message);
+      return { success: false, message: deliveryResult.message };
+    }
+
+    await payment.update({ deliveryShipmentCreated: true });
+    const courier = deliveryResult.data?.courier;
+    const shipment = await Shipment.create({
+      orderId,
+      type: "delivery",
+      trackingCode: deliveryResult.data?.order_id,
+      trackingUrl: deliveryResult.data?.tracking_url,
+      courier: courier?.name,
+      status: deliveryResult.data?.status,
+      shippingFee: deliveryResult.data?.payment?.shipping_fee,
+      currency: deliveryResult.data?.payment?.currency,
+    });
+
+    return {
+      success: true,
+      message: "Delivery shipment created successfully",
+      shipment,
+      data: deliveryResult.data,
+       };
+  } catch (error) {
+    console.log("triggerDeliveryShipment error:", error.message);
+    return { success: false, message: error.message };
+  }
+};
 const generateOrderNumber = () => {
   const randomNumber = Math.floor(100000 + Math.random() * 900000);
   return `QI-${randomNumber}`;
@@ -31,24 +92,15 @@ const getPagination = (query) => {
   const page = Math.max(Number(query.page) || 1, 1);
   const limit = Math.min(Math.max(Number(query.limit) || 10, 1), 100);
   const offset = (page - 1) * limit;
-
   return { page, limit, offset };
 };
 
 const buildOrderWhere = (req) => {
   const where = {};
 
-  if (req.query.id) {
-    where.id = req.query.id;
-  }
-
-  if (req.query.designerId) {
-    where.designerId = req.query.designerId;
-  }
-
-  if (req.query.customerId) {
-    where.customerId = req.query.customerId;
-  }
+  if (req.query.id) where.id = req.query.id;
+  if (req.query.designerId) where.designerId = req.query.designerId;
+  if (req.query.customerId) where.customerId = req.query.customerId;
 
   if (req.query.status) {
     const requestedStatus = req.query.status.toLowerCase();
@@ -65,32 +117,28 @@ const buildOrderWhere = (req) => {
   return where;
 };
 
-const buildVerifiedPaymentInclude = () => ({
+const buildPaymentInclude = (required = false) => ({
   model: Payment,
   as: "payment",
-  required: true,
+  required,
   where: { status: "success" },
   attributes: [
-    "id",
-    "status",
-    "paidAt",
-    "amount",
-    "currency",
-    "paymentProvider",
-    "transactionReference",
+    "id", "status", "paidAt", "amount",
+    "currency", "paymentProvider", "transactionReference",
   ],
 });
 
-exports.buildVerifiedPaymentInclude = buildVerifiedPaymentInclude;
+exports.buildVerifiedPaymentInclude = buildPaymentInclude;
 
 exports.createOrder = async (req, res, next) => {
   try {
     const customerId = req.user.id;
     const { requestId, designerId, designId, itemName, amount, pickupDate } = req.body;
-    if (!itemName || !amount ) {
+
+    if (!itemName || !amount) {
       return res.status(400).json({
         success: false,
-        message: "itemName, amount, and address are required",
+        message: "itemName and amount are required",
       });
     }
 
@@ -121,7 +169,7 @@ exports.createOrder = async (req, res, next) => {
       });
     }
 
-   const order = await Order.create({
+    const order = await Order.create({
       orderNumber: generateOrderNumber(),
       requestId: requestId,
       customerId,
@@ -130,9 +178,9 @@ exports.createOrder = async (req, res, next) => {
       itemName,
       amount,
       status: "pending",
-      placedAt: new Date(),     
-      pickupDate: pickupDate || null, 
-   });
+      placedAt: new Date(),
+      pickupDate: pickupDate || null,
+    });
 
     const orderWithDetails = await Order.findByPk(order.id, {
       include: [
@@ -178,16 +226,8 @@ exports.getDesignerOrders = async (req, res, next) => {
       where,
       distinct: true,
       include: [
-        buildVerifiedPaymentInclude(),
+        buildPaymentInclude(true),
         {
-           model: Payment,
-          as: "payment",
-          required: true,        
-          where: { status: "success" },
-          attributes: [
-            "id", "status", "paidAt", "amount",
-            "currency", "paymentProvider", "transactionReference",
-          ],
           model: Customer,
           as: "customer",
           attributes: ["id", "firstName", "lastName", "email"],
@@ -203,7 +243,7 @@ exports.getDesignerOrders = async (req, res, next) => {
       offset,
     });
 
-     return res.status(200).json({
+    return res.status(200).json({
       success: true,
       message: "Your designer orders have been retrieved.",
       data: rows,
@@ -234,16 +274,7 @@ exports.getCustomerOrders = async (req, res, next) => {
       where,
       distinct: true,
       include: [
-        {
-          model: Payment,
-          as: "payment",
-          required: true,       
-          where: { status: "success" },
-          attributes: [
-            "id", "status", "paidAt", "amount",
-            "currency", "paymentProvider", "transactionReference",
-          ],
-        },
+        buildPaymentInclude(true),
         {
           model: Designer,
           as: "designer",
@@ -278,29 +309,19 @@ exports.getCustomerOrders = async (req, res, next) => {
   }
 };
 
-
 exports.getOrderById = async (req, res, next) => {
   try {
     const { id } = req.params;
 
     const order = await Order.findByPk(id, {
       attributes: [
-        'id',
-        'orderNumber',
-        'itemName',
-        'amount',
-        'status',  
-        'pickupDate',    
-        'placedAt',
-        'activeAt',
-        'deliveredAt',
-        'completedAt',
-        'createdAt',
-        'updatedAt',
+        'id', 'orderNumber', 'itemName', 'amount',
+        'status', 'pickupDate', 'placedAt', 'activeAt',
+        'deliveredAt', 'completedAt', 'createdAt', 'updatedAt',
       ],
       include: [
-        buildVerifiedPaymentInclude(),
-        {
+        buildPaymentInclude(false),
+               {
           model: Customer,
           as: "customer",
           attributes: ["id", "firstName", "lastName", "email", "phone", "address"],
@@ -332,8 +353,7 @@ exports.getOrderById = async (req, res, next) => {
 
     const responseData = {
       ...(order?.toJSON?.() || {}),
-      measurement: parseMeasurementValue(order?.request?.measurement),
-      designImage: order?.design?.designImage || null,
+      measurement: parseMeasurementValue(order?.request?.measurement),      designImage: order?.design?.designImage || null,
     };
 
     return res.status(200).json({
@@ -361,7 +381,7 @@ exports.getDesignerOrderById = async (req, res, next) => {
     const order = await Order.findOne({
       where: { id, designerId },
       include: [
-        buildVerifiedPaymentInclude(),
+        buildPaymentInclude(false),
         {
           model: Customer,
           as: "customer",
@@ -418,7 +438,7 @@ exports.getCustomerOrderById = async (req, res, next) => {
     const order = await Order.findOne({
       where: { id, customerId },
       include: [
-        buildVerifiedPaymentInclude(),
+        buildPaymentInclude(false),
         {
           model: Designer,
           as: "designer",
@@ -474,12 +494,8 @@ exports.updateOrderStatus = async (req, res, next) => {
     }
 
     const order = await Order.findByPk(id);
-
     if (!order) {
-      return res.status(404).json({
-        success: false,
-        message: "Order not found",
-      });
+      return res.status(404).json({ success: false, message: "Order not found" });
     }
 
     if (order.designerId !== req.user.id) {
@@ -491,23 +507,22 @@ exports.updateOrderStatus = async (req, res, next) => {
 
     const updateData = { status };
 
-    if (status === "active" && !order.activeAt) {
-      updateData.activeAt = new Date();
-    }
-
-    if (status === "delivered" && !order.deliveredAt) {
-      updateData.deliveredAt = new Date();
-    }
-
-    if (status === "completed" && !order.completedAt) {
-      updateData.completedAt = new Date();
-    }
+    if (status === "active" && !order.activeAt) updateData.activeAt = new Date();
+    if (status === "delivered" && !order.deliveredAt) updateData.deliveredAt = new Date();
+    if (status === "completed" && !order.completedAt) updateData.completedAt = new Date();
 
     await order.update(updateData);
 
     let escrow = null;
+    let deliveryShipment = null;
+
     if (status === "completed") {
+   
+      deliveryShipment = await triggerDeliveryShipment(order.id, req.user.id);
+
+     
       escrow = await releaseOrderEscrowToDesigner(order.id);
+
       await order.reload();
       await updateDesignerStatsFromOrders(order.designerId);
     }
@@ -517,6 +532,7 @@ exports.updateOrderStatus = async (req, res, next) => {
       message: "The order status has been updated.",
       data: order,
       escrow,
+      deliveryShipment,
     });
   } catch (error) {
     next(error);
@@ -524,40 +540,27 @@ exports.updateOrderStatus = async (req, res, next) => {
 };
 
 const updateDesignerStatsFromOrders = async (designerId) => {
-  const { DesignerProfile, Order, Op } = require("../models");
+  const { DesignerProfile } = require("../models");
 
-  const profile = await DesignerProfile.findOne({
-    where: { designerId },
-  });
-
-  if (!profile) {
-    return;
-  }
+  const profile = await DesignerProfile.findOne({ where: { designerId } });
+  if (!profile) return;
 
   const totalOrders = await Order.count({
     where: { designerId },
     distinct: true,
-    include: [buildVerifiedPaymentInclude()],
+    include: [buildPaymentInclude(true)],
   });
 
   const completedOrders = await Order.count({
-    where: {
-      designerId,
-      status: "completed",
-    },
+    where: { designerId, status: "completed" },
     distinct: true,
-    include: [buildVerifiedPaymentInclude()],
+    include: [buildPaymentInclude(true)],
   });
 
   const reliabilityScore =
-    totalOrders === 0
-      ? 100
-      : Math.round((completedOrders / totalOrders) * 100);
+    totalOrders === 0 ? 100 : Math.round((completedOrders / totalOrders) * 100);
 
-  await profile.update({
-    completedOrders,
-    reliabilityScore,
-  });
+  await profile.update({ completedOrders, reliabilityScore });
 };
 
 exports.getAllOrders = async (req, res, next) => {
@@ -569,7 +572,7 @@ exports.getAllOrders = async (req, res, next) => {
       where,
       distinct: true,
       include: [
-        buildVerifiedPaymentInclude(),
+        buildPaymentInclude(false), 
         {
           model: Customer,
           as: "customer",
@@ -609,7 +612,6 @@ exports.getAllOrders = async (req, res, next) => {
   }
 };
 
-
 exports.getOrdersByDesignerAndCustomer = async (req, res, next) => {
   try {
     const { designerId, customerId } = req.params;
@@ -632,7 +634,7 @@ exports.getOrdersByDesignerAndCustomer = async (req, res, next) => {
       where,
       distinct: true,
       include: [
-        buildVerifiedPaymentInclude(),
+        buildPaymentInclude(true), 
         {
           model: Customer,
           as: "customer",
@@ -681,7 +683,7 @@ exports.getOrdersByDesignerId = async (req, res, next) => {
       where: { designerId, ...buildOrderWhere(req) },
       distinct: true,
       include: [
-        buildVerifiedPaymentInclude(),
+        buildPaymentInclude(true),
         {
           model: Customer,
           as: "customer",
@@ -725,7 +727,7 @@ exports.getOrdersByCustomerId = async (req, res, next) => {
       where: { customerId, ...buildOrderWhere(req) },
       distinct: true,
       include: [
-        buildVerifiedPaymentInclude(),
+        buildPaymentInclude(true),
         {
           model: Designer,
           as: "designer",
