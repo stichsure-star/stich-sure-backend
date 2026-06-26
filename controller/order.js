@@ -6,7 +6,8 @@ const {
   Designs,
   request,
   Payment,
-  Shipment
+  Shipment,
+  DesignerProfile
 } = require("../models");
 const { createShipment } = require('../services/shipbubble.service');
 const { AppError } = require('../utils/errorHandler');
@@ -117,11 +118,11 @@ const buildOrderWhere = (req) => {
   return where;
 };
 
-const buildPaymentInclude = (required = false) => ({
+const buildPaymentInclude = (required = false, statusFilter = true) => ({
   model: Payment,
   as: "payment",
   required,
-  where: { status: "success" },
+  ...(statusFilter && { where: { status: "success" } }),
   attributes: [
     "id",
     "status",
@@ -142,7 +143,8 @@ const buildPaymentInclude = (required = false) => ({
     "deliveryRequestToken",
     "deliveryCourierId",
     "deliveryServiceCode",
-    "checkoutUrl"
+    "pickupShipmentCreated",
+    "deliveryShipmentCreated",
   ],
 });
 console.log('build', buildPaymentInclude);
@@ -335,7 +337,7 @@ exports.getOrderById = async (req, res, next) => {
         'deliveredAt', 'completedAt', 'createdAt', 'updatedAt',
       ],
       include: [
-        buildPaymentInclude(false),
+        buildPaymentInclude(false, false),
         {
           model: Customer,
           as: "customer",
@@ -344,12 +346,19 @@ exports.getOrderById = async (req, res, next) => {
         {
           model: Designer,
           as: "designer",
-          attributes: ["id", "firstName", "lastName", "email", "phone", "address"],
+          attributes: ["id", "firstName", "lastName", "email"],
+          include: [
+            {
+              model: DesignerProfile,
+              as: "profile",
+              attributes: ["id", "firstName", "lastName", "email", "phoneNumber", "address"],
+            }
+          ]
         },
         {
           model: request,
           as: "request",
-          attributes: ["id", "measurement", "description", "designImage", "inspirationalImage"],
+          attributes: ["id", "measurement", "description", "designImage", "inspirationalImage", "deadLine"],
         },
         {
           model: Designs,
@@ -402,7 +411,7 @@ exports.getOrderById = async (req, res, next) => {
           service_code: payment.deliveryServiceCode,
           insurance_code: payment.insurance_code
         },
-      } : null,
+      } : null
     };
 
     return res.status(200).json({

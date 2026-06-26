@@ -8,10 +8,13 @@ module.exports = (sequelize, DataTypes) => {
         foreignKey: 'requestId',
         as: 'request',
       });
-
       Order.belongsTo(models.Customer, {
         foreignKey: 'customerId',
         as: 'customer',
+      });
+      Order.belongsTo(models.DesignerProfile, {
+        foreignKey: 'designerProfile',
+        as: 'profile',
       });
 
       Order.belongsTo(models.Designer, {

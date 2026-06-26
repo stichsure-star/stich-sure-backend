@@ -332,7 +332,7 @@ exports.initializePayment = async (req, res, next) => {
         currency: "NGN",
         customer: { email },
         reference,
-        redirect_url: "https://stich-sure-frontend.vercel.app/user/checkoutpayment",
+        redirect_url: "https://stichsure.vercel.app/user/checkoutpayment",
       },
       {
         headers: {
