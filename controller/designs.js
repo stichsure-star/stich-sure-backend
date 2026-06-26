@@ -6,8 +6,7 @@ const { AppError } = require('../utils/errorHandler');
 
 exports.createDesign = async (req, res, next) => {
   try {
-    const { designerId, designTitle, category, price, description } = req.body;
-    let { measurement } = req.body;
+    const { designerId, designTitle, category, price, description, measurement } = req.body;
     let designImage = null;
 
 

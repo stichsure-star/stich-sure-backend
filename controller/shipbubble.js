@@ -1,3 +1,4 @@
+console.log("=== PAYMENT CONTROLLER LOADED ===");
 const axios = require("axios");
 const crypto = require("crypto");
 const { Payment, Order, Designer, Shipment, Customer, DesignerProfile, request, Designs } = require("../models");
@@ -13,7 +14,10 @@ const {
   createShipment,
   fundWallet
 } = require("../services/shipbubble.service");
-
+console.log("Order model:", Order);
+console.log("Model name:", Order?.name);
+console.log("Raw attributes:", Object.keys(Order?.rawAttributes || {}));
+console.log(Order.rawAttributes.orderId);
 const getCheapestCourier = (couriers) =>
   couriers.reduce((prev, curr) =>
     Number(prev.total) < Number(curr.total) ? prev : curr
@@ -397,9 +401,13 @@ exports.initializePayment = async (req, res, next) => {
     });
   } catch (error) {
     console.log("Initialize Payment Error:", error.response?.data || error.message);
+      console.error("SQL:", error.sql);
+  console.error("Parent:", error.parent);
+    console.error("Message:", error.message);
     return res.status(500).json({ message: "Failed to initialize payment" });
   }
 };
+
 
 exports.verifyPayment = async (req, res, next) => {
   try {
