@@ -31,7 +31,7 @@ const {
 
 router.get('/', authentication, getAllRequests);
 router.get('/:id', authentication, getOneRequest);
-router.post('/create/:designerId', authentication, upload.single('designImage'), createRequestValidator, createRequest);
+router.post('/create/:designerId', authentication, upload.fields([{ name: 'designImage', maxCount: 5 }, { name: 'inspirationalImage', maxCount: 5}]), createRequestValidator, createRequest);
 router.put('/complete/:id', authentication, completeRequest);
 router.put('/progress/:id', authentication, requestProgressValidator, updateRequestProgress);
 router.put('/accept/:id', authentication, acceptRequestFromCustomer);

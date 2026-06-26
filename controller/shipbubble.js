@@ -364,8 +364,10 @@ exports.initializePayment = async (req, res, next) => {
       deliveryCourierId: String(cheapestDelivery.courier_id),
       deliveryServiceCode: cheapestDelivery.service_code,
       deliveryFee,
+      checkoutUrl: paymentResponse.data.data.checkout_url,
     });
-
+    console.log('pickup', payment)
+    
     return res.status(200).json({
       success: true,
       message: "Payment initialized successfully",

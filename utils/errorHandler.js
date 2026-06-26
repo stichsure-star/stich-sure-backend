@@ -51,8 +51,8 @@ const globalErrorHandler = (err, req, res, next) => {
 
   if (err.name === 'JsonWebTokenError' || err.name === 'TokenExpiredError') {
     message = err.name === 'TokenExpiredError' 
-      ? 'Session expired, please login again' 
-      : 'Invalid token, please login again';
+      ? 'Sorry the account was logged out due to inactivity, please login again to continue.' 
+      : 'Sorry the account was logged out due to inactivity, please login again to continue.';
     statusCode = 401;
     success = false;
   }
