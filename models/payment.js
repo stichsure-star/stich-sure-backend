@@ -4,13 +4,8 @@ const {
 } = require('sequelize');
 module.exports = (sequelize, DataTypes) => {
   class Payment extends Model {
-    /**
-     * Helper method for defining associations.
-     * This method is not a part of Sequelize lifecycle.
-     * The `models/index` file will call this method automatically.
-     */
     static associate(models) {
-      // define association here
+   
       Payment.belongsTo(models.Order, {
         foreignKey: 'orderId',
         as: 'order',
@@ -32,6 +27,7 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.UUID,
       defaultValue: DataTypes.UUIDV4
     },
+      designerId: DataTypes.UUID,
     customerId: DataTypes.UUID,
     orderId: DataTypes.UUID,
     reference: DataTypes.STRING,
@@ -39,6 +35,7 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.ENUM('pending', 'processing', 'success', 'failed'),
       defaultValue: 'pending'
     },
+      designerId: DataTypes.UUID,
     amount: {
       type: DataTypes.INTEGER,
       allowNull: false
@@ -68,15 +65,15 @@ deliveryShipmentCreated:
 { type: DataTypes.BOOLEAN, 
   defaultValue: false 
 },
-escrowStatus: {
-  type: DataTypes.ENUM("holding", "released", "refunded"),
-  defaultValue: "holding",
-},
-
-designAmount: {
-  type: DataTypes.DECIMAL(10, 2),
-  allowNull: false,
-},
+  escrowStatus: {
+    type: DataTypes.ENUM("holding", "released", "refunded"),
+    allowNull: true,    
+    defaultValue: null, 
+  },
+  designAmount: {
+    type: DataTypes.DECIMAL(10, 2),
+    allowNull: true, 
+  },
 
 releasedAt: {
   type: DataTypes.DATE,

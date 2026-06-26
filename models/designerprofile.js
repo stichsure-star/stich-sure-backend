@@ -10,10 +10,10 @@ module.exports = (sequelize, DataTypes) => {
         foreignKey: 'designerId',
         as: 'designer'
       });
-      DesignerProfile.hasOne(models.Order, {
-        foreignKey: 'orderId',
-        as: 'order'
-      });
+      // DesignerProfile.hasOne(models.Order, {
+      //   foreignKey: 'orderId',
+      //   as: 'order'
+      // });
     }
   }
 

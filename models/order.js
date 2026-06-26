@@ -12,10 +12,7 @@ module.exports = (sequelize, DataTypes) => {
         foreignKey: 'customerId',
         as: 'customer',
       });
-      Order.belongsTo(models.DesignerProfile, {
-        foreignKey: 'designerProfile',
-        as: 'profile',
-      });
+      
 
       Order.belongsTo(models.Designer, {
         foreignKey: 'designerId',
@@ -26,7 +23,6 @@ module.exports = (sequelize, DataTypes) => {
         foreignKey: 'designId',
         as: 'design',
       });
-
       Order.hasOne(models.DesignerWalletTransaction, {
         foreignKey: 'orderId',
         as: 'walletTransaction',

@@ -202,7 +202,7 @@ exports.createOrder = async (req, res, next) => {
       placedAt: new Date(),
       pickupDate: pickupDate || null,
     });
-
+    console.log('order:', order)
     const orderWithDetails = await Order.findByPk(order.id, {
       include: [
         {
@@ -227,7 +227,7 @@ exports.createOrder = async (req, res, next) => {
     return res.status(201).json({
       success: true,
       message: "Your order has been placed successfully!",
-      data: responseData,
+      data: responseData, order
     });
   } catch (error) {
     next(error);
