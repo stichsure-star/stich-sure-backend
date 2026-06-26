@@ -47,9 +47,17 @@ paths:
                   type: string
                   example: Need a bridal dress with lace sleeves and embroidery.
                 designImage:
-                  type: string
-                  format: binary
-                  description: Image of the requested design.
+                    type: array
+                    items:
+                      type: string
+                      format: binary
+                    description: "Design image files"
+                inspirationalImage:
+                    type: array
+                    items:
+                      type: string
+                      format: binary
+                    description: "Inspirational image files"
       responses:
         "201":
           description: Request created successfully

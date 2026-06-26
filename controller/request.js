@@ -2,7 +2,7 @@ const { Op } = require("sequelize");
 const { request, DesignerProfile, Customer, Designer } = require("../models");
 const { AppError } = require('../utils/errorHandler');
 const {createNotification} = require("../utils/createNotification");
-
+const fs = require("fs");
 const progressByStatus = {
   pending: 0,
   picked_up: 33,
@@ -61,6 +61,35 @@ exports.createRequest = async (req, res, next) => {
   try {
     const customerId = req.user.id;
     const designerId = req.params.designerId || req.body.designerId;
+    
+const designImageFiles = req.files?.designImage || [];
+const inspirationalImageFiles = req.files?.inspirationalImage || [];
+
+const inspirationalImage = [];
+const designImage = [];
+
+for (const file of designImageFiles) {
+  try {
+    const result = await cloudinary.uploader.upload(file.path);
+    designImage.push(result.secure_url);
+  } catch (error) {
+    console.error("Design image upload failed:", error);
+  } finally {
+    if (fs.existsSync(file.path)) fs.unlinkSync(file.path);
+  }
+}
+
+
+for (const file of inspirationalImageFiles) {
+  try {
+    const result = await cloudinary.uploader.upload(file.path);
+    inspirationalImage.push(result.secure_url);
+  } catch (error) {
+    console.error("Inspirational image upload failed:", error);
+  } finally {
+    if (fs.existsSync(file.path)) fs.unlinkSync(file.path);
+  }
+}
 
     const {
       fullName,
@@ -102,6 +131,8 @@ exports.createRequest = async (req, res, next) => {
       measurement,
       description,
       status: "pending",
+      inspirationalImage,
+      designImage
     });
 
     await createNotification({
@@ -133,7 +164,7 @@ exports.acceptRequestFromCustomer = async (req, res, next) => {
       return res.status(403).json({
         success: false,
         message: "Unauthorized. Only designers can accept requests.",
-      });
+      });``
     }
 
     const foundRequest = await request.findByPk(id);
@@ -248,6 +279,20 @@ exports.rejectRequest = async (req, res, next) => {
 exports.getAllRequests = async (req, res, next) => {
   try {
     const requests = await request.findAll({
+      attributes: [
+        "id",
+        "customerId",
+        "designerId",
+        "fullName",
+        "deadLine",
+        "description",
+        "measurement",
+        "requestImage",
+        "status",
+        "progress",
+        "createdAt",
+        "updatedAt",
+      ],
       include: [
         {
           model: Customer,
@@ -276,15 +321,41 @@ exports.getAllRequests = async (req, res, next) => {
 exports.getOneRequest = async (req, res, next) => {
   try {
     const { id } = req.params;
+
     const foundRequest = await request.findByPk(id, {
+      attributes: [
+        "id",
+        "customerId",
+        "designerId",
+        "fullName",
+        "deadLine",
+        "description",
+        "measurement",
+        "requestImage",
+        "status",
+        "progress",
+        "createdAt",
+        "updatedAt",
+      ],
       include: [
-        { model: Customer, as: "customer", attributes: ["id", "firstName", "lastName", "email"] },
-        { model: Designer, as: "designer", attributes: ["id", "firstName", "lastName", "email"] },
+        {
+          model: Customer,
+          as: "customer",
+          attributes: ["id", "firstName", "lastName", "email"],
+        },
+        {
+          model: Designer,
+          as: "designer",
+          attributes: ["id", "firstName", "lastName", "email"],
+        },
       ],
     });
 
     if (!foundRequest) {
-      return res.status(404).json({ success: false, message: "Request not found" });
+      return res.status(404).json({
+        success: false,
+        message: "Request not found",
+      });
     }
 
     return res.status(200).json({

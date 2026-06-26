@@ -123,10 +123,29 @@ const buildPaymentInclude = (required = false) => ({
   required,
   where: { status: "success" },
   attributes: [
-    "id", "status", "paidAt", "amount",
-    "currency", "paymentProvider", "transactionReference",
+    "id",
+    "status",
+    "paidAt",
+    "amount",
+    "currency",
+    "paymentProvider",
+    "transactionReference",
+    "reference",
+    "escrowStatus",
+    "pickupFee",
+    "deliveryFee",
+    "shippingFee",
+    "totalAmount",
+    "pickupRequestToken",
+    "pickupCourierId",
+    "pickupServiceCode",
+    "deliveryRequestToken",
+    "deliveryCourierId",
+    "deliveryServiceCode",
+    "checkoutUrl"
   ],
 });
+console.log('build', buildPaymentInclude);
 
 exports.buildVerifiedPaymentInclude = buildPaymentInclude;
 
@@ -317,7 +336,7 @@ exports.getOrderById = async (req, res, next) => {
       ],
       include: [
         buildPaymentInclude(false),
-               {
+        {
           model: Customer,
           as: "customer",
           attributes: ["id", "firstName", "lastName", "email", "phone", "address"],
@@ -347,9 +366,40 @@ exports.getOrderById = async (req, res, next) => {
       });
     }
 
+    const payment = order.payment;
+
     const responseData = {
       ...(order?.toJSON?.() || {}),
-      measurement: parseMeasurementValue(order?.request?.measurement),      designImage: order?.design?.designImage || null,
+      measurement: parseMeasurementValue(order?.request?.measurement),
+      designImage: order?.design?.designImage || null,
+
+      payment: payment ? {
+        id: payment.id,
+        reference: payment.reference,
+        transactionReference: payment.transactionReference,
+        status: payment.status,
+        escrowStatus: payment.escrowStatus,
+        currency: payment.currency,
+        paymentProvider: payment.paymentProvider,
+        paidAt: payment.paidAt,
+        charges: {
+          orderAmount: order.amount,
+          pickupFee: payment.pickupFee,
+          deliveryFee: payment.deliveryFee,
+          shippingFee: payment.shippingFee,
+          totalAmount: payment.totalAmount,
+        },
+        pickup: {
+          request_token: payment.pickupRequestToken,
+          courier_id: payment.pickupCourierId,
+          service_code: payment.pickupServiceCode,
+        },
+        delivery: {
+          request_token: payment.deliveryRequestToken,
+          courier_id: payment.deliveryCourierId,
+          service_code: payment.deliveryServiceCode,
+        },
+      } : null,
     };
 
     return res.status(200).json({
@@ -386,7 +436,7 @@ exports.getDesignerOrderById = async (req, res, next) => {
         {
           model: request,
           as: "request",
-          attributes: ["id", "measurement"],
+          attributes: ["id", "measurement", "inspirationalImage", "designImage", "description"],
         },
         {
           model: Designs,
@@ -403,11 +453,42 @@ exports.getDesignerOrderById = async (req, res, next) => {
       });
     }
 
-    const responseData = {
-      ...(order?.toJSON?.() || {}),
-      measurement: parseMeasurementValue(order?.request?.measurement),
-      designImage: order?.design?.designImage || null,
-    };
+   const payment = order.payment;
+
+const responseData = {
+
+  ...(order?.toJSON?.() || {}),
+  measurement: parseMeasurementValue(order?.request?.measurement),
+  designImage: order?.design?.designImage || null,
+
+  payment: payment ? {
+    id: payment.id,
+    reference: payment.reference,
+    transactionReference: payment.transactionReference,
+    status: payment.status,
+    escrowStatus: payment.escrowStatus,
+    currency: payment.currency,
+    paymentProvider: payment.paymentProvider,
+    paidAt: payment.paidAt,
+    charges: {
+      orderAmount: order.amount,
+      pickupFee: payment.pickupFee,
+      deliveryFee: payment.deliveryFee,
+      shippingFee: payment.shippingFee,
+      totalAmount: payment.totalAmount,
+    },
+    pickup: {
+      request_token: payment.pickupRequestToken,
+      courier_id: payment.pickupCourierId,
+      service_code: payment.pickupServiceCode,
+    },
+    delivery: {
+      request_token: payment.deliveryRequestToken,
+      courier_id: payment.deliveryCourierId,
+      service_code: payment.deliveryServiceCode,
+    },
+  } : null,
+};
 
     return res.status(200).json({
       success: true,
@@ -443,7 +524,7 @@ exports.getCustomerOrderById = async (req, res, next) => {
         {
           model: request,
           as: "request",
-          attributes: ["id", "measurement"],
+          attributes: ["id", "designImage", "designTitle", "category"],
         },
         {
           model: Designs,
@@ -460,17 +541,42 @@ exports.getCustomerOrderById = async (req, res, next) => {
       });
     }
 
-    const responseData = {
-      ...(order?.toJSON?.() || {}),
-      measurement: parseMeasurementValue(order?.request?.measurement),
-      designImage: order?.design?.designImage || null,
-    };
+     const payment = order.payment;
 
-    return res.status(200).json({
-      success: true,
-      message: "Order details retrieved successfully.",
-      data: responseData,
-    });
+const responseData = {
+
+  ...(order?.toJSON?.() || {}),
+  measurement: parseMeasurementValue(order?.request?.measurement),
+  designImage: order?.design?.designImage || null,
+
+  payment: payment ? {
+    id: payment.id,
+    reference: payment.reference,
+    transactionReference: payment.transactionReference,
+    status: payment.status,
+    escrowStatus: payment.escrowStatus,
+    currency: payment.currency,
+    paymentProvider: payment.paymentProvider,
+    paidAt: payment.paidAt,
+    charges: {
+      orderAmount: order.amount,
+      pickupFee: payment.pickupFee,
+      deliveryFee: payment.deliveryFee,
+      shippingFee: payment.shippingFee,
+      totalAmount: payment.totalAmount,
+    },
+    pickup: {
+      request_token: payment.pickupRequestToken,
+      courier_id: payment.pickupCourierId,
+      service_code: payment.pickupServiceCode,
+    },
+    delivery: {
+      request_token: payment.deliveryRequestToken,
+      courier_id: payment.deliveryCourierId,
+      service_code: payment.deliveryServiceCode,
+    },
+  } : null,
+};
   } catch (error) {
     next(error);
   }
