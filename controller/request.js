@@ -3,6 +3,7 @@ const { request, DesignerProfile, Customer, Designer } = require("../models");
 const { AppError } = require('../utils/errorHandler');
 const {createNotification} = require("../utils/createNotification");
 const fs = require("fs");
+const cloudinary = require("../utils/cloudinary");
 const progressByStatus = {
   pending: 0,
   picked_up: 33,
@@ -64,7 +65,9 @@ exports.createRequest = async (req, res, next) => {
     
 const designImageFiles = req.files?.designImage || [];
 const inspirationalImageFiles = req.files?.inspirationalImage || [];
-
+console.log('req.files', req.files)
+console.log('designImageFiles:', designImageFiles)
+console.log('inspirationalImageFiles:', inspirationalImageFiles)
 const inspirationalImage = [];
 const designImage = [];
 

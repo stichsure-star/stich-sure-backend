@@ -26,7 +26,7 @@ const {
 
 //   return { page, limit, offset };
 // };
-
+    console.log('Korapay key:', getKoraSecretKey()?.slice(0, 15) + '...');
 exports.createDesignerWallet = async (req, res, next) => {
   try {
     const designerId = req.user.id;
