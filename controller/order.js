@@ -349,7 +349,7 @@ exports.getOrderById = async (req, res, next) => {
         {
           model: request,
           as: "request",
-          attributes: ["id", "measurement"],
+          attributes: ["id", "measurement", "description", "designImage", "inspirationalImage"],
         },
         {
           model: Designs,
@@ -393,11 +393,14 @@ exports.getOrderById = async (req, res, next) => {
           request_token: payment.pickupRequestToken,
           courier_id: payment.pickupCourierId,
           service_code: payment.pickupServiceCode,
+          insurance_code: payment.insurance_code
+
         },
         delivery: {
           request_token: payment.deliveryRequestToken,
           courier_id: payment.deliveryCourierId,
           service_code: payment.deliveryServiceCode,
+          insurance_code: payment.insurance_code
         },
       } : null,
     };
@@ -524,7 +527,7 @@ exports.getCustomerOrderById = async (req, res, next) => {
         {
           model: request,
           as: "request",
-          attributes: ["id", "designImage", "designTitle", "category"],
+          attributes: ["id", "designImage", "inspirationalImage", "designTitle", "category", "measurement", "description"],
         },
         {
           model: Designs,

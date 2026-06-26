@@ -2,16 +2,21 @@
 
 module.exports = {
   async up(queryInterface, Sequelize) {
-
- await queryInterface.addColumn('requests', 'designImage', {
-      type: Sequelize.JSON,
-      defaultValue: [],
-      allowNull: true,
-    });
+    try {
+      await queryInterface.addColumn('requests', 'designerImage', {
+        type: Sequelize.TEXT,
+        allowNull: true,
+      });
+    } catch (error) {
+      // Column may already exist
+    }
   },
 
   async down(queryInterface, Sequelize) {
-
-    await queryInterface.removeColumn('requests', 'designImage');
+    try {
+      await queryInterface.removeColumn('requests', 'designerImage');
+    } catch (error) {
+      // Column may not exist
+    }
   }
 };

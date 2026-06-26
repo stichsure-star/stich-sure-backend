@@ -2,24 +2,36 @@
 
 module.exports = {
   async up(queryInterface, Sequelize) {
- 
-    await queryInterface.removeColumn('DesignerProfiles', 'currentHouseAddress');
+    try {
+      await queryInterface.removeColumn('DesignerProfiles', 'currentHouseAddress');
+    } catch (error) {
+      // Column may not exist
+    }
 
-
-    await queryInterface.addColumn('DesignerProfiles', 'address', {
-      type: Sequelize.STRING,
-      allowNull: true,
-    });
+    try {
+      await queryInterface.addColumn('DesignerProfiles', 'address', {
+        type: Sequelize.STRING,
+        allowNull: true,
+      });
+    } catch (error) {
+      // Column may already exist
+    }
   },
 
   async down(queryInterface, Sequelize) {
+    try {
+      await queryInterface.removeColumn('DesignerProfiles', 'address');
+    } catch (error) {
+      // Column may not exist
+    }
 
-    await queryInterface.removeColumn('DesignerProfiles', 'address');
-
-
-    await queryInterface.addColumn('DesignerProfiles', 'currentHouseAddress', {
-      type: Sequelize.STRING,
-      allowNull: true,
-    });
+    try {
+      await queryInterface.addColumn('DesignerProfiles', 'currentHouseAddress', {
+        type: Sequelize.STRING,
+        allowNull: true,
+      });
+    } catch (error) {
+      // Column may already exist
+    }
   }
 };
