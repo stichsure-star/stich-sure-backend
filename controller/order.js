@@ -524,7 +524,7 @@ exports.getCustomerOrderById = async (req, res, next) => {
         {
           model: request,
           as: "request",
-          attributes: ["id", "designImage", "designTitle", "category"],
+          attributes: ["id", "designImage", "inspirationalImage", "designTitle", "category", "measurement"],
         },
         {
           model: Designs,
