@@ -9,9 +9,6 @@ module.exports = {
   },
 
   async down(queryInterface, Sequelize) {
-    await queryInterface.removeColumn('requests', 'requestImage', {
-      type: Sequelize.STRING,
-      allowNull: true,
-    });
+    await queryInterface.removeColumn('requests', 'requestImage'); // ✅ no third argument
   }
 };
