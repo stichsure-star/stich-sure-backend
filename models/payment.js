@@ -5,7 +5,6 @@ const {
 module.exports = (sequelize, DataTypes) => {
   class Payment extends Model {
     static associate(models) {
-   
       Payment.belongsTo(models.Order, {
         foreignKey: 'orderId',
         as: 'order',

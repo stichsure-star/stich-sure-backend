@@ -599,6 +599,8 @@ exports.updateOrderStatus = async (req, res, next) => {
     const { id } = req.params;
     const requestedStatus = req.body.status;
     const status = statusAliases[requestedStatus] || requestedStatus;
+        console.log('updateOrderStatus called:', { id, requestedStatus, resolvedStatus: status });
+    console.log('req.user.id:', req.user.id);
 
     if (!allowedStatuses.includes(status)) {
       return res.status(400).json({
