@@ -3,7 +3,8 @@ info:
   title: StitchSure API Documentation
   version: 1.0.0
   description: API documentation for the StitchSure application, which connects customers with tailors and designers for custom clothing services.
-paths:  
+
+paths:
   /api/v1/withdrawal/banks:
     get:
       summary: Get list of banks
@@ -29,7 +30,7 @@ paths:
         - bearerAuth: []
       description: >
         Verifies a bank account number using Korapay before initiating a withdrawal.
-        Returns the account name if valid.
+        Returns the account name if valid. Use "account" and "bank" as field names.
       requestBody:
         required: true
         content:
@@ -37,14 +38,14 @@ paths:
             schema:
               type: object
               required:
-                - accountNumber
-                - bankCode
+                - account
+                - bank
               properties:
-                accountNumber:
+                account:
                   type: string
                   example: "0123456789"
                   description: "The bank account number to verify"
-                bankCode:
+                bank:
                   type: string
                   example: "044"
                   description: "Bank code gotten from the get banks endpoint"
@@ -67,7 +68,8 @@ paths:
         Initiates a withdrawal from the designer's wallet to either their saved bank
         account on the platform or a new bank account. If useNewAccount is false,
         the saved account from the designer profile is used. If true, the provided
-        bank details are used instead.
+        bank details are used instead. On success an SMS notification is sent to
+        the designer's phone number.
       requestBody:
         required: true
         content:
@@ -143,7 +145,7 @@ paths:
                           - pending
                           - success
                           - failed
-                        example: pending
+                        example: success
                   wallet:
                     type: object
                     properties:
@@ -207,6 +209,9 @@ paths:
                         accountName:
                           type: string
                           example: John Doe
+                        bankCode:
+                          type: string
+                          example: "044"
                         reference:
                           type: string
                           example: WIT_abc12345_1718364000000
@@ -220,9 +225,11 @@ paths:
                         korapayTransferId:
                           type: string
                           example: txn_abc123
+                          nullable: true
                         failureReason:
                           type: string
                           example: null
+                          nullable: true
                         createdAt:
                           type: string
                           format: date-time
@@ -238,7 +245,8 @@ paths:
       security:
         - bearerAuth: []
       description: >
-        Retrieves the current wallet balance and bank details for the logged-in designer.
+        Retrieves the current wallet balance and saved bank details
+        for the logged-in designer.
       responses:
         "200":
           description: Wallet balance retrieved successfully
@@ -281,3 +289,10 @@ paths:
           description: Wallet not found
         "500":
           description: Failed to get wallet balance
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
