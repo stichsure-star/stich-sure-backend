@@ -10,7 +10,7 @@ const options = {
         },
         servers: [
             {
-                url: "http://localhost:7001",
+                url: "https://stich-sure-backend.onrender.com",
                 description: 'hosted server'
             },
             {
