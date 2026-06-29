@@ -455,8 +455,14 @@ exports.verifyPayment = async (req, res, next) => {
       payment,
     });
   } catch (error) {
-    console.log(error.message);
-    return res.status(500).json({ message: "Verification failed" });
+    console.error("Verification Error Context:", error);
+    
+    return res.status(500).json({ 
+      success: false,
+      message: "Verification failed", 
+      debugError: error.message,
+      debugDetails: error.response?.data || "No external API response data"
+    });
   }
 };
 
