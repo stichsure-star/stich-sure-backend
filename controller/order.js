@@ -411,7 +411,7 @@ exports.getDesignerOrderById = async (req, res, next) => {
     const order = await Order.findOne({
       where: { id, designerId },
       include: [
-        buildPaymentInclude(true, true), 
+        buildPaymentInclude(true, false), 
         {
           model: Customer,
           as: "customer",
@@ -469,7 +469,7 @@ exports.getCustomerOrderById = async (req, res, next) => {
     const order = await Order.findOne({
       where: { id, customerId },
       include: [
-        buildPaymentInclude(true, true), 
+        buildPaymentInclude(true, false), 
         {
           model: Designer,
           as: "designer",
@@ -654,7 +654,7 @@ exports.getOrdersByDesignerAndCustomer = async (req, res, next) => {
       where,
       distinct: true,
       include: [
-        buildPaymentInclude(true, true),
+        buildPaymentInclude(true, false),
                 {
           model: Customer,
           as: "customer",
@@ -692,7 +692,7 @@ exports.getOrdersByDesignerId = async (req, res, next) => {
       where: { designerId, ...buildOrderWhere(req) },
       distinct: true,
       include: [
-        buildPaymentInclude(true, true), 
+        buildPaymentInclude(true, false), 
         {
           model: Customer,
           as: "customer",
@@ -725,7 +725,7 @@ exports.getOrdersByCustomerId = async (req, res, next) => {
       where: { customerId, ...buildOrderWhere(req) },
       distinct: true,
       include: [
-        buildPaymentInclude(true, true),
+        buildPaymentInclude(true, false),
         {
           model: Designer,
           as: "designer",
