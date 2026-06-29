@@ -43,51 +43,22 @@ const safeTimingEqualHex = (aHex, bHex) => {
 };
 
 const processSuccessfulPayment = async (payment) => {
-  if (payment.pickupShipmentCreated && payment.status === "success") {
+  if (payment.status === "success") {
     return { alreadyProcessed: true };
   }
-
-  const pickupShipmentResult = await createShipment({
-    request_token: payment.pickupRequestToken,
-    courier_id: payment.pickupCourierId,
-    service_code: payment.pickupServiceCode,
-  });
-
-  const pickupDate =
-    pickupShipmentResult.data?.pickup_date ||
-    pickupShipmentResult.data?.scheduled_date ||
-    getTomorrowDate();
 
   await payment.update({
     status: "success",
     paidAt: payment.paidAt || new Date(),
-    pickupShipmentCreated: true,
-    pickupDate,
     escrowStatus: "holding",
   });
 
- 
   await Order.update(
-    { status: "active", pickupDate },
+    { status: "active" },
     { where: { id: payment.orderId } }
   );
 
-  const courier = pickupShipmentResult.data?.courier;
-  await Shipment.findOrCreate({
-    where: { orderId: payment.orderId, type: "pickup" },
-    defaults: {
-      orderId: payment.orderId,
-      type: "pickup",
-      trackingCode: pickupShipmentResult.data?.order_id,
-      trackingUrl: pickupShipmentResult.data?.tracking_url,
-      courier: courier?.name,
-      status: pickupShipmentResult.data?.status,
-      shippingFee: pickupShipmentResult.data?.payment?.shipping_fee,
-      currency: pickupShipmentResult.data?.payment?.currency,
-    },
-  });
-
-  return { alreadyProcessed: false, pickupShipmentResult };
+  return { alreadyProcessed: false };
 };
 
 exports.validateAddress = async (req, res) => {
@@ -442,42 +413,17 @@ exports.verifyPayment = async (req, res, next) => {
       });
     }
 
-    const pickupShipmentResult = await createShipment({
-      request_token: payment.pickupRequestToken,
-      courier_id: payment.pickupCourierId,
-      service_code: payment.pickupServiceCode,
-    });
-
-    const pickupDate =
-      pickupShipmentResult.data?.pickup_date ||
-      pickupShipmentResult.data?.scheduled_date ||
-      getTomorrowDate();
-
+   
     await payment.update({
       status: "success",
       paidAt: new Date(),
-      pickupShipmentCreated: true,
-      pickupDate,
       escrowStatus: "holding",
     });
 
-   
     await Order.update(
-      { status: "pending", pickupDate },
+      { status: "active" },
       { where: { id: payment.orderId } }
     );
-
-    const courier = pickupShipmentResult.data?.courier;
-    const shipment = await Shipment.create({
-      orderId: payment.orderId,
-      type: "pickup",
-      trackingCode: pickupShipmentResult.data?.order_id,
-      trackingUrl: pickupShipmentResult.data?.tracking_url,
-      courier: courier?.name,
-      status: pickupShipmentResult.data?.status,
-      shippingFee: pickupShipmentResult.data?.payment?.shipping_fee,
-      currency: pickupShipmentResult.data?.payment?.currency,
-    });
 
     await payment.reload();
 
@@ -504,12 +450,9 @@ exports.verifyPayment = async (req, res, next) => {
 
     return res.status(200).json({
       success: true,
-      message: "Payment verified successfully. Pickup has been scheduled.",
+      message: "Payment verified successfully. Order is now active.",
       order: enrichedOrder,
       payment,
-      shipment,
-      pickupDate,
-      pickupShipment: pickupShipmentResult.data,
     });
   } catch (error) {
     console.log(error.message);

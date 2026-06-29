@@ -165,9 +165,6 @@ paths:
                   type: string
                   example: "cora"
                   description: "Service code of selected courier from rates response"
-                insurance_code:
-                  type: string
-                  description: "Optional - include if insurance is needed"
                 is_cod_label:
                   type: boolean
                   description: "Optional - set to true for cash on delivery"

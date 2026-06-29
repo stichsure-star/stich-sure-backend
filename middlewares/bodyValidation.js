@@ -357,7 +357,6 @@ exports.createShipmentValidator = validateBody(
     request_token: requiredString("Request token", 500),
     courier_id: Joi.alternatives().try(Joi.number().integer().positive(), Joi.string().trim().min(1)).required(),
     service_code: requiredString("Service code", 100),
-    insurance_code: optionalString("Insurance code", 100),
     is_cod_label: Joi.boolean().optional(),
   })
 );
