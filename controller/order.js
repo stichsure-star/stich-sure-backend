@@ -17,12 +17,10 @@ const { parseMeasurementValue } = require("../utils/measurement");
 const allowedStatuses = ["pending", "active", "delivered", "completed", "cancelled"];
 const statusAliases = {
   new: "pending",
-  preparing: "active",
-  ready: "delivered",
-  picked_up: "active",
-  pickedUp: "active",
-  "picked-up": "active",
-  in_production: "active",
+  active: "active",
+  delivered: "delivered",
+  completed: "completed",
+  cancelled: "cancelled"
 };
 
 const triggerDeliveryShipment = async (orderId, designerId) => {
@@ -270,7 +268,7 @@ exports.getDesignerOrders = async (req, res, next) => {
       where,
       distinct: true,
       include: [
-        buildPaymentInclude(true, true), 
+        buildPaymentInclude(false, false), 
         {
           model: Customer,
           as: "customer",
