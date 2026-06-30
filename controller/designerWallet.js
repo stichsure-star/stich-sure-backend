@@ -11,8 +11,8 @@ const {
   getBanks,
   resolveWalletBankDetails,
   initiateBankPayout,
-  getKoraSecretKey,
-} = require("../services/korapay.service");
+  getFlwSecretKey,
+} = require("../services/flutterwave.service");
 const {
   WITHDRAWAL_PLATFORM_FEE,
   generateWithdrawalReference,
@@ -26,7 +26,7 @@ const {
 
 //   return { page, limit, offset };
 // };
-    console.log('Korapay key:', getKoraSecretKey()?.slice(0, 15) + '...');
+console.log('Flutterwave key:', getFlwSecretKey()?.slice(0, 15) + '...');
 exports.createDesignerWallet = async (req, res, next) => {
   try {
     const designerId = req.user.id;
@@ -39,10 +39,10 @@ exports.createDesignerWallet = async (req, res, next) => {
       });
     }
 
-    if (!getKoraSecretKey()) {
+    if (!getFlwSecretKey()) {
       return res.status(500).json({
         success: false,
-        message: "Korapay secret key is not configured.",
+        message: "Flutterwave secret key is not configured.",
       });
     }
 
@@ -139,7 +139,7 @@ exports.updateDesignerWallet = async (req, res, next) => {
       accountName: nextAccountName,
     };
 
-    if (bankDetailsChanged && getKoraSecretKey()) {
+    if (bankDetailsChanged && getFlwSecretKey()) {
       try {
         resolvedBankDetails = await resolveWalletBankDetails({
           bankName: nextBankName,
@@ -302,10 +302,10 @@ exports.getAllWallets = async (req, res, next) => {
 
 exports.getBanks = async (req, res, next) => {
   try {
-    if (!getKoraSecretKey()) {
+    if (!getFlwSecretKey()) {
       return res.status(500).json({
         success: false,
-        message: "Korapay secret key is not configured.",
+        message: "Flutterwave secret key is not configured.",
       });
     }
 
@@ -323,10 +323,10 @@ exports.getBanks = async (req, res, next) => {
 
 exports.resolveBankAccountDetails = async (req, res, next) => {
   try {
-    if (!getKoraSecretKey()) {
+    if (!getFlwSecretKey()) {
       return res.status(500).json({
         success: false,
-        message: "Korapay secret key is not configured.",
+        message: "Flutterwave secret key is not configured.",
       });
     }
 
@@ -375,10 +375,10 @@ exports.withdrawFunds = async (req, res, next) => {
       });
     }
 
-    if (!getKoraSecretKey()) {
+    if (!getFlwSecretKey()) {
       return res.status(500).json({
         success: false,
-        message: "Korapay secret key is not configured.",
+        message: "Flutterwave secret key is not configured.",
       });
     }
 
