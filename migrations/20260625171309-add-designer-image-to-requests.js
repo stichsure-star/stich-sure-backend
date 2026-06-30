@@ -8,7 +8,11 @@ module.exports = {
     });
   },
 
-  async down(queryInterface, Sequelize) {
-    await queryInterface.removeColumn('requests', 'designerImage');
+  async down(queryInterface) {
+    const table = await queryInterface.describeTable('requests');
+
+    if (table.designerImage) {
+      await queryInterface.removeColumn('requests', 'designerImage');
+    }
   }
 };

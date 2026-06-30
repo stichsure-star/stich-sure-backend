@@ -177,13 +177,24 @@ exports.loginDesigner = async (req, res, next) => {
     });
 
    
-    if (!existingDesigner) {
+       if (!existingDesigner) {
+      const existingCustomer= await Customer.findOne({
+        where: { email: formattedEmail }
+      });
+
+      if (existingCustomer) {
+        return res.status(400).json({
+          success: false,
+          message: "This email is registered as a customer. Please log in through the customer portal.", 
+        });
+      }
+
       return res.status(404).json({
         success: false,
         message: "Invalid email or password",
       });
     }
-        if (existingDesigner.role === 'customer') {
+        if (existingDesigner.role !== 'designer') {
       return res.status(400).json({
         success: false,
         message: "This email doesn't exist as a customer, login as a designer and try again", 

@@ -136,19 +136,33 @@ exports.verifyEmail = async (req, res, next) => {
 exports.loginCustomer = async (req, res, next) => {
   try {
     const { email, password } = req.body;
+    const normalizedEmail = email.toLowerCase();
     
+
     const existingCustomer = await Customer.findOne({
-      where: { email: email.toLowerCase() },
+      where: { email: normalizedEmail },
     });
 
     if (!existingCustomer) {
+      const existingDesigner = await Designer.findOne({
+        where: { email: normalizedEmail }
+      });
+
+      if (existingDesigner) {
+        return res.status(400).json({
+          success: false,
+          message: "This email is registered as a designer. Please log in through the designer portal.", 
+        });
+      }
+
       return res.status(404).json({
         success: false,
         message: "Invalid email or password",
       });
     }
 
-    if (existingCustomer.role === 'designer') {
+  
+    if (existingCustomer.role !== 'customer') {
       return res.status(400).json({
         success: false,
         message: "This email doesn't exist as a customer, login as a designer and try again", 
@@ -162,7 +176,6 @@ exports.loginCustomer = async (req, res, next) => {
       });
     }
 
-
     const correctPassword = await bcrypt.compare(
       password,
       existingCustomer.password,
@@ -174,7 +187,6 @@ exports.loginCustomer = async (req, res, next) => {
       });
     }
 
-
     const token = jwt.sign(
       {
         id: existingCustomer.id,
@@ -184,7 +196,6 @@ exports.loginCustomer = async (req, res, next) => {
       process.env.JWT_SECRET,
       { expiresIn: "1d" },
     );
-
 
     redisClient.del(`customer_${existingCustomer.id}`);
     redisClient.set(`customer_${existingCustomer.id}`, token, { EX: 86400 });
