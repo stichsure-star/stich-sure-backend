@@ -5,10 +5,10 @@ const { sendSMS } = require('../utils/sms');
 exports.getBanks = async (req, res) => {
   try {
     const response = await axios.get(
-      'https://api.korapay.com/merchant/api/v1/misc/banks?countryCode=NG',
+      'https://api.flutterwave.com/v3/banks/NG',
       {
         headers: {
-          Authorization: `Bearer ${process.env.KORA_SECRET_KEY}`,
+          Authorization: `Bearer ${process.env.FLUTTERWAVE_SECRET_KEY}`,
         },
       }
     );
@@ -39,15 +39,14 @@ exports.verifyAccount = async (req, res) => {
     }
 
     const response = await axios.post(
-      'https://api.korapay.com/merchant/api/v1/misc/banks/resolve',
+      'https://api.flutterwave.com/v3/accounts/resolve',
       {
-        account,
-        bank,
-        currency: 'NGN',
+        account_number: account,
+        account_bank: bank,
       },
       {
         headers: {
-          Authorization: `Bearer ${process.env.KORA_SECRET_KEY}`,
+          Authorization: `Bearer ${process.env.FLUTTERWAVE_SECRET_KEY}`,
           'Content-Type': 'application/json',
         },
       }
