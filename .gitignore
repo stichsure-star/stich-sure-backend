@@ -2,4 +2,5 @@ node_modules
 .env
 assets
 Database
+config
 test.js
