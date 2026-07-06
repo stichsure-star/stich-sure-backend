@@ -1,6 +1,7 @@
 require('dotenv').config();
 const express = require('express');
 const app = express();
+require('./config/config.js');
 const { sequelize } = require('./models');
 const swaggerUi = require('swagger-ui-express')
 const redisClient = require('./Redis/redisConnection')

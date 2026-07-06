@@ -1,4 +1,10 @@
-{
+require('dotenv').config()
+USERNAME = process.env.USERNAME
+PASSWORD = process.env.PASSWORD
+DATABASE = process.env.DATABASE
+HOST = process.env.HOST
+DIALECT = process.env.DIALECT
+module.exports = {
   "development": {
     "username": "sql8832011",
     "password": "YAERLaXwRW",
