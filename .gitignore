@@ -1,6 +1,5 @@
 node_modules
 .env
 assets
-Database
-config
+Databas
 test.js
