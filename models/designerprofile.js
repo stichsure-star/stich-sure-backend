@@ -10,6 +10,10 @@ module.exports = (sequelize, DataTypes) => {
         foreignKey: 'designerId',
         as: 'designer'
       });
+      // DesignerProfile.hasOne(models.Order, {
+      //   foreignKey: 'orderId',
+      //   as: 'order'
+      // });
     }
   }
 
@@ -29,17 +33,9 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.STRING,
       allowNull: false
     },
-    currentHouseAddress: {
+    address: {
       type: DataTypes.STRING,
       allowNull: false
-    },
-    state: {
-      type: DataTypes.STRING,
-      allowNull: true
-    },
-    country: {
-      type: DataTypes.STRING,
-      allowNull: true
     },
     profilePhoto: {
       type: DataTypes.TEXT,

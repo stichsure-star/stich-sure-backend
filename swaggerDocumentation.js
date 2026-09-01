@@ -40,7 +40,8 @@ const options = {
         './docs/payment.yaml',
         './docs/shipbubble.yaml',
         './docs/Payment.yaml',
-        './docs/notifications.yaml'
+        './docs/notifications.yaml',
+        './docs/withdrawal.yaml'
     ]
 }
 

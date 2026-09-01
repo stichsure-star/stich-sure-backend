@@ -21,13 +21,44 @@ const dateRule = Joi.date().iso();
 
 const validateBody = (schema, options = {}) => (req, res, next) => {
   const hasUploadedFile = !!req.file;
-  const hasBodyFields = Object.keys(req.body || {}).length > 0;
+  let body = req.body;
+
+  if (body && typeof body === "object" && Array.isArray(body)) {
+    body = {};
+  }
+
+  if (typeof body === "string") {
+    try {
+      body = JSON.parse(body);
+    } catch (error) {
+      body = {};
+    }
+  }
+
+  if (body && typeof body === "object") {
+    if (!body.fullName && (body.full_name || body.fullname)) {
+      body.fullName = body.full_name || body.fullname;
+    }
+    if (!body.deadLine && body.deadline) {
+      body.deadLine = body.deadline;
+    }
+  }
+
+  const hasBodyFields = Object.keys(body || {}).length > 0;
 
   if (options.allowFileOnly && hasUploadedFile && !hasBodyFields) {
     return next();
   }
 
-  const { error, value } = schema.validate(req.body || {}, {
+  if (!options.allowFileOnly && hasUploadedFile && !hasBodyFields) {
+    return next();
+  }
+
+  if (!options.allowFileOnly && hasUploadedFile && hasBodyFields) {
+    return next();
+  }
+
+  const { error, value } = schema.validate(body || {}, {
     abortEarly: true,
     convert: true,
     stripUnknown: true,
@@ -80,9 +111,7 @@ const resolveBankAccountSchema = Joi.object({
 
 const profileFields = {
   businessName: optionalString("Business name", 100),
-  currentHouseAddress: optionalString("Current house address", 255),
-  state: optionalString("State", 100),
-  country: optionalString("Country", 100),
+  address: optionalString("Current house address", 255),
   phoneNumber: phoneRule.optional().messages({
     "string.empty": "Phone number cannot be empty",
     "string.min": "Phone number must be at least 7 characters",
@@ -124,6 +153,14 @@ const packageItemSchema = Joi.object({
   quantity: Joi.alternatives().try(Joi.number().integer().positive(), Joi.string().trim().min(1)).required(),
 });
 
+const measurementRule = Joi.alternatives()
+  .try(
+    Joi.array().items(Joi.string().trim().min(1).max(1000)).min(1),
+    Joi.string().trim().min(1).max(1000)
+  )
+  .messages({
+    "alternatives.match": "Measurement must be an array of strings or a single string",
+  });
 exports.createRequestValidator = validateBody(
   Joi.object({
     fullName: requiredString("Full name", 100),
@@ -131,6 +168,7 @@ exports.createRequestValidator = validateBody(
       "any.required": "Deadline is required",
       "date.format": "Deadline must be a valid ISO date",
     }),
+    measurement: measurementRule.optional(),
     description: requiredString("Description", 2000),
   })
 );
@@ -185,17 +223,6 @@ exports.updateOrderStatusValidator = validateBody(
   })
 );
 
-const measurementArrayRule = Joi.alternatives()
-  .try(
-    Joi.array().items(textRule("Measurement item", 1000)),
-    Joi.string().trim().min(1).max(1000)
-  )
-  .messages({
-    "array.base": "Measurement must be an array",
-    "array.includes": "Measurement items must be strings",
-    "string.base": "Measurement must be a valid string or array",
-  });
-
 exports.createDesignValidator = validateBody(
   Joi.object({
     designerId: uuidRule.required().messages({
@@ -210,7 +237,7 @@ exports.createDesignValidator = validateBody(
       "number.positive": "Price must be greater than 0",
     }),
     description: requiredString("Description", 2000),
-    measurement: measurementArrayRule.optional(),
+    measurement: measurementRule.optional(),
   })
 );
 
@@ -223,7 +250,7 @@ exports.updateDesignValidator = validateBody(
       "number.positive": "Price must be greater than 0",
     }),
     description: optionalString("Description", 2000),
-    measurement: measurementArrayRule.optional(),
+    measurement: measurementRule.optional(),
   }).or("designTitle", "category", "price", "description", "measurement"),
   { allowFileOnly: true }
 );
@@ -235,9 +262,7 @@ exports.designerProfileCreateValidator = validateBody(
   Joi.object({
     ...profileFields,
     businessName: requiredString("Business name", 100),
-    currentHouseAddress: requiredString("Current house address", 255),
-    state: requiredString("State", 100),
-    country: requiredString("Country", 100),
+    address: requiredString("Address", 255),
     phoneNumber: phoneRule.required().messages({
       "any.required": "Phone number is required",
       "string.empty": "Phone number cannot be empty",
@@ -249,9 +274,7 @@ exports.designerOnboardingValidator = validateBody(
   Joi.object({
     ...profileFields,
     businessName: requiredString("Business name", 100),
-    currentHouseAddress: requiredString("Current house address", 255),
-    state: requiredString("State", 100),
-    country: requiredString("Country", 100),
+    address: requiredString("Address", 255),
     phoneNumber: phoneRule.required().messages({
       "any.required": "Phone number is required",
       "string.empty": "Phone number cannot be empty",
@@ -268,9 +291,7 @@ exports.designerOnboardingValidator = validateBody(
 exports.designerProfileUpdateValidator = validateBody(
   Joi.object(profileFields).or(
     "businessName",
-    "currentHouseAddress",
-    "state",
-    "country",
+    "address",
     "phoneNumber",
     "bankName",
     "accountNumber",
@@ -336,7 +357,6 @@ exports.createShipmentValidator = validateBody(
     request_token: requiredString("Request token", 500),
     courier_id: Joi.alternatives().try(Joi.number().integer().positive(), Joi.string().trim().min(1)).required(),
     service_code: requiredString("Service code", 100),
-    insurance_code: optionalString("Insurance code", 100),
     is_cod_label: Joi.boolean().optional(),
   })
 );

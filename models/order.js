@@ -8,11 +8,11 @@ module.exports = (sequelize, DataTypes) => {
         foreignKey: 'requestId',
         as: 'request',
       });
-
       Order.belongsTo(models.Customer, {
         foreignKey: 'customerId',
         as: 'customer',
       });
+      
 
       Order.belongsTo(models.Designer, {
         foreignKey: 'designerId',
@@ -23,7 +23,6 @@ module.exports = (sequelize, DataTypes) => {
         foreignKey: 'designId',
         as: 'design',
       });
-
       Order.hasOne(models.DesignerWalletTransaction, {
         foreignKey: 'orderId',
         as: 'walletTransaction',

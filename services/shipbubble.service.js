@@ -1,6 +1,13 @@
 const axios = require('axios');
 require('dotenv').config()
+const { sanitizeAddressForShipbubble } = require('../utils/addressSanitizer');
+
 exports.validateAddress = async (payload) => {
+  const cleanedPayload = {
+    ...payload,
+    address: sanitizeAddressForShipbubble(payload?.address),
+  };
+
   const res = await fetch(`${process.env.SHIPBUBBLE_BASE_URL}/shipping/address/validate`, {
     method: 'POST',
     headers: {
@@ -8,7 +15,7 @@ exports.validateAddress = async (payload) => {
       'Content-Type': 'application/json',
       
     },
-    body: JSON.stringify(payload),
+    body: JSON.stringify(cleanedPayload),
   });
    const data = await res.json();
   console.log('validateAddress response:', JSON.stringify(data, null, 2));

@@ -6,17 +6,9 @@ const { AppError } = require('../utils/errorHandler');
 
 exports.createDesign = async (req, res, next) => {
   try {
-    const { designerId, designTitle, category, price, description } = req.body;
-    let { measurement } = req.body;
+    const { designerId, designTitle, category, price, description, measurement } = req.body;
     let designImage = null;
 
-    if (typeof measurement === "string" && measurement.trim().length > 0) {
-      try {
-        measurement = JSON.parse(measurement);
-      } catch (err) {
-        // keep string values for backward compatibility; validation will reject incorrect formats
-      }
-    }
 
     if (req.file) {
       const filePath = req.file.path;
@@ -155,13 +147,6 @@ exports.updateDesign = async (req, res, next) => {
       });
     }
 
-    if (typeof measurement === "string" && measurement.trim().length > 0) {
-      try {
-        measurement = JSON.parse(measurement);
-      } catch (err) {
-        // keep string values for backward compatibility; validation will reject incorrect formats
-      }
-    }
 
     let designImage = design.designImage;
 
@@ -177,7 +162,7 @@ exports.updateDesign = async (req, res, next) => {
       category: category || design.category,
       price: price || design.price,
       description: description || design.description,
-      measurement: measurement !== undefined ? measurement : design.measurement,
+      measurement,
       designImage: designImage,
     });
 

@@ -31,7 +31,7 @@ const {
   updateCustomerProfileValidator,
   updatePasswordValidator
 } = require('../middlewares/customerValidation')
-const { profileContactValidator } = require('../middlewares/bodyValidation')
+// const { profileContactValidator } = require('../middlewares/bodyValidation')
 
 router.post('/register', customerValidator, createCustomer);
 router.post('/verify', verifyEmailValidator, verifyEmail)
