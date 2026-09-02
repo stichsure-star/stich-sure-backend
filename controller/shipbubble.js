@@ -42,23 +42,56 @@ const safeTimingEqualHex = (aHex, bHex) => {
   return crypto.timingSafeEqual(a, b);
 };
 
-const processSuccessfulPayment = async (payment) => {
-  if (payment.status === "success") {
-    return { alreadyProcessed: true };
+const createPickupShipmentForPayment = async (payment) => {
+  if (payment.pickupShipmentCreated) return null;
+
+  if (!payment.pickupRequestToken || !payment.pickupCourierId) {
+    throw new Error("Pickup shipment details are missing for this payment");
   }
 
-  await payment.update({
-    status: "success",
-    paidAt: payment.paidAt || new Date(),
-    escrowStatus: "holding",
+  const shipmentResult = await createShipment({
+    request_token: payment.pickupRequestToken,
+    courier_id: payment.pickupCourierId,
+    service_code: payment.pickupServiceCode,
   });
 
-  await Order.update(
-    { status: "active" },
-    { where: { id: payment.orderId } }
-  );
+  if (shipmentResult.status === "failed") {
+    throw new Error(shipmentResult.message || "Failed to create pickup shipment");
+  }
 
-  return { alreadyProcessed: false };
+  const courier = shipmentResult.data?.courier;
+  const shipment = await Shipment.create({
+    orderId: payment.orderId,
+    trackingCode: shipmentResult.data?.order_id,
+    trackingUrl: shipmentResult.data?.tracking_url,
+    courier: courier?.name,
+    status: shipmentResult.data?.status,
+    shippingFee: shipmentResult.data?.payment?.shipping_fee,
+    currency: shipmentResult.data?.payment?.currency,
+  });
+
+  await payment.update({ pickupShipmentCreated: true });
+  return shipment;
+};
+
+const processSuccessfulPayment = async (payment) => {
+  const alreadyProcessed = payment.status === "success";
+
+  if (!alreadyProcessed) {
+    await payment.update({
+      status: "success",
+      paidAt: payment.paidAt || new Date(),
+      escrowStatus: "holding",
+    });
+
+    await Order.update(
+      { status: "active" },
+      { where: { id: payment.orderId } }
+    );
+  }
+
+  const shipment = await createPickupShipmentForPayment(payment);
+  return { alreadyProcessed, shipment };
 };
 
 exports.validateAddress = async (req, res) => {
@@ -396,7 +429,7 @@ exports.verifyPayment = async (req, res, next) => {
       return res.status(404).json({ success: false, message: "Payment record not found" });
     }
 
-    if (payment.status === "success") {
+    if (payment.status === "success" && payment.pickupShipmentCreated) {
       return res.status(200).json({
         success: true,
         message: "Payment already verified",
@@ -414,16 +447,7 @@ exports.verifyPayment = async (req, res, next) => {
     }
 
    
-    await payment.update({
-      status: "success",
-      paidAt: new Date(),
-      escrowStatus: "holding",
-    });
-
-    await Order.update(
-      { status: "active" },
-      { where: { id: payment.orderId } }
-    );
+    const paymentResult = await processSuccessfulPayment(payment);
 
     await payment.reload();
 
@@ -453,6 +477,7 @@ exports.verifyPayment = async (req, res, next) => {
       message: "Payment verified successfully. Order is now active.",
       order: enrichedOrder,
       payment,
+      shipment: paymentResult.shipment,
     });
   } catch (error) {
     console.error("Verification Error Context:", error);

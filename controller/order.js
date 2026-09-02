@@ -173,6 +173,23 @@ const formatPayment = (payment, orderAmount) => {
   };
 };
 
+const buildShipmentInclude = () => ({
+  model: Shipment,
+  as: "shipments",
+  attributes: [
+    "id",
+    "trackingCode",
+    "trackingUrl",
+    "courier",
+    "status",
+    "shippingFee",
+    "currency",
+    "createdAt",
+  ],
+  separate: true,
+  order: [["createdAt", "DESC"]],
+});
+
 exports.createOrder = async (req, res, next) => {
   try {
     const customerId = req.user.id;
@@ -342,6 +359,7 @@ exports.getOrderById = async (req, res, next) => {
       ],
       include: [
         buildPaymentInclude(false, false),
+        buildShipmentInclude(),
         {
           model: Customer,
           as: "customer",
@@ -384,6 +402,7 @@ exports.getOrderById = async (req, res, next) => {
       measurement: parseMeasurementValue(order?.request?.measurement),
       designImage: order?.design?.designImage || null,
       payment: formatPayment(order.payment, order.amount),
+      shipment: order.shipments?.[0] || null,
     };
 
     return res.status(200).json({
@@ -412,6 +431,7 @@ exports.getDesignerOrderById = async (req, res, next) => {
       where: { id, designerId },
       include: [
         buildPaymentInclude(true, false), 
+        buildShipmentInclude(),
         {
           model: Customer,
           as: "customer",
@@ -442,6 +462,7 @@ exports.getDesignerOrderById = async (req, res, next) => {
       measurement: parseMeasurementValue(order?.request?.measurement),
       designImage: order?.design?.designImage || null,
       payment: formatPayment(order.payment, order.amount),
+      shipment: order.shipments?.[0] || null,
     };
 
     return res.status(200).json({

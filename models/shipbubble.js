@@ -1,55 +1,44 @@
 'use strict';
-const {
-  Model,
-  Sequelize
-} = require('sequelize');
-module.exports = (sequelize, DataTypes) => {
-  class Payment extends Model {
-    /**
-     * Helper method for defining associations.
-     * This method is not a part of Sequelize lifecycle.
-     * The `models/index` file will call this method automatically.
-     */
-    static associate(models) {
-    Shipment.belongsTo(models.Order, {
-    foreignKey: "orderId",
-    as: "order",
-  });
+const { Model } = require('sequelize');
 
-  Shipment.belongsTo(models.Payment, {
-    foreignKey: "paymentId",
-    as: "payment",
-  });
+module.exports = (sequelize, DataTypes) => {
+  class Shipment extends Model {
+    static associate(models) {
+      Shipment.belongsTo(models.Order, {
+        foreignKey: "orderId",
+        as: "order",
+      });
     }
   }
-  
-  const Shipment = sequelize.define('Shipment', {
+
+  Shipment.init({
     orderId: {
-      type: Sequelize.STRING,
+      type: DataTypes.STRING,
+      allowNull: false,
     },
     trackingCode: {
-      type: Sequelize.STRING,
+      type: DataTypes.STRING,
     },
     trackingUrl: {
-      type: Sequelize.TEXT,
+      type: DataTypes.TEXT,
     },
     courier: {
-      type: Sequelize.STRING,
+      type: DataTypes.STRING,
     },
     status: {
-      type: Sequelize.STRING,
-      ENUM: [
-        
-      ]
-      
+      type: DataTypes.STRING,
     },
     shippingFee: {
-      type: Sequelize.FLOAT,
+      type: DataTypes.FLOAT,
     },
     currency: {
-      type: Sequelize.STRING,
+      type: DataTypes.STRING,
       defaultValue: 'NGN',
     },
+  }, {
+    sequelize,
+    modelName: 'Shipment',
   });
+
   return Shipment;
 };
