@@ -1,4 +1,4 @@
-const { Designer, DesignerProfile, DesignerWallet, Designs,Order } = require("../models");
+const { Designer, Customer, DesignerProfile, DesignerWallet, Designs,Order } = require("../models");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const redisClient = require('../Redis/redisConnection')
