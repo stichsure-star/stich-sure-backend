@@ -105,7 +105,7 @@ const sanitizeProfileResponse = (profile) => {
 
 //     const {
 //       businessName,
-//       currentHouseAddress,
+//       address,
 //       phoneNumber,
 //       bankName,
 //       accountNumber,
@@ -118,7 +118,7 @@ const sanitizeProfileResponse = (profile) => {
 //     } = req.body;
 //     const parsedSpecialization = parseSpecialization(specialization);
 
-//     if (!businessName || !currentHouseAddress || !phoneNumber) {
+//     if (!businessName || !address || !phoneNumber) {
 //       return res.status(400).json({
 //         success: false,
 //         message: "Business name, current house address, and phone number are required.",
@@ -140,7 +140,7 @@ const sanitizeProfileResponse = (profile) => {
 
 //     const isProfileCompleted =
 //       businessName &&
-//       currentHouseAddress &&
+//       address &&
 //       phoneNumber &&
 //       parsedSpecialization &&
 //       yearsOfExperience &&
@@ -152,7 +152,7 @@ const sanitizeProfileResponse = (profile) => {
 //     if (profile) {
 //       await profile.update({
 //         businessName,
-//         currentHouseAddress,
+//         address,
 //         phoneNumber,
 //         bankName,
 //         accountNumber,
@@ -169,7 +169,7 @@ const sanitizeProfileResponse = (profile) => {
 //       profile = await DesignerProfile.create({
 //         designerId,
 //         businessName,
-//         currentHouseAddress,
+//         address,
 //         phoneNumber,
 //         bankName,
 //         accountNumber,
@@ -214,9 +214,7 @@ exports.createOrUpdateDesignerOnboarding = async (req, res, next) => {
     const designerId = req.user.id;
     const {
       businessName,
-      currentHouseAddress,
-      state,
-      country,
+      address,
       phoneNumber,
       specialization,
       yearsOfExperience,
@@ -228,11 +226,11 @@ exports.createOrUpdateDesignerOnboarding = async (req, res, next) => {
       lastName
     } = req.body;
 
-    if (!businessName || !currentHouseAddress || !state || !country || !phoneNumber) {
+    if (!businessName || !address || !phoneNumber) {
       await transaction.rollback();
       return res.status(400).json({
         success: false,
-        message: "Business name, current house address, state, country, and phone number are required.",
+        message: "Business name, address, and phone number are required.",
       });
     }
 
@@ -261,9 +259,7 @@ exports.createOrUpdateDesignerOnboarding = async (req, res, next) => {
 
     const isProfileCompleted =
       businessName &&
-      currentHouseAddress &&
-      state &&
-      country &&
+      address &&
       phoneNumber &&
       parsedSpecialization &&
       yearsOfExperience &&
@@ -275,9 +271,7 @@ exports.createOrUpdateDesignerOnboarding = async (req, res, next) => {
     const profilePayload = {
       designerId,
       businessName,
-      currentHouseAddress,
-      state,
-      country,
+      address,
       phoneNumber,
       bankName,
       accountNumber,
@@ -298,7 +292,6 @@ exports.createOrUpdateDesignerOnboarding = async (req, res, next) => {
     } else {
       profile = await DesignerProfile.create(profilePayload, { transaction });
     }
-
     let wallet = await DesignerWallet.findOne({
       where: { designerId },
       transaction,
@@ -629,9 +622,7 @@ exports.updateDesignerProfile = async (req, res, next) => {
     const designerId = req.user.id;
     const {
       businessName,
-      currentHouseAddress,
-      state,
-      country,
+      address,
       phoneNumber,
       bankName,
       accountNumber,
@@ -661,10 +652,8 @@ exports.updateDesignerProfile = async (req, res, next) => {
     }
 
     const updatedBusinessName = businessName || profile.businessName;
-    const updatedCurrentHouseAddress =
-      currentHouseAddress || profile.currentHouseAddress;
-    const updatedState = state || profile.state;
-    const updatedCountry = country || profile.country;
+    const updatedAddress =
+      address || profile.address;
     const updatedPhoneNumber = phoneNumber || profile.phoneNumber;
     const updatedBankName = bankName || profile.bankName;
     const updatedAccountNumber = accountNumber || profile.accountNumber;
@@ -678,9 +667,7 @@ exports.updateDesignerProfile = async (req, res, next) => {
 
     const isProfileCompleted =
       updatedBusinessName &&
-      updatedCurrentHouseAddress &&
-      updatedState &&
-      updatedCountry &&
+      updatedAddress &&
       updatedPhoneNumber &&
       updatedSpecialization &&
       updatedYearsOfExperience &&
@@ -689,9 +676,7 @@ exports.updateDesignerProfile = async (req, res, next) => {
 
     await profile.update({
       businessName: updatedBusinessName,
-      currentHouseAddress: updatedCurrentHouseAddress,
-      state: updatedState,
-      country: updatedCountry,
+      address: updatedAddress,
       phoneNumber: updatedPhoneNumber,
       bankName: updatedBankName,
       accountNumber: updatedAccountNumber,
@@ -762,7 +747,7 @@ exports.updateDesignerProfileSettings = async (req, res) => {
       });
     }
 
-    const { bio, email, firstName, lastName, location } = req.body;
+    const { bio, email, firstName, lastName, location, phoneNumber, address } = req.body;
     let profile = await DesignerProfile.findOne({
       where: { id }
     });
@@ -776,21 +761,21 @@ exports.updateDesignerProfileSettings = async (req, res) => {
     }
 
    
-    if (!bio  || !email || !firstName || !lastName || !location ) {
-      return res.status(error).json({
+    if (!bio  || !email || !firstName || !lastName || !location || !phoneNumber || !address ) {
+      return res.status(400).json({
         message: 'All fields are required'
       });
     }
 
    
     await Designer.update(
-      { email, firstName, lastName },
+      { email, firstName, lastName, phoneNumber, address },
       { where: { id } }
     );
 
     
     const updatedProfileSetting = await DesignerProfile.update(
-      { bio, profilePhoto, email, firstName, lastName, location },
+      { bio, profilePhoto, email, firstName, lastName, location, phoneNumber, address },
       { where: { designerId: id } }
     );
 

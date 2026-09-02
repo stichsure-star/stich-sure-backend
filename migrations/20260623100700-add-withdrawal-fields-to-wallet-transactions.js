@@ -1,6 +1,5 @@
 'use strict';
 
-/** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
     await queryInterface.changeColumn('DesignerWalletTransactions', 'orderId', {
@@ -28,17 +27,30 @@ module.exports = {
   },
 
   async down(queryInterface, Sequelize) {
-    await queryInterface.removeColumn('DesignerWalletTransactions', 'payoutReference');
-    await queryInterface.removeColumn('DesignerWalletTransactions', 'transactionType');
+    try {
+      await queryInterface.removeColumn('DesignerWalletTransactions', 'payoutReference');
+    } catch (error) {
+      // Column may not exist
+    }
+
+    try {
+      await queryInterface.removeColumn('DesignerWalletTransactions', 'transactionType');
+    } catch (error) {
+      // Column may not exist
+    }
 
     await queryInterface.changeColumn('DesignerWalletTransactions', 'orderId', {
       type: Sequelize.UUID,
       allowNull: false,
     });
 
-    await queryInterface.addIndex('DesignerWalletTransactions', ['orderId'], {
-      unique: true,
-      name: 'orderId',
-    });
+    try {
+      await queryInterface.addIndex('DesignerWalletTransactions', ['orderId'], {
+        unique: true,
+        name: 'orderId',
+      });
+    } catch (error) {
+      // Index may already exist
+    }
   },
-};
+}

@@ -11,22 +11,22 @@ const {
   getBanks,
   resolveWalletBankDetails,
   initiateBankPayout,
-  getKoraSecretKey,
-} = require("../services/korapay.service");
+  getFlwSecretKey,
+} = require("../services/flutterwave.service");
 const {
   WITHDRAWAL_PLATFORM_FEE,
   generateWithdrawalReference,
   rollbackFailedWithdrawal,
 } = require("../utils/withdrawal");
 
-const getPagination = (query) => {
-  const page = Math.max(Number(query.page) || 1, 1);
-  const limit = Math.min(Math.max(Number(query.limit) || 10, 1), 100);
-  const offset = (page - 1) * limit;
+// const getPagination = (query) => {
+//   const page = Math.max(Number(query.page) || 1, 1);
+//   const limit = Math.min(Math.max(Number(query.limit) || 10, 1), 100);
+//   const offset = (page - 1) * limit;
 
-  return { page, limit, offset };
-};
-
+//   return { page, limit, offset };
+// };
+console.log('Flutterwave key:', getFlwSecretKey()?.slice(0, 15) + '...');
 exports.createDesignerWallet = async (req, res, next) => {
   try {
     const designerId = req.user.id;
@@ -39,10 +39,10 @@ exports.createDesignerWallet = async (req, res, next) => {
       });
     }
 
-    if (!getKoraSecretKey()) {
+    if (!getFlwSecretKey()) {
       return res.status(500).json({
         success: false,
-        message: "Korapay secret key is not configured.",
+        message: "Flutterwave secret key is not configured.",
       });
     }
 
@@ -139,7 +139,7 @@ exports.updateDesignerWallet = async (req, res, next) => {
       accountName: nextAccountName,
     };
 
-    if (bankDetailsChanged && getKoraSecretKey()) {
+    if (bankDetailsChanged && getFlwSecretKey()) {
       try {
         resolvedBankDetails = await resolveWalletBankDetails({
           bankName: nextBankName,
@@ -180,7 +180,9 @@ exports.updateDesignerWallet = async (req, res, next) => {
       data: wallet,
     });
   } catch (error) {
-    next(error);
+    return res.status(500).json({
+      message: error.message
+    })
   }
 };
 
@@ -212,9 +214,9 @@ exports.getDesignerWallet = async (req, res, next) => {
 exports.getTransactionHistory = async (req, res, next) => {
   try {
     const designerId = req.user.id;
-    const { page, limit, offset } = getPagination(req.query);
+    // const { page, limit, offset } = getPagination(req.query);
 
-    const { count, rows } = await DesignerWalletTransaction.findAndCountAll({
+    const { rows } = await DesignerWalletTransaction.findAndCountAll({
       where: { designerId },
       include: [
         {
@@ -229,8 +231,6 @@ exports.getTransactionHistory = async (req, res, next) => {
         },
       ],
       order: [["transactionDate", "DESC"]],
-      limit,
-      offset,
     });
 
     const data = rows.map((transaction) => {
@@ -261,14 +261,14 @@ exports.getTransactionHistory = async (req, res, next) => {
       success: true,
       message: "Your transaction history is ready.",
       data,
-      pagination: {
-        totalItems: count,
-        totalPages: Math.ceil(count / limit),
-        currentPage: page,
-        pageSize: limit,
-        hasNextPage: page < Math.ceil(count / limit),
-        hasPreviousPage: page > 1,
-      },
+      // pagination: {
+      //   totalItems: count,
+      //   totalPages: Math.ceil(count / limit),
+      //   currentPage: page,
+      //   pageSize: limit,
+      //   hasNextPage: page < Math.ceil(count / limit),
+      //   hasPreviousPage: page > 1,
+      // },
     });
   } catch (error) {
     next(error);
@@ -277,8 +277,8 @@ exports.getTransactionHistory = async (req, res, next) => {
 
 exports.getAllWallets = async (req, res, next) => {
   try {
-    const { page, limit, offset } = getPagination(req.query);
-    const { count, rows } = await DesignerWallet.findAndCountAll({
+    // const { page, limit, offset } = getPagination(req.query);
+    const { rows } = await DesignerWallet.findAndCountAll({
       include: [
         {
           model: Designer,
@@ -287,15 +287,13 @@ exports.getAllWallets = async (req, res, next) => {
         },
       ],
       order: [["createdAt", "DESC"]],
-      limit,
-      offset,
     });
 
     return res.status(200).json({
       success: true,
       message: "List of wallets retrieved.",
       data: rows,
-      pagination: { totalItems: count, totalPages: Math.ceil(count / limit), currentPage: page, pageSize: limit },
+      // pagination: { totalItems: count, totalPages: Math.ceil(count / limit), currentPage: page, pageSize: limit },
     });
   } catch (error) {
     next(error);
@@ -304,10 +302,10 @@ exports.getAllWallets = async (req, res, next) => {
 
 exports.getBanks = async (req, res, next) => {
   try {
-    if (!getKoraSecretKey()) {
+    if (!getFlwSecretKey()) {
       return res.status(500).json({
         success: false,
-        message: "Korapay secret key is not configured.",
+        message: "Flutterwave secret key is not configured.",
       });
     }
 
@@ -325,10 +323,10 @@ exports.getBanks = async (req, res, next) => {
 
 exports.resolveBankAccountDetails = async (req, res, next) => {
   try {
-    if (!getKoraSecretKey()) {
+    if (!getFlwSecretKey()) {
       return res.status(500).json({
         success: false,
-        message: "Korapay secret key is not configured.",
+        message: "Flutterwave secret key is not configured.",
       });
     }
 
@@ -377,10 +375,10 @@ exports.withdrawFunds = async (req, res, next) => {
       });
     }
 
-    if (!getKoraSecretKey()) {
+    if (!getFlwSecretKey()) {
       return res.status(500).json({
         success: false,
-        message: "Korapay secret key is not configured.",
+        message: "Flutterwave secret key is not configured.",
       });
     }
 

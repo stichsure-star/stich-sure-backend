@@ -1,0 +1,16 @@
+{
+	"folders": [
+		{
+			"path": "../../Fashion and appareal"
+		},
+		{
+			"path": ".."
+		},
+		{
+			"path": "../../Hackathon_Project"
+		}
+	],
+	"settings": {
+		"liveServer.settings.multiRootWorkspaceName": "Hackathon_Project"
+	}
+}

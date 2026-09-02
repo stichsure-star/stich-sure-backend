@@ -1,4 +1,4 @@
-const { Designer, DesignerProfile, DesignerWallet, Designs } = require("../models");
+const { Designer, DesignerProfile, DesignerWallet, Designs,Order } = require("../models");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const redisClient = require('../Redis/redisConnection')
@@ -170,27 +170,49 @@ exports.verifyEmail = async (req, res, next) => {
 exports.loginDesigner = async (req, res, next) => {
   try {
     const { email, password } = req.body;
+    const formattedEmail = email.toLowerCase();
+
     const existingDesigner = await Designer.findOne({
-      where: { email: email.toLowerCase() },
+      where: { email: formattedEmail },
     });
-    if (!existingDesigner) {
+
+   
+       if (!existingDesigner) {
+      const existingCustomer= await Customer.findOne({
+        where: { email: formattedEmail }
+      });
+
+      if (existingCustomer) {
+        return res.status(400).json({
+          success: false,
+          message: "This email is registered as a customer. Please log in through the customer portal.", 
+        });
+      }
+
       return res.status(404).json({
         success: false,
-        message: "Invaid email or password",
+        message: "Invalid email or password",
       });
     }
-     if (existingDesigner.isEmailVerified == false) {
-           return res.status(403).json({
-            success: false,
-            message: 'Please verify your email to continue'
-           })
-        }
+        if (existingDesigner.role !== 'designer') {
+      return res.status(400).json({
+        success: false,
+        message: "This email doesn't exist as a customer, login as a designer and try again", 
+      });
+    }
+    if (existingDesigner.isEmailVerified == false) {
+      return res.status(403).json({
+        success: false,
+        message: 'Please verify your email to continue'
+      });
+    }
+
     const checkPassword = await bcrypt.compare(
       password,
       existingDesigner.password,
     );
     if (!checkPassword) {
-      return res.status(404).json({
+      return res.status(400).json({
         success: false,
         message: "Invalid credentials",
       });
@@ -206,28 +228,28 @@ exports.loginDesigner = async (req, res, next) => {
       { expiresIn: "1d" },
     );
     
-        redisClient.del(`Designer_${existingDesigner.id}`);
-        redisClient.set(`Designer_${existingDesigner.id}`, token, {EX: 86400})
+  
+    redisClient.del(`Designer_${existingDesigner.id}`);
+    redisClient.set(`Designer_${existingDesigner.id}`, token, { EX: 86400 });
 
     const data = {
       id: existingDesigner.id,
       email: existingDesigner.email,
       role: existingDesigner.role,
       firstName: existingDesigner.firstName,
-      lastName:  existingDesigner.lastName
-    }
+      lastName: existingDesigner.lastName
+    };
 
     res.status(200).json({
       success: true,
       message: "Welcome back! You're now logged in.",
       token,
       data,
-    })
+    });
   } catch (error) {
     next(error);
   }
 };
-
 
 
 exports.updatePassword = async (req, res, next) => {
@@ -515,6 +537,10 @@ exports.getOneDesigner = async (req, res, next) => {
         {
           model: Designs,
           as: "designs",
+        },
+        {
+          model: Order,
+          as: "orders",
         },
       ],
     });

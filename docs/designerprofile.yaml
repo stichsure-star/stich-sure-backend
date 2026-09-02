@@ -18,7 +18,7 @@ paths:
   #             type: object
   #             required:
   #               - businessName
-  #               - currentHouseAddress
+  #               - address
   #               - phoneNumber
   #               - specialization
   #               - yearsOfExperience
@@ -28,7 +28,7 @@ paths:
   #                 type: string
   #                 example: "Stitch Masters"
   #                 description: "The designer's business name"
-  #               currentHouseAddress:
+  #               address:
   #                 type: string
   #                 example: "123 Fashion Avenue"
   #                 description: "The designer's current work address"
@@ -89,9 +89,7 @@ paths:
               type: object
               required:
                 - businessName
-                - currentHouseAddress
-                - state
-                - country
+                - address
                 - phoneNumber
                 - bankName
                 - accountNumber
@@ -100,12 +98,12 @@ paths:
                 businessName:
                   type: string
                   example: "Stitch Masters"
-                currentHouseAddress:
+                address:
                   type: string
-                  example: "123 Fashion Avenue"
+                  example: "123 Broad Street, Lagos Island, Lagos State, Nigeria"
                 phoneNumber:
                   type: string
-                  example: "+2348012345678"
+                  example: "08012345678"
                 bankName:
                   type: string
                   example: "Access Bank"
@@ -135,14 +133,6 @@ paths:
                   type: string
                   example: "Doe"
                   description: "The designer's last name"
-                state:
-                  type: string
-                  example: "Lagos"
-                  description: "The state where the designer is located"
-                country:
-                  type: string
-                  example: "Nigeria"
-                  description: "The country where the designer is located"
       responses:
         '200':
           description: Designer onboarding saved successfully. Returns the joined profile fields and wallet data.
@@ -189,11 +179,7 @@ paths:
                               format: uuid
                             businessName:
                               type: string
-                            currentHouseAddress:
-                              type: string
-                            state:
-                              type: string
-                            country:
+                            address:
                               type: string
                             profilePhoto:
                               type: string
@@ -326,11 +312,7 @@ paths:
                               format: uuid
                             businessName:
                               type: string
-                            currentHouseAddress:
-                              type: string
-                            state:
-                              type: string
-                            country:
+                            address:
                               type: string
                             profilePhoto:
                               type: string
@@ -469,11 +451,7 @@ paths:
                             format: uuid
                           businessName:
                             type: string
-                          currentHouseAddress:
-                            type: string
-                          state:
-                            type: string
-                          country:
+                          address:
                             type: string
                           profilePhoto:
                             type: string
@@ -550,15 +528,9 @@ paths:
                 businessName:
                   type: string
                   example: "Stitch Masters"
-                currentHouseAddress:
+                address:
                   type: string
                   example: "123 Fashion Avenue"
-                state:
-                  type: string
-                  example: "Lagos"
-                country:
-                  type: string
-                  example: "Nigeria"
                 phoneNumber:
                   type: string
                   example: "+2348012345678"
@@ -608,6 +580,8 @@ paths:
                 - firstName
                 - lastName
                 - location
+                - phoneNumber
+                - address
               properties:
                 firstName:
                   type: string
@@ -624,6 +598,12 @@ paths:
                 location:
                   type: string
                   example: "Lagos, Nigeria"
+                phoneNumber:
+                  type: string
+                  example: "08012345678"
+                address:
+                  type: string
+                  example: "123 Broad Street, Lagos Island, Lagos State, Nigeria"
                 profilePhoto:
                   type: string
                   format: binary

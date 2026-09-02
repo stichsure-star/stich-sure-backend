@@ -1,17 +1,22 @@
 const axios = require("axios");
 
 const getKoraBaseUrl = () =>
-  process.env.KORAPAY_BASE_URL || "https://api.korapay.com/merchant/api/v1";
+  process.env.KORA_BASE_URL || "https://api.korapay.com/merchant/api/v1";
 
 const getKoraSecretKey = () =>
-  process.env.KORA_SECRET_KEY || process.env.KORAPAY_SECRET_KEY || "";
+  process.env.KORA_SECRET_KEY;
 
 const getKoraHeaders = () => ({
   Authorization: `Bearer ${getKoraSecretKey()}`,
   "Content-Type": "application/json",
 });
 
+
+
 const getBanks = async (countryCode = "NG") => {
+  console.log('Korapay key:', getKoraSecretKey()?.slice(0, 15) + '...');
+  console.log('Korapay URL:', `${getKoraBaseUrl()}/misc/banks`);
+  
   const response = await axios.get(`${getKoraBaseUrl()}/misc/banks`, {
     params: { countryCode },
     headers: getKoraHeaders(),
@@ -19,6 +24,7 @@ const getBanks = async (countryCode = "NG") => {
 
   return response.data;
 };
+
 
 const normalizeBankName = (name) =>
   String(name || "")

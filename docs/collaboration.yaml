@@ -2,7 +2,7 @@ openapi: 3.0.0
 info:
   title: StitchSure API Documentation
   version: 1.0.0
-  description: API documentation for designer collaboration endpoints.
+  description: API documentation for designer collaboration endpoints with Shipbubble + Korapay escrow integration.
 paths:
   /api/v1/collaboration/create:
     post:
@@ -18,7 +18,6 @@ paths:
               type: object
               required:
                 - receiverDesignerId
-                - title
               properties:
                 receiverDesignerId:
                   type: string
@@ -44,6 +43,7 @@ paths:
       responses:
         '201':
           description: Collaboration request sent successfully
+          
   /api/v1/collaboration/sent:
     get:
       summary: Get collaborations sent by the logged-in designer
@@ -53,6 +53,7 @@ paths:
       responses:
         '200':
           description: Sent collaborations loaded successfully
+          
   /api/v1/collaboration/received:
     get:
       summary: Get collaborations received by the logged-in designer
@@ -62,6 +63,7 @@ paths:
       responses:
         '200':
           description: Received collaborations loaded successfully
+          
   /api/v1/collaboration/stats:
     get:
       summary: Get collaboration dashboard stats for the logged-in designer
@@ -71,6 +73,7 @@ paths:
       responses:
         '200':
           description: Collaboration stats loaded successfully
+          
   /api/v1/collaboration/getById/{id}:
     get:
       summary: Get one collaboration by id
@@ -89,9 +92,11 @@ paths:
           description: Collaboration loaded successfully
         '404':
           description: Collaboration not found
+          
   /api/v1/collaboration/accept/{id}:
     put:
       summary: Accept a collaboration request
+      description: Changes status to accepted. Allows the sender to proceed to the payment step.
       tags: [collaboration]
       security:
         - bearerAuth: []
@@ -104,7 +109,111 @@ paths:
             format: uuid
       responses:
         '200':
-          description: Collaboration accepted successfully
+          description: Collaboration accepted successfully. Waiting for sender payment.
+          
+  /api/v1/collaboration/initialize-payment:
+    post:
+      summary: Initialize shipping quotes and gateway checkout for accepted collaborations
+      description: Validates sender/receiver addresses via Shipbubble, aggregates courier charges, and creates a Korapay checkout session.
+      tags: [collaboration]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - collaborationId
+              properties:
+                collaborationId:
+                  type: string
+                  format: uuid
+                  example: "a8b9c0d1-e2f3-4a5b-6c7d-8e9f0a1b2c3d"
+                email:
+                  type: string
+                  format: email
+                  example: "sender.designer@stitchsure.com"
+      responses:
+        '200':
+          description: Escrow session initialized successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  checkoutUrl:
+                    type: string
+                    example: "https://checkout.korapay.com/payment/token"
+                  paymentId:
+                    type: integer
+                    example: 45
+                  charges:
+                    type: object
+                    properties:
+                      offeredPayment:
+                        type: number
+                        example: 50000
+                      pickupFee:
+                        type: number
+                        example: 2500
+                      deliveryFee:
+                        type: number
+                        example: 2500
+                      totalAmount:
+                        type: number
+                        example: 55000
+        '400':
+          description: Unconfigured designer profiles or failed Shipbubble address matching
+        '403':
+          description: Unauthorized request boundary check failure
+          
+  /api/v1/collaboration/verify-payment/{reference}:
+    get:
+      summary: Verify collaboration escrow payment status
+      description: Checks transaction statuses against Korapay networks and transforms collaboration context status to active on success.
+      tags: [collaboration]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: reference
+          required: true
+          schema:
+            type: string
+            example: "COL_PAY_a8b9c0_1719682628"
+      responses:
+        '200':
+          description: Payment verified successfully. Escrow funds locked holding state.
+        '400':
+          description: Gateway processing reported incomplete transaction state
+        '404':
+          description: Payment tracking identity reference not found
+          
+  /api/v1/collaboration/complete/{id}:
+    put:
+      summary: Mark an active collaboration as completed
+      description: Transitions status to completed, creates delivery waybills over Shipbubble, and automatically dispatches escrow balances to the receiving designer.
+      tags: [collaboration]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Collaboration complete loop satisfied. Waybills generated and payouts sent.
+        '400':
+          description: Collaboration must be active and funded to call closing hooks
+          
   /api/v1/collaboration/reject/{id}:
     put:
       summary: Reject a collaboration request
@@ -121,22 +230,7 @@ paths:
       responses:
         '200':
           description: Collaboration rejected successfully
-  /api/v1/collaboration/complete/{id}:
-    put:
-      summary: Mark an accepted collaboration as completed
-      tags: [collaboration]
-      security:
-        - bearerAuth: []
-      parameters:
-        - in: path
-          name: id
-          required: true
-          schema:
-            type: string
-            format: uuid
-      responses:
-        '200':
-          description: Collaboration completed successfully
+          
   /api/v1/collaboration/cancel/{id}:
     put:
       summary: Cancel a collaboration request
@@ -153,6 +247,7 @@ paths:
       responses:
         '200':
           description: Collaboration cancelled successfully
+          
   /api/v1/collaboration:
     get:
       summary: Get all collaborations
@@ -162,3 +257,10 @@ paths:
       responses:
         '200':
           description: Collaborations retrieved successfully
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT

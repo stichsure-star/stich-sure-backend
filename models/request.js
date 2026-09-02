@@ -1,4 +1,5 @@
 'use strict';
+const { InboundParsingApi } = require('@getbrevo/brevo');
 const {
   Model
 } = require('sequelize');
@@ -46,7 +47,9 @@ module.exports = (sequelize, DataTypes) => {
     },
     deadLine: DataTypes.DATE,
     description: DataTypes.STRING,
-    measurement: DataTypes.STRING,
+   measurement: {
+      type: DataTypes.TEXT
+    },
     status: {
       type: DataTypes.ENUM('pending', 'proposal_sent', 'accepted', 'picked_up', 'ready', 'completed', 'rejected', 'cancelled'),
       defaultValue: 'pending'
@@ -62,7 +65,41 @@ module.exports = (sequelize, DataTypes) => {
     designerMessage: DataTypes.TEXT,
     rating: DataTypes.INTEGER,
     reviewComment: DataTypes.TEXT,
-    reviewedAt: DataTypes.DATE
+    reviewedAt: DataTypes.DATE,
+   designImage: {
+  type: DataTypes.TEXT,
+  allowNull: true,
+
+  defaultValue: '[]',
+  get() {
+    const value = this.getDataValue('designImage');
+    try {
+      return value ? JSON.parse(value) : [];
+    } catch {
+      return [];
+    }
+  },
+  set(value) {
+    this.setDataValue('designImage', JSON.stringify(value || []));
+  },
+},
+
+inspirationalImage: {
+  type: DataTypes.TEXT,
+  allowNull: true,
+  defaultValue: '[]',
+  get() {
+    const value = this.getDataValue('inspirationalImage');
+    try {
+      return value ? JSON.parse(value) : [];
+    } catch {
+      return [];
+    }
+  },
+  set(value) {
+    this.setDataValue('inspirationalImage', JSON.stringify(value || []));
+  },
+},
   }, {
     sequelize,
     modelName: 'request',

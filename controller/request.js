@@ -2,7 +2,8 @@ const { Op } = require("sequelize");
 const { request, DesignerProfile, Customer, Designer } = require("../models");
 const { AppError } = require('../utils/errorHandler');
 const {createNotification} = require("../utils/createNotification");
-
+const fs = require("fs");
+const cloudinary = require("../utils/cloudinary");
 const progressByStatus = {
   pending: 0,
   picked_up: 33,
@@ -61,14 +62,52 @@ exports.createRequest = async (req, res, next) => {
   try {
     const customerId = req.user.id;
     const designerId = req.params.designerId || req.body.designerId;
-    const { fullName, deadLine, measurement, description } = req.body;
+    
+const designImageFiles = req.files?.designImage || [];
+const inspirationalImageFiles = req.files?.inspirationalImage || [];
+console.log('req.files', req.files)
+console.log('designImageFiles:', designImageFiles)
+console.log('inspirationalImageFiles:', inspirationalImageFiles)
+const inspirationalImage = [];
+const designImage = [];
 
+for (const file of designImageFiles) {
+  try {
+    const result = await cloudinary.uploader.upload(file.path);
+    designImage.push(result.secure_url);
+  } catch (error) {
+    console.error("Design image upload failed:", error);
+  } finally {
+    if (fs.existsSync(file.path)) fs.unlinkSync(file.path);
+  }
+}
+
+
+for (const file of inspirationalImageFiles) {
+  try {
+    const result = await cloudinary.uploader.upload(file.path);
+    inspirationalImage.push(result.secure_url);
+  } catch (error) {
+    console.error("Inspirational image upload failed:", error);
+  } finally {
+    if (fs.existsSync(file.path)) fs.unlinkSync(file.path);
+  }
+}
+
+    const {
+      fullName,
+      deadLine,
+      measurement,
+      description,
+    } = req.body;
+    console.log('req.body', req.body)
     if (!designerId) {
       return res.status(400).json({
         success: false,
         message: "Designer ID is required",
       });
     }
+
 
     const customer = await Customer.findByPk(customerId);
     const designer = await Designer.findByPk(designerId);
@@ -95,6 +134,8 @@ exports.createRequest = async (req, res, next) => {
       measurement,
       description,
       status: "pending",
+      inspirationalImage,
+      designImage
     });
 
     await createNotification({
@@ -102,11 +143,12 @@ exports.createRequest = async (req, res, next) => {
       designerId,
       requestId: newRequest.id,
       title: "New Request Received",
-      message: "You have received a new request from a customer. Please review and respond.",
+      message:
+        "You have received a new request from a customer. Please review and respond.",
       type: "new_request",
     });
 
-    res.status(201).json({
+    return res.status(201).json({
       success: true,
       message: "Your request has been sent to the designer!",
       data: newRequest,
@@ -125,7 +167,7 @@ exports.acceptRequestFromCustomer = async (req, res, next) => {
       return res.status(403).json({
         success: false,
         message: "Unauthorized. Only designers can accept requests.",
-      });
+      });``
     }
 
     const foundRequest = await request.findByPk(id);
@@ -240,6 +282,21 @@ exports.rejectRequest = async (req, res, next) => {
 exports.getAllRequests = async (req, res, next) => {
   try {
     const requests = await request.findAll({
+      attributes: [
+        "id",
+        "customerId",
+        "designerId",
+        "fullName",
+        "deadLine",
+        "description",
+        "measurement",
+        "inspirationalImage",
+        "designImage",
+        "status",
+        "progress",
+        "createdAt",
+        "updatedAt",
+      ],
       include: [
         {
           model: Customer,
@@ -268,15 +325,42 @@ exports.getAllRequests = async (req, res, next) => {
 exports.getOneRequest = async (req, res, next) => {
   try {
     const { id } = req.params;
+
     const foundRequest = await request.findByPk(id, {
+      attributes: [
+        "id",
+        "customerId",
+        "designerId",
+        "fullName",
+        "deadLine",
+        "description",
+        "measurement",
+        "designImage",
+        "inspirationalImage",
+        "status",
+        "progress",
+        "createdAt",
+        "updatedAt",
+      ],
       include: [
-        { model: Customer, as: "customer", attributes: ["id", "firstName", "lastName", "email"] },
-        { model: Designer, as: "designer", attributes: ["id", "firstName", "lastName", "email"] },
+        {
+          model: Customer,
+          as: "customer",
+          attributes: ["id", "firstName", "lastName", "email"],
+        },
+        {
+          model: Designer,
+          as: "designer",
+          attributes: ["id", "firstName", "lastName", "email"],
+        },
       ],
     });
 
     if (!foundRequest) {
-      return res.status(404).json({ success: false, message: "Request not found" });
+      return res.status(404).json({
+        success: false,
+        message: "Request not found",
+      });
     }
 
     return res.status(200).json({
