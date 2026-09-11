@@ -4,7 +4,6 @@ const {
   Designer,
   DesignerProfile,
   Order,
-  Payment,
   SavedDesigner,
 } = require("../models");
 const bcrypt = require("bcrypt");
@@ -517,19 +516,12 @@ exports.getCustomerDashboardStats = async (req, res, next) => {
         where: {
           customerId,
           status: {
-            [Op.in]: [ "completed", "delivered"],
+            // New orders start as pending. They remain active until completed
+            // or cancelled, including while they are being delivered.
+            [Op.in]: ["pending", "active", "delivered"],
           },
         },
         distinct: true,
-        include: [
-          {
-            model: Payment,
-            as: "payment",
-            required: true,
-            where: { status: "success" },
-            attributes: [],
-          },
-        ],
       }),
       Order.count({
         where: {
@@ -537,15 +529,6 @@ exports.getCustomerDashboardStats = async (req, res, next) => {
           status: "completed",
         },
         distinct: true,
-        include: [
-          {
-            model: Payment,
-            as: "payment",
-            required: true,
-            where: { status: "success" },
-            attributes: [],
-          },
-        ],
       }),
       SavedDesigner.count({
         where: { customerId },

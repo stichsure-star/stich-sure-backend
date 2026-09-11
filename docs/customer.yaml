@@ -522,7 +522,7 @@ paths:
   /api/v1/customer/dashboard-stats:
     get:
       summary: Get customer dashboard statistics
-      description: Returns the authenticated customer's active order count, saved designer count, and completed order count.
+      description: Returns the authenticated customer's active order count, saved designer count, and completed order count. Active orders include pending, active, and delivered orders.
       tags: [customer]
       security:
         - bearerAuth: []
