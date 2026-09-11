@@ -26,7 +26,9 @@ router.route('/onboarding')
 // router.post('/create', authentication, upload.single('profilePhoto'), designerProfileCreateValidator, createOrUpdateDesignerProfile);
 router.get('/getAll', getAllDesignerProfiles);
 router.get('/featured', getFeaturedDesigners);
-router.get('/dashboard-stats', authentication, getDesignerDashboardStats);
+// Dashboard order cards must be calculated from Order records, not tailoring
+// request records. A request can exist without becoming an order.
+router.get('/dashboard-stats', authentication, getDesignerOrderDashboardStats);
 router.get('/getByDesigner/:designerId', getDesignerProfile);
 router.patch('/update', authentication, upload.single('profilePhoto'), designerProfileUpdateValidator, updateDesignerProfile);
 router.patch('/updateDesignerProfileSettings', authentication, upload.single('profilePhoto'), updateDesignerProfileSettings);

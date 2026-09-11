@@ -511,7 +511,7 @@ paths:
         - bearerAuth: []
       responses:
         '200':
-          description: Dashboard stats loaded successfully. Reliability starts at Bronze with score 0, then increases from completed accepted orders. Tiers are Bronze 0+, Silver 50+, Gold 90+, and Diamond 98+.
+          description: Dashboard order stats loaded successfully. totalOrders counts the logged-in designer's Order records. activeOrders includes pending, active, and delivered orders; completed and cancelled orders are reported separately.
   /api/v1/designerProfile/update:
     patch:
       summary: Update designer profile
