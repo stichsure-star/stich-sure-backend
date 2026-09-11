@@ -1,4 +1,3 @@
-const { Op } = require("sequelize");
 const {
   Customer,
   Designer,
@@ -20,6 +19,7 @@ const {
 const { sendSingleEmail } = require("../utils/brevo");
 const redisClient = require("../Redis/redisConnection");
 const { AppError } = require("../utils/errorHandler");
+const { getDistinctOrders } = require("../utils/orderDashboard");
 const {
   VERIFICATION_OTP_TTL_MINUTES,
   RESET_PASSWORD_OTP_TTL_MINUTES,
@@ -511,29 +511,20 @@ exports.getCustomerDashboardStats = async (req, res, next) => {
         message: "Unauthorized. Only customers can perform this action",
       });
     }
-    const [activeOrders, completedOrders, savedDesigners] = await Promise.all([
-      Order.count({
-        where: {
-          customerId,
-          status: {
-            // New orders start as pending. They remain active until completed
-            // or cancelled, including while they are being delivered.
-            [Op.in]: ["pending", "active", "delivered"],
-          },
-        },
-        distinct: true,
-      }),
-      Order.count({
-        where: {
-          customerId,
-          status: "completed",
-        },
-        distinct: true,
-      }),
+    const [orders, savedDesigners] = await Promise.all([
+      Order.findAll({ where: { customerId } }),
       SavedDesigner.count({
         where: { customerId },
       }),
     ]);
+
+    const distinctOrders = getDistinctOrders(orders);
+    const activeOrders = distinctOrders.filter((item) =>
+      ["pending", "active", "delivered"].includes(item.status)
+    ).length;
+    const completedOrders = distinctOrders.filter(
+      (item) => item.status === "completed"
+    ).length;
 
     return res.status(200).json({
       success: true,
