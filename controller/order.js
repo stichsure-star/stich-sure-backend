@@ -1,5 +1,6 @@
 const { Op } = require("sequelize");
 const {
+  sequelize,
   Order,
   Customer,
   Designer,
@@ -13,6 +14,7 @@ const { createShipment } = require('../services/shipbubble.service');
 const { AppError } = require('../utils/errorHandler');
 const { releaseOrderEscrowToDesigner } = require("../utils/escrow");
 const { parseMeasurementValue } = require("../utils/measurement");
+const { getDistinctOrders } = require("../utils/orderDashboard");
 
 const allowedStatuses = ["pending", "active", "delivered", "completed", "cancelled"];
 const statusAliases = {
@@ -229,7 +231,7 @@ exports.createOrder = async (req, res, next) => {
       });
     }
 
-    const order = await Order.create({
+    const orderValues = {
       orderNumber: generateOrderNumber(),
       requestId: requestId,
       customerId,
@@ -240,7 +242,42 @@ exports.createOrder = async (req, res, next) => {
       status: "pending",
       placedAt: new Date(),
       pickupDate: pickupDate || null,
-    });
+    };
+
+    let order;
+    if (requestId) {
+      // Locking the request serializes simultaneous retries. The second call
+      // sees the first order and returns it instead of creating a duplicate.
+      const result = await sequelize.transaction(async (transaction) => {
+        await request.findByPk(requestId, {
+          transaction,
+          lock: transaction.LOCK.UPDATE,
+        });
+
+        const existingOrder = await Order.findOne({
+          where: { requestId },
+          transaction,
+        });
+
+        if (existingOrder) return { existingOrder };
+
+        return {
+          order: await Order.create(orderValues, { transaction }),
+        };
+      });
+
+      if (result.existingOrder) {
+        return res.status(200).json({
+          success: true,
+          message: "An order already exists for this request.",
+          data: result.existingOrder,
+        });
+      }
+
+      order = result.order;
+    } else {
+      order = await Order.create(orderValues);
+    }
 
     const orderWithDetails = await Order.findByPk(order.id, {
       include: [
@@ -303,7 +340,7 @@ exports.getDesignerOrders = async (req, res, next) => {
     return res.status(200).json({
       success: true,
       message: "Your designer orders have been retrieved.",
-      data: rows,
+      data: getDistinctOrders(rows),
     });
   } catch (error) {
     next(error);
@@ -340,7 +377,7 @@ exports.getCustomerOrders = async (req, res, next) => {
     return res.status(200).json({
       success: true,
       message: "Your order history has been retrieved.",
-      data: rows,
+      data: getDistinctOrders(rows),
     });
   } catch (error) {
     next(error);

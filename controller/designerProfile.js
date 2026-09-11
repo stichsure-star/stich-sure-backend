@@ -2,6 +2,7 @@ const { sequelize, Designer, DesignerProfile, DesignerWallet, Designs, request }
 const cloudinary = require("../utils/cloudinary");
 const fs = require("fs");
 const { AppError } = require('../utils/errorHandler');
+const { getDistinctOrders } = require("../utils/orderDashboard");
 
 const reliabilityTiers = [
   { name: "Bronze", min: 0 },
@@ -578,11 +579,13 @@ exports.getDesignerOrderDashboardStats = async (req, res, next) => {
     // An order is active from the moment it is placed until it is completed or
     // cancelled. This includes newly-created orders, whose initial status is
     // "pending".
-    const activeOrders = allOrders.filter((item) =>
+    const distinctOrders = getDistinctOrders(allOrders);
+
+    const activeOrders = distinctOrders.filter((item) =>
       ["pending", "active", "delivered"].includes(item.status)
     ).length;
 
-    const completedOrders = allOrders.filter(
+    const completedOrders = distinctOrders.filter(
       (item) => item.status === "completed"
     ).length;
 
@@ -592,9 +595,9 @@ exports.getDesignerOrderDashboardStats = async (req, res, next) => {
     const ratingCount = Number(profile?.ratingCount || 0);
 
     const reliabilityScore =
-      allOrders.length === 0
+      distinctOrders.length === 0
         ? 100
-        : Math.round((completedOrders / allOrders.length) * 100);
+        : Math.round((completedOrders / distinctOrders.length) * 100);
 
     return res.status(200).json({
       success: true,
@@ -607,9 +610,9 @@ exports.getDesignerOrderDashboardStats = async (req, res, next) => {
         avgRatingLabel: `${ratingAverage.toFixed(1)}/5`,
         ratingCount,
         completedOrders,
-        totalOrders: allOrders.length,
-        cancelledOrders: allOrders.filter((item) => item.status === "cancelled").length,
-        pendingOrders: allOrders.filter((item) => item.status === "pending").length,
+        totalOrders: distinctOrders.length,
+        cancelledOrders: distinctOrders.filter((item) => item.status === "cancelled").length,
+        pendingOrders: distinctOrders.filter((item) => item.status === "pending").length,
         reliabilityScore,
         reliabilityLabel: `${reliabilityScore}/100`,
         ...getReliabilityTierInfo(reliabilityScore),
