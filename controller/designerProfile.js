@@ -575,8 +575,11 @@ exports.getDesignerOrderDashboardStats = async (req, res, next) => {
       order: [["placedAt", "DESC"]],
     });
 
+    // An order is active from the moment it is placed until it is completed or
+    // cancelled. This includes newly-created orders, whose initial status is
+    // "pending".
     const activeOrders = allOrders.filter((item) =>
-      ["active", "delivered"].includes(item.status)
+      ["pending", "active", "delivered"].includes(item.status)
     ).length;
 
     const completedOrders = allOrders.filter(
