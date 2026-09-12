@@ -136,7 +136,7 @@ paths:
           description: Design updated successfully
         '404':
           description: Design not found
-  /api/v1/designs/delete/{id}:
+  /api/v1/designs/{id}:
     delete:
       summary: Delete a design
       tags: [designs]
@@ -155,3 +155,5 @@ paths:
           description: Design deleted successfully
         '404':
           description: Design not found
+        '403':
+          description: Only the designer who published the design can delete it

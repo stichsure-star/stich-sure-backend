@@ -9,6 +9,7 @@ router.get('/getAll', getAllDesigns)
 router.get('/getById/:id', getDesignById)
 router.get('/getDesignerDesigns/:designerId', getDesignerDesigns)
 router.put('/update/:id', authentication, upload.single('designImage'), updateDesignValidator, updateDesign)
-router.delete('/delete/:id', authentication,  deleteDesign)
+router.delete('/:id', authentication, deleteDesign)
+router.delete('/delete/:id', authentication, deleteDesign)
 
 module.exports = router

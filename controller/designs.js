@@ -183,7 +183,15 @@ exports.deleteDesign = async (req, res, next) => {
 
     if (!design) {
       return res.status(404).json({
+        success: false,
         message: "Design not found",
+      });
+    }
+
+    if (req.user.role !== "designer" || design.designerId !== req.user.id) {
+      return res.status(403).json({
+        success: false,
+        message: "Only the designer who published this design can delete it.",
       });
     }
 
